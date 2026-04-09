@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import '../../../../../core/storage/token_storage.dart';
@@ -12,14 +13,18 @@ class AuthCubit extends Cubit<AuthState> {
   AuthCubit({
     required AuthRepository authRepository,
     required TokenStorage tokenStorage,
-  })  : _authRepository = authRepository,
-        _tokenStorage = tokenStorage,
-        super(const AuthInitial());
+  }) : _authRepository = authRepository,
+       _tokenStorage = tokenStorage,
+       super(const AuthInitial());
 
   Future<void> signInWithGoogle() async {
     emit(const AuthLoading());
     try {
-      final googleSignIn = GoogleSignIn();
+      final googleSignIn = GoogleSignIn(
+        serverClientId: dotenv.env['WEB_CLIENT_ID'],
+      );
+
+      await googleSignIn.signOut(); // force hiện account picker
       final googleUser = await googleSignIn.signIn();
       if (googleUser == null) {
         // Người dùng huỷ đăng nhập
@@ -30,7 +35,11 @@ class AuthCubit extends Cubit<AuthState> {
       final googleAuth = await googleUser.authentication;
       final idToken = googleAuth.idToken;
       if (idToken == null) {
-        emit(const AuthFailure('Không lấy được Google ID Token. Vui lòng thử lại.'));
+        emit(
+          const AuthFailure(
+            'Không lấy được Google ID Token. Vui lòng thử lại.',
+          ),
+        );
         return;
       }
 
