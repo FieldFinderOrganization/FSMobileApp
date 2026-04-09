@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">fsmobileapp</string>
+    <string name="facebook_app_id">1833583237233963</string>
+    <string name="fb_login_protocol_scheme">fb1833583237233963</string>
+    <string name="facebook_client_token">2051680e4e49f99f7481ac0cbd4077f5</string>
+</resources>

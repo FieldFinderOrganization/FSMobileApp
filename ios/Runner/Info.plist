@@ -26,6 +26,47 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+
+	<!-- Google Sign-In & Facebook URL Schemes -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<!-- Google Sign-In: REVERSED_CLIENT_ID -->
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.572262371455-k42tuvpnebr708qk87f9gb3qnqudikep</string>
+			</array>
+		</dict>
+		<!-- Facebook Login -->
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fb1833583237233963</string>
+			</array>
+		</dict>
+	</array>
+
+	<!-- Facebook App ID & Display Name -->
+	<key>FacebookAppID</key>
+	<string>1833583237233963</string>
+	<key>FacebookDisplayName</key>
+	<string>FieldFinder</string>
+	<key>FacebookClientToken</key>
+	<string>2051680e4e49f99f7481ac0cbd4077f5</string>
+
+	<!-- Cho phép query scheme Facebook -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>fbapi</string>
+		<string>fb-messenger-share-api</string>
+		<string>fbauth2</string>
+		<string>fbshareextension</string>
+	</array>
+
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

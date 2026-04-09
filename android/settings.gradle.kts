@@ -14,6 +14,7 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
+        implementation 'com.facebook.android:facebook-android-sdk:[8,9)'
     }
 }
 
