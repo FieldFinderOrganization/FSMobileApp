@@ -8,6 +8,7 @@ import '../../../data/datasources/auth_remote_datasource.dart';
 import '../../../data/repositories/auth_repository_impl.dart';
 import '../../../register/presentation/pages/register_screen.dart';
 import '../../../otp/presentation/pages/otp_screen.dart';
+import '../../../forgot_password/presentation/pages/forgot_password_screen.dart';
 import '../../../../profile/presentation/pages/profile_screen.dart';
 import '../bloc/auth_cubit.dart';
 import '../bloc/auth_state.dart';
@@ -167,7 +168,11 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
                           alignment: Alignment.centerRight,
                           child: GestureDetector(
                             onTap: () {
-                              // TODO: Chuyển sang màn hình Quên mật khẩu
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const ForgotPasswordScreen(),
+                                ),
+                              );
                             },
                             child: Text(
                               'Forgot Password?',

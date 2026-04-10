@@ -112,8 +112,8 @@ class AuthCubit extends Cubit<AuthState> {
         phone: phone,
         password: password,
       );
-      // Gửi email thông báo đăng ký thành công, rồi quay về màn đăng nhập.
-      await _authRepository.sendOtp(email);
+      // Gửi email chào mừng (không phải OTP), rồi quay về màn đăng nhập.
+      await _authRepository.sendActivationEmail(email);
       emit(const AuthRegisterSuccess());
     } catch (e) {
       emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));

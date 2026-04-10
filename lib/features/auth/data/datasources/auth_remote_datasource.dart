@@ -64,4 +64,18 @@ class AuthRemoteDatasource {
       data: {'email': email, 'code': code},
     );
   }
+
+  Future<void> sendActivationEmail(String email) async {
+    await _dio.post(
+      ApiConstants.sendActivationEmail,
+      queryParameters: {'email': email},
+    );
+  }
+
+  Future<void> resetPasswordWithOtp(String email, String newPassword) async {
+    await _dio.post(
+      ApiConstants.resetPasswordOtp,
+      queryParameters: {'email': email, 'newPassword': newPassword},
+    );
+  }
 }
