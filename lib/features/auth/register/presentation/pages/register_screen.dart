@@ -74,6 +74,28 @@ class _RegisterScreenBodyState extends State<_RegisterScreenBody> {
       return;
     }
 
+    final emailRegex = RegExp(r'^[\w\-\.+]+@([\w\-]+\.)+[\w\-]{2,}$');
+    if (!emailRegex.hasMatch(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Email không hợp lệ.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final phoneRegex = RegExp(r'^\d{10}$');
+    if (!phoneRegex.hasMatch(phone)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Số điện thoại phải có đúng 10 chữ số.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     if (password != confirmPassword) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

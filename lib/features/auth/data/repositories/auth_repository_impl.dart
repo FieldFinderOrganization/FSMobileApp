@@ -104,7 +104,13 @@ class AuthRepositoryImpl implements AuthRepository {
     if (statusCode == 401) {
       return Exception('Phiên đăng nhập không hợp lệ. Vui lòng thử lại.');
     } else if (statusCode == 403) {
-      return Exception('Tài khoản của bạn đã bị khóa.');
+      final error = e.response?.data?['error'] as String?;
+      final message = e.response?.data?['message'] as String?;
+      final detail = message ?? error;
+      if (detail != null && detail.isNotEmpty) {
+        return Exception(detail);
+      }
+      return Exception('Truy cập bị từ chối. Vui lòng thử lại.');
     } else if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.receiveTimeout) {
       return Exception('Không thể kết nối máy chủ. Vui lòng kiểm tra mạng.');

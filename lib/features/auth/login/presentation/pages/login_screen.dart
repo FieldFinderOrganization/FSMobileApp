@@ -202,6 +202,16 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
                                     );
                                     return;
                                   }
+                                  final emailRegex = RegExp(r'^[\w\-\.+]+@([\w\-]+\.)+[\w\-]{2,}$');
+                                  if (!emailRegex.hasMatch(email)) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Email không hợp lệ.'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                    return;
+                                  }
                                   context.read<AuthCubit>().signInWithEmail(email, password);
                                 },
                           style: ElevatedButton.styleFrom(

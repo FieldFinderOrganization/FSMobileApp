@@ -25,10 +25,8 @@ class ProfileScreen extends StatelessWidget {
     final repository = AuthRepositoryImpl(datasource);
 
     return BlocProvider(
-      create: (_) => AuthCubit(
-        authRepository: repository,
-        tokenStorage: tokenStorage,
-      ),
+      create: (_) =>
+          AuthCubit(authRepository: repository, tokenStorage: tokenStorage),
       child: _ProfileBody(user: user),
     );
   }
@@ -56,10 +54,7 @@ class _ProfileBody extends StatelessWidget {
           children: [
             // Background
             Positioned.fill(
-              child: Image.asset(
-                'assets/images/mainbg.jpg',
-                fit: BoxFit.cover,
-              ),
+              child: Image.asset('assets/images/mainbg.jpg', fit: BoxFit.cover),
             ),
             Positioned.fill(
               child: Container(color: Colors.black.withOpacity(0.55)),
@@ -71,7 +66,10 @@ class _ProfileBody extends StatelessWidget {
                   _buildAppBar(context),
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
                       child: Column(
                         children: [
                           const SizedBox(height: 24),
@@ -120,7 +118,13 @@ class _ProfileBody extends StatelessWidget {
   Widget _buildAvatar() {
     final hasImage = user.imageUrl != null && user.imageUrl!.isNotEmpty;
     final initials = user.name.isNotEmpty
-        ? user.name.trim().split(' ').map((w) => w[0]).take(2).join().toUpperCase()
+        ? user.name
+              .trim()
+              .split(' ')
+              .map((w) => w[0])
+              .take(2)
+              .join()
+              .toUpperCase()
         : '?';
 
     return Container(
@@ -142,7 +146,7 @@ class _ProfileBody extends StatelessWidget {
             ? Image.network(
                 user.imageUrl!,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _buildInitialsAvatar(initials),
+                errorBuilder: (_, _, _) => _buildInitialsAvatar(initials),
               )
             : _buildInitialsAvatar(initials),
       ),
@@ -209,19 +213,30 @@ class _ProfileBody extends StatelessWidget {
         children: [
           _buildInfoRow(Icons.email_rounded, 'Email', user.email),
           if (user.phone != null && user.phone!.isNotEmpty)
-            _buildInfoRowWithDivider(Icons.phone_rounded, 'Điện thoại', user.phone!),
+            _buildInfoRowWithDivider(
+              Icons.phone_rounded,
+              'Điện thoại',
+              user.phone!,
+            ),
           _buildInfoRowWithDivider(
             Icons.circle,
             'Trạng thái',
             user.status == 'ACTIVE' ? 'Hoạt động' : user.status,
-            valueColor: user.status == 'ACTIVE' ? Colors.greenAccent : Colors.orange,
+            valueColor: user.status == 'ACTIVE'
+                ? Colors.greenAccent
+                : Colors.orange,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value, {Color? valueColor}) {
+  Widget _buildInfoRow(
+    IconData icon,
+    String label,
+    String value, {
+    Color? valueColor,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
@@ -257,7 +272,12 @@ class _ProfileBody extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRowWithDivider(IconData icon, String label, String value, {Color? valueColor}) {
+  Widget _buildInfoRowWithDivider(
+    IconData icon,
+    String label,
+    String value, {
+    Color? valueColor,
+  }) {
     return Column(
       children: [
         Divider(height: 1, color: Colors.white.withOpacity(0.1)),
@@ -283,7 +303,9 @@ class _ProfileBody extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 14),
           side: BorderSide(color: Colors.white.withOpacity(0.3)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       ),
     );
