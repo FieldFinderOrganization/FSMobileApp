@@ -50,4 +50,18 @@ class AuthRemoteDatasource {
       data: {'refreshToken': refreshToken},
     );
   }
+
+  Future<void> sendOtp(String email) async {
+    await _dio.post(
+      ApiConstants.sendOtp,
+      queryParameters: {'email': email},
+    );
+  }
+
+  Future<void> verifyOtp(String email, String code) async {
+    await _dio.post(
+      ApiConstants.verifyOtp,
+      data: {'email': email, 'code': code},
+    );
+  }
 }

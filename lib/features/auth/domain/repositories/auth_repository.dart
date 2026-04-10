@@ -11,4 +11,6 @@ abstract class AuthRepository {
     required String password,
   });
   Future<void> logout(String refreshToken);
+  Future<void> sendOtp(String email);
+  Future<void> verifyOtp(String email, String code);
 }

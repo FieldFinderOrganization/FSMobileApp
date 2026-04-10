@@ -33,3 +33,26 @@ class AuthFailure extends AuthState {
   @override
   List<Object?> get props => [message];
 }
+
+class AuthRegisterSuccess extends AuthState {
+  const AuthRegisterSuccess();
+}
+
+class AuthOtpSent extends AuthState {
+  final AuthTokenEntity pendingToken;
+  final String email;
+
+  const AuthOtpSent({required this.pendingToken, required this.email});
+
+  @override
+  List<Object?> get props => [pendingToken, email];
+}
+
+class AuthOtpVerified extends AuthState {
+  final AuthTokenEntity authToken;
+
+  const AuthOtpVerified(this.authToken);
+
+  @override
+  List<Object?> get props => [authToken];
+}

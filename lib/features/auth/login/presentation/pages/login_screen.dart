@@ -7,6 +7,8 @@ import '../../../../../core/storage/token_storage.dart';
 import '../../../data/datasources/auth_remote_datasource.dart';
 import '../../../data/repositories/auth_repository_impl.dart';
 import '../../../register/presentation/pages/register_screen.dart';
+import '../../../otp/presentation/pages/otp_screen.dart';
+import '../../../../profile/presentation/pages/profile_screen.dart';
 import '../bloc/auth_cubit.dart';
 import '../bloc/auth_state.dart';
 
@@ -51,14 +53,10 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
     super.dispose();
   }
 
-  void _onAuthSuccess(BuildContext context) {
-    // TODO: Navigate to home screen
-    // Navigator.of(context).pushReplacementNamed('/home');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đăng nhập thành công!'),
-        backgroundColor: Colors.green,
-      ),
+  void _navigateToProfile(BuildContext context, user) {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => ProfileScreen(user: user)),
+      (route) => false,
     );
   }
 
@@ -70,7 +68,21 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthSuccess) {
-          _onAuthSuccess(context);
+          // Google / Facebook login → thẳng vào Profile
+          _navigateToProfile(context, state.authToken.user);
+        } else if (state is AuthOtpSent) {
+          // Email login → chuyển qua màn OTP (dùng BlocProvider.value để share cubit)
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => BlocProvider.value(
+                value: context.read<AuthCubit>(),
+                child: OtpScreen(
+                  email: state.email,
+                  pendingToken: state.pendingToken,
+                ),
+              ),
+            ),
+          );
         } else if (state is AuthFailure) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

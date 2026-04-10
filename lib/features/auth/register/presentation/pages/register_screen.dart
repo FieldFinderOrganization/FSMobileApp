@@ -109,10 +109,10 @@ class _RegisterScreenBodyState extends State<_RegisterScreenBody> {
 
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
-        if (state is AuthSuccess) {
+        if (state is AuthRegisterSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Đăng ký thành công!'),
+              content: Text('Đăng ký thành công! Vui lòng kiểm tra email.'),
               backgroundColor: Colors.green,
             ),
           );
