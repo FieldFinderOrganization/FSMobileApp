@@ -5,6 +5,8 @@ class ApiConstants {
 
   static const String googleLogin = '/auth/google';
   static const String facebookLogin = '/auth/facebook';
+  static const String emailLogin = '/auth/login';
+  static const String register = '/auth/register';
   static const String refreshToken = '/auth/refresh-token';
   static const String logout = '/auth/logout';
 }

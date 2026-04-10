@@ -85,6 +85,48 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  Future<void> signInWithEmail(String email, String password) async {
+    emit(const AuthLoading());
+    try {
+      final authToken = await _authRepository.loginWithEmail(email, password);
+      await _tokenStorage.saveTokens(
+        accessToken: authToken.accessToken,
+        refreshToken: authToken.refreshToken,
+        userId: authToken.user.userId,
+        role: authToken.user.role,
+      );
+      emit(AuthSuccess(authToken));
+    } catch (e) {
+      emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
+    }
+  }
+
+  Future<void> registerUser({
+    required String name,
+    required String email,
+    required String phone,
+    required String password,
+  }) async {
+    emit(const AuthLoading());
+    try {
+      final authToken = await _authRepository.register(
+        name: name,
+        email: email,
+        phone: phone,
+        password: password,
+      );
+      await _tokenStorage.saveTokens(
+        accessToken: authToken.accessToken,
+        refreshToken: authToken.refreshToken,
+        userId: authToken.user.userId,
+        role: authToken.user.role,
+      );
+      emit(AuthSuccess(authToken));
+    } catch (e) {
+      emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
+    }
+  }
+
   Future<void> logout() async {
     final refreshToken = await _tokenStorage.getRefreshToken();
     if (refreshToken != null) {

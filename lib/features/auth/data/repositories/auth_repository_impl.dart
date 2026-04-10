@@ -27,6 +27,34 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<AuthTokenEntity> loginWithEmail(String email, String password) async {
+    try {
+      return await _datasource.loginWithEmail(email, password);
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
+  @override
+  Future<AuthTokenEntity> register({
+    required String name,
+    required String email,
+    required String phone,
+    required String password,
+  }) async {
+    try {
+      return await _datasource.register(
+        name: name,
+        email: email,
+        phone: phone,
+        password: password,
+      );
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
+  @override
   Future<void> logout(String refreshToken) async {
     try {
       await _datasource.logout(refreshToken);

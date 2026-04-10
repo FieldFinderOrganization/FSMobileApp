@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../../core/network/dio_client.dart';
 import '../../../../../core/storage/token_storage.dart';
 import '../../../data/datasources/auth_remote_datasource.dart';
 import '../../../data/repositories/auth_repository_impl.dart';
-import '../../../register/presentation/pages/register_screen.dart';
-import '../bloc/auth_cubit.dart';
-import '../bloc/auth_state.dart';
+import '../../../login/presentation/bloc/auth_cubit.dart';
+import '../../../login/presentation/bloc/auth_state.dart';
 
-class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatelessWidget {
+  const RegisterScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -25,41 +23,83 @@ class LoginScreen extends StatelessWidget {
         authRepository: repository,
         tokenStorage: tokenStorage,
       ),
-      child: const _LoginScreenBody(),
+      child: const _RegisterScreenBody(),
     );
   }
 }
 
-class _LoginScreenBody extends StatefulWidget {
-  const _LoginScreenBody();
+class _RegisterScreenBody extends StatefulWidget {
+  const _RegisterScreenBody();
 
   @override
-  State<_LoginScreenBody> createState() => _LoginScreenBodyState();
+  State<_RegisterScreenBody> createState() => _RegisterScreenBodyState();
 }
 
-class _LoginScreenBodyState extends State<_LoginScreenBody> {
+class _RegisterScreenBodyState extends State<_RegisterScreenBody> {
   bool _isPasswordVisible = false;
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  bool _isConfirmPasswordVisible = false;
+
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
   final Color primaryRed = const Color(0xFF7B0323);
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  void _onAuthSuccess(BuildContext context) {
-    // TODO: Navigate to home screen
-    // Navigator.of(context).pushReplacementNamed('/home');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đăng nhập thành công!'),
-        backgroundColor: Colors.green,
-      ),
-    );
+  void _onRegister(BuildContext context) {
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final phone = _phoneController.text.trim();
+    final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+
+    if (name.isEmpty || email.isEmpty || phone.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng điền đầy đủ thông tin.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mật khẩu xác nhận không khớp.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mật khẩu phải có ít nhất 6 ký tự.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    context.read<AuthCubit>().registerUser(
+          name: name,
+          email: email,
+          phone: phone,
+          password: password,
+        );
   }
 
   @override
@@ -70,7 +110,13 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthSuccess) {
-          _onAuthSuccess(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Đăng ký thành công!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.of(context).pop();
         } else if (state is AuthFailure) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -105,7 +151,7 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
                       children: [
                         SizedBox(height: size.height * 0.05),
                         Text(
-                          'WELCOME BACK!',
+                          'CREATE ACCOUNT',
                           style: GoogleFonts.playfairDisplay(
                             fontSize: 32,
                             fontWeight: FontWeight.w900,
@@ -115,78 +161,82 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 16),
-                        RichText(
-                          textAlign: TextAlign.center,
-                          text: TextSpan(
-                            style: GoogleFonts.inter(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w400,
-                              color: Colors.white,
-                            ),
-                            children: const [
-                              TextSpan(text: 'Log in to '),
-                              TextSpan(
-                                text: 'FS',
-                                style: TextStyle(fontStyle: FontStyle.italic),
-                              ),
-                              TextSpan(text: ' to continue to '),
-                              TextSpan(
-                                text: 'FS',
-                                style: TextStyle(fontStyle: FontStyle.italic),
-                              ),
-                            ],
+                        Text(
+                          'Join our community for exclusive rewards',
+                          style: GoogleFonts.inter(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.white,
                           ),
+                          textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 48),
+                        const SizedBox(height: 40),
+                        _buildTextField(
+                          controller: _nameController,
+                          hintText: 'Enter your full name',
+                          icon: Icons.person_rounded,
+                        ),
+                        const SizedBox(height: 16),
                         _buildTextField(
                           controller: _emailController,
                           hintText: 'Enter your email address',
                           icon: Icons.email_rounded,
+                          keyboardType: TextInputType.emailAddress,
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          controller: _phoneController,
+                          hintText: 'Enter your phone number',
+                          icon: Icons.phone_rounded,
+                          keyboardType: TextInputType.phone,
+                        ),
+                        const SizedBox(height: 16),
                         _buildTextField(
                           controller: _passwordController,
                           hintText: 'Password',
                           icon: Icons.lock_rounded,
                           isPassword: true,
+                          isVisible: _isPasswordVisible,
+                          onToggleVisibility: () {
+                            setState(() => _isPasswordVisible = !_isPasswordVisible);
+                          },
                         ),
-                        const SizedBox(height: 12),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: GestureDetector(
-                            onTap: () {
-                              // TODO: Chuyển sang màn hình Quên mật khẩu
-                            },
-                            child: Text(
-                              'Forgot Password?',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                                decoration: TextDecoration.underline,
-                                decorationColor: Colors.white,
-                              ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          controller: _confirmPasswordController,
+                          hintText: 'Confirm Password',
+                          icon: Icons.lock_outline_rounded,
+                          isPassword: true,
+                          isVisible: _isConfirmPasswordVisible,
+                          onToggleVisibility: () {
+                            setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible);
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        RichText(
+                          text: TextSpan(
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: Colors.white,
                             ),
+                            children: [
+                              const TextSpan(text: 'By clicking the '),
+                              TextSpan(
+                                text: 'Register',
+                                style: GoogleFonts.inter(
+                                  fontStyle: FontStyle.italic,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFFE57373),
+                                ),
+                              ),
+                              const TextSpan(
+                                  text: ' button, you agree to our privacy policy'),
+                            ],
                           ),
                         ),
                         const SizedBox(height: 32),
                         ElevatedButton(
-                          onPressed: isLoading
-                              ? null
-                              : () {
-                                  final email = _emailController.text.trim();
-                                  final password = _passwordController.text;
-                                  if (email.isEmpty || password.isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Vui lòng nhập email và mật khẩu.'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                    return;
-                                  }
-                                  context.read<AuthCubit>().signInWithEmail(email, password);
-                                },
+                          onPressed: isLoading ? null : () => _onRegister(context),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryRed,
                             disabledBackgroundColor: primaryRed.withOpacity(0.6),
@@ -206,7 +256,7 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
                                   ),
                                 )
                               : Text(
-                                  'LOGIN',
+                                  'REGISTER',
                                   style: GoogleFonts.playfairDisplay(
                                     fontSize: 20,
                                     fontWeight: FontWeight.w900,
@@ -215,44 +265,9 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
                                   ),
                                 ),
                         ),
-                        const SizedBox(height: 40),
-                        Text(
-                          '- OR Continue with -',
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _buildSocialButton(
-                              icon: FontAwesomeIcons.google,
-                              color: const Color(0xFFDB4437),
-                              isLoading: isLoading,
-                              onTap: () => context.read<AuthCubit>().signInWithGoogle(),
-                            ),
-                            const SizedBox(width: 24),
-                            _buildSocialButton(
-                              icon: FontAwesomeIcons.facebookF,
-                              color: const Color(0xFF1877F2),
-                              isLoading: isLoading,
-                              onTap: () => context.read<AuthCubit>().signInWithFacebook(),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 32),
                         GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const RegisterScreen(),
-                              ),
-                            );
-                          },
+                          onTap: () => Navigator.of(context).pop(),
                           child: RichText(
                             textAlign: TextAlign.center,
                             text: TextSpan(
@@ -261,9 +276,9 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
                                 color: Colors.white,
                               ),
                               children: [
-                                const TextSpan(text: 'Create An Account '),
+                                const TextSpan(text: 'I Already Have An Account '),
                                 TextSpan(
-                                  text: 'Sign Up',
+                                  text: 'Login',
                                   style: GoogleFonts.inter(
                                     fontWeight: FontWeight.bold,
                                     decoration: TextDecoration.underline,
@@ -296,6 +311,9 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
     required String hintText,
     required IconData icon,
     bool isPassword = false,
+    bool isVisible = false,
+    VoidCallback? onToggleVisibility,
+    TextInputType keyboardType = TextInputType.text,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -304,7 +322,8 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
       ),
       child: TextField(
         controller: controller,
-        obscureText: isPassword && !_isPasswordVisible,
+        obscureText: isPassword && !isVisible,
+        keyboardType: keyboardType,
         style: const TextStyle(color: Colors.black87),
         decoration: InputDecoration(
           hintText: hintText,
@@ -313,41 +332,16 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
           suffixIcon: isPassword
               ? IconButton(
                   icon: Icon(
-                    _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                    isVisible ? Icons.visibility_off : Icons.visibility,
                     color: Colors.grey[700],
                     size: 20,
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _isPasswordVisible = !_isPasswordVisible;
-                    });
-                  },
+                  onPressed: onToggleVisibility,
                 )
               : null,
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 18),
         ),
-      ),
-    );
-  }
-
-  Widget _buildSocialButton({
-    required IconData icon,
-    required Color color,
-    required bool isLoading,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: isLoading ? null : onTap,
-      borderRadius: BorderRadius.circular(30),
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.white.withOpacity(isLoading ? 0.5 : 1.0),
-        ),
-        child: Icon(icon, color: color, size: 26),
       ),
     );
   }
