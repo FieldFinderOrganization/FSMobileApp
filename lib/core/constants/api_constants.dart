@@ -13,4 +13,5 @@ class ApiConstants {
   static const String verifyOtp = '/auth/verify-otp';
   static const String sendActivationEmail = '/auth/send-activation-email';
   static const String resetPasswordOtp = '/users/reset-password-otp';
+  static const String sendResetOtp = '/auth/send-reset-otp';
 }

@@ -19,10 +19,8 @@ class RegisterScreen extends StatelessWidget {
     final repository = AuthRepositoryImpl(datasource);
 
     return BlocProvider(
-      create: (_) => AuthCubit(
-        authRepository: repository,
-        tokenStorage: tokenStorage,
-      ),
+      create: (_) =>
+          AuthCubit(authRepository: repository, tokenStorage: tokenStorage),
       child: const _RegisterScreenBody(),
     );
   }
@@ -45,6 +43,68 @@ class _RegisterScreenBodyState extends State<_RegisterScreenBody> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  String? _nameError;
+  String? _emailError;
+  String? _phoneError;
+  String? _passwordError;
+  String? _confirmPasswordError;
+
+  void _validateName(String value) {
+    setState(() {
+      _nameError = value.trim().isEmpty ? 'Vui lòng nhập họ tên' : null;
+    });
+  }
+
+  void _validateEmail(String value) {
+    final emailRegex = RegExp(r'^[\w\-\.+]+@([\w\-]+\.)+[\w\-]{2,}$');
+    setState(() {
+      if (value.trim().isEmpty) {
+        _emailError = 'Vui lòng nhập email';
+      } else if (!emailRegex.hasMatch(value.trim())) {
+        _emailError = 'Email không đúng định dạng';
+      } else {
+        _emailError = null;
+      }
+    });
+  }
+
+  void _validatePhone(String value) {
+    final phoneRegex = RegExp(r'^\d{10}$');
+    setState(() {
+      if (value.trim().isEmpty) {
+        _phoneError = 'Vui lòng nhập số điện thoại';
+      } else if (!phoneRegex.hasMatch(value.trim())) {
+        _phoneError = 'Số điện thoại phải có 10 chữ số';
+      } else {
+        _phoneError = null;
+      }
+    });
+  }
+
+  void _validatePassword(String value) {
+    setState(() {
+      if (value.isEmpty) {
+        _passwordError = 'Vui lòng nhập mật khẩu';
+      } else if (value.length < 6) {
+        _passwordError = 'Mật khẩu phải từ 6 ký tự';
+      } else {
+        _passwordError = null;
+      }
+    });
+  }
+
+  void _validateConfirmPassword(String value) {
+    setState(() {
+      if (value.isEmpty) {
+        _confirmPasswordError = 'Vui lòng xác nhận mật khẩu';
+      } else if (value != _passwordController.text) {
+        _confirmPasswordError = 'Mật khẩu xác nhận không khớp';
+      } else {
+        _confirmPasswordError = null;
+      }
+    });
+  }
+
   final Color primaryRed = const Color(0xFF7B0323);
 
   @override
@@ -58,70 +118,28 @@ class _RegisterScreenBodyState extends State<_RegisterScreenBody> {
   }
 
   void _onRegister(BuildContext context) {
-    final name = _nameController.text.trim();
-    final email = _emailController.text.trim();
-    final phone = _phoneController.text.trim();
-    final password = _passwordController.text;
-    final confirmPassword = _confirmPasswordController.text;
+    // Kích hoạt kiểm tra tất cả các trường
+    _validateName(_nameController.text);
+    _validateEmail(_emailController.text);
+    _validatePhone(_phoneController.text);
+    _validatePassword(_passwordController.text);
+    _validateConfirmPassword(_confirmPasswordController.text);
 
-    if (name.isEmpty || email.isEmpty || phone.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng điền đầy đủ thông tin.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    final emailRegex = RegExp(r'^[\w\-\.+]+@([\w\-]+\.)+[\w\-]{2,}$');
-    if (!emailRegex.hasMatch(email)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Email không hợp lệ.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    final phoneRegex = RegExp(r'^\d{10}$');
-    if (!phoneRegex.hasMatch(phone)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Số điện thoại phải có đúng 10 chữ số.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    if (password != confirmPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mật khẩu xác nhận không khớp.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    if (password.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mật khẩu phải có ít nhất 6 ký tự.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    // Kiểm tra nếu có bất kỳ lỗi nào hiện hữu
+    if (_nameError != null ||
+        _emailError != null ||
+        _phoneError != null ||
+        _passwordError != null ||
+        _confirmPasswordError != null) {
       return;
     }
 
     context.read<AuthCubit>().registerUser(
-          name: name,
-          email: email,
-          phone: phone,
-          password: password,
-        );
+      name: _nameController.text.trim(),
+      email: _emailController.text.trim(),
+      phone: _phoneController.text.trim(),
+      password: _passwordController.text,
+    );
   }
 
   @override
@@ -166,7 +184,9 @@ class _RegisterScreenBodyState extends State<_RegisterScreenBody> {
               SafeArea(
                 child: Center(
                   child: SingleChildScrollView(
-                    padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                    ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -197,6 +217,8 @@ class _RegisterScreenBodyState extends State<_RegisterScreenBody> {
                           controller: _nameController,
                           hintText: 'Enter your full name',
                           icon: Icons.person_rounded,
+                          errorText: _nameError, // Truyền biến lỗi
+                          onChanged: _validateName,
                         ),
                         const SizedBox(height: 16),
                         _buildTextField(
@@ -204,6 +226,8 @@ class _RegisterScreenBodyState extends State<_RegisterScreenBody> {
                           hintText: 'Enter your email address',
                           icon: Icons.email_rounded,
                           keyboardType: TextInputType.emailAddress,
+                          errorText: _emailError,
+                          onChanged: _validateEmail,
                         ),
                         const SizedBox(height: 16),
                         _buildTextField(
@@ -211,16 +235,22 @@ class _RegisterScreenBodyState extends State<_RegisterScreenBody> {
                           hintText: 'Enter your phone number',
                           icon: Icons.phone_rounded,
                           keyboardType: TextInputType.phone,
+                          errorText: _phoneError,
+                          onChanged: _validatePhone,
                         ),
                         const SizedBox(height: 16),
                         _buildTextField(
                           controller: _passwordController,
                           hintText: 'Password',
                           icon: Icons.lock_rounded,
+                          errorText: _passwordError,
+                          onChanged: _validatePassword,
                           isPassword: true,
                           isVisible: _isPasswordVisible,
                           onToggleVisibility: () {
-                            setState(() => _isPasswordVisible = !_isPasswordVisible);
+                            setState(
+                              () => _isPasswordVisible = !_isPasswordVisible,
+                            );
                           },
                         ),
                         const SizedBox(height: 16),
@@ -229,9 +259,14 @@ class _RegisterScreenBodyState extends State<_RegisterScreenBody> {
                           hintText: 'Confirm Password',
                           icon: Icons.lock_outline_rounded,
                           isPassword: true,
+                          errorText: _confirmPasswordError,
+                          onChanged: _validateConfirmPassword,
                           isVisible: _isConfirmPasswordVisible,
                           onToggleVisibility: () {
-                            setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible);
+                            setState(
+                              () => _isConfirmPasswordVisible =
+                                  !_isConfirmPasswordVisible,
+                            );
                           },
                         ),
                         const SizedBox(height: 16),
@@ -252,16 +287,22 @@ class _RegisterScreenBodyState extends State<_RegisterScreenBody> {
                                 ),
                               ),
                               const TextSpan(
-                                  text: ' button, you agree to our privacy policy'),
+                                text:
+                                    ' button, you agree to our privacy policy',
+                              ),
                             ],
                           ),
                         ),
                         const SizedBox(height: 32),
                         ElevatedButton(
-                          onPressed: isLoading ? null : () => _onRegister(context),
+                          onPressed: isLoading
+                              ? null
+                              : () => _onRegister(context),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryRed,
-                            disabledBackgroundColor: primaryRed.withOpacity(0.6),
+                            disabledBackgroundColor: primaryRed.withOpacity(
+                              0.6,
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -298,7 +339,9 @@ class _RegisterScreenBodyState extends State<_RegisterScreenBody> {
                                 color: Colors.white,
                               ),
                               children: [
-                                const TextSpan(text: 'I Already Have An Account '),
+                                const TextSpan(
+                                  text: 'I Already Have An Account ',
+                                ),
                                 TextSpan(
                                   text: 'Login',
                                   style: GoogleFonts.inter(
@@ -332,39 +375,68 @@ class _RegisterScreenBodyState extends State<_RegisterScreenBody> {
     required TextEditingController controller,
     required String hintText,
     required IconData icon,
+    String? errorText, // Thêm dòng này
+    Function(String)? onChanged, // Thêm để validate khi đang gõ
     bool isPassword = false,
     bool isVisible = false,
     VoidCallback? onToggleVisibility,
     TextInputType keyboardType = TextInputType.text,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.85),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: TextField(
-        controller: controller,
-        obscureText: isPassword && !isVisible,
-        keyboardType: keyboardType,
-        style: const TextStyle(color: Colors.black87),
-        decoration: InputDecoration(
-          hintText: hintText,
-          hintStyle: GoogleFonts.inter(color: Colors.grey[600], fontSize: 15),
-          prefixIcon: Icon(icon, color: Colors.grey[700], size: 20),
-          suffixIcon: isPassword
-              ? IconButton(
-                  icon: Icon(
-                    isVisible ? Icons.visibility_off : Icons.visibility,
-                    color: Colors.grey[700],
-                    size: 20,
-                  ),
-                  onPressed: onToggleVisibility,
-                )
-              : null,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 18),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.85),
+            borderRadius: BorderRadius.circular(12),
+            // Đổi màu viền nếu có lỗi
+            border: errorText != null
+                ? Border.all(color: Colors.redAccent, width: 1.5)
+                : null,
+          ),
+          child: TextField(
+            controller: controller,
+            obscureText: isPassword && !isVisible,
+            keyboardType: keyboardType,
+            onChanged: onChanged, // Gọi hàm validate khi gõ
+            style: const TextStyle(color: Colors.black87),
+            decoration: InputDecoration(
+              hintText: hintText,
+              hintStyle: GoogleFonts.inter(
+                color: Colors.grey[600],
+                fontSize: 15,
+              ),
+              prefixIcon: Icon(icon, color: Colors.grey[700], size: 20),
+              suffixIcon: isPassword
+                  ? IconButton(
+                      icon: Icon(
+                        isVisible ? Icons.visibility_off : Icons.visibility,
+                        color: Colors.grey[700],
+                        size: 20,
+                      ),
+                      onPressed: onToggleVisibility,
+                    )
+                  : null,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 18),
+              // Chúng ta không dùng errorText của InputDecoration mặc định
+              // vì nó làm vỡ layout Container tròn, ta tự build Text bên dưới.
+            ),
+          ),
         ),
-      ),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 8, top: 4),
+            child: Text(
+              errorText,
+              style: const TextStyle(
+                color: Colors.redAccent,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

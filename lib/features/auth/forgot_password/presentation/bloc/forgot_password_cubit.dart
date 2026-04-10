@@ -6,14 +6,14 @@ class ForgotPasswordCubit extends Cubit<ForgotPasswordState> {
   final AuthRepository _authRepository;
 
   ForgotPasswordCubit({required AuthRepository authRepository})
-      : _authRepository = authRepository,
-        super(const ForgotPasswordInitial());
+    : _authRepository = authRepository,
+      super(const ForgotPasswordInitial());
 
   /// Gửi OTP đến email để đặt lại mật khẩu
   Future<void> sendOtp(String email) async {
     emit(const ForgotPasswordLoading());
     try {
-      await _authRepository.sendOtp(email);
+      await _authRepository.sendResetPassword(email);
       emit(ForgotOtpSent(email));
     } catch (e) {
       emit(ForgotPasswordFailure(e.toString().replaceFirst('Exception: ', '')));

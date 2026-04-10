@@ -1,3 +1,5 @@
+import 'dart:isolate';
+
 import '../entities/auth_token_entity.dart';
 
 abstract class AuthRepository {
@@ -15,4 +17,5 @@ abstract class AuthRepository {
   Future<void> verifyOtp(String email, String code);
   Future<void> sendActivationEmail(String email);
   Future<void> resetPasswordWithOtp(String email, String newPassword);
+  Future<void> sendResetPassword(String email);
 }

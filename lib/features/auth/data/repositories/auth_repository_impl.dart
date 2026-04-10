@@ -118,4 +118,13 @@ class AuthRepositoryImpl implements AuthRepository {
     final message = e.response?.data?['message'] as String?;
     return Exception(message ?? 'Đăng nhập thất bại. Vui lòng thử lại.');
   }
+
+  @override
+  Future<void> sendResetPassword(String email) async {
+    try {
+      await _datasource.sendResetPassword(email);
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
 }
