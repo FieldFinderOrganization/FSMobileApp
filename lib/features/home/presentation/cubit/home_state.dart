@@ -65,6 +65,8 @@ class HomeState {
   final int visibleProductCount;
   final bool hasLoadedMore; // true sau khi nhấn "Xem thêm" ít nhất 1 lần
 
+  final String selectedDistrict; // '' = Tất cả
+
   final String? errorMessage;
 
   const HomeState({
@@ -84,6 +86,7 @@ class HomeState {
     this.selectedGenders = const {},
     this.visibleProductCount = kProductPageSize,
     this.hasLoadedMore = false,
+    this.selectedDistrict = '',
     this.errorMessage,
   });
 
@@ -174,6 +177,25 @@ class HomeState {
   List<DiscountEntity> get activeDiscounts =>
       discounts.where((d) => d.isActive).toList();
 
+  /// Sân đã lọc theo khu vực đang chọn
+  List<PitchEntity> get filteredPitches {
+    if (selectedDistrict.isEmpty) return pitches;
+    return pitches
+        .where((p) => p.district == selectedDistrict)
+        .toList();
+  }
+
+  /// Danh sách quận duy nhất có trong danh sách sân
+  List<String> get availableDistricts {
+    final districts = pitches
+        .map((p) => p.district)
+        .where((d) => d.isNotEmpty)
+        .toSet()
+        .toList();
+    districts.sort();
+    return districts;
+  }
+
   // ── copyWith ─────────────────────────────────────────────────────────────
 
   HomeState copyWith({
@@ -193,6 +215,7 @@ class HomeState {
     Set<String>? selectedGenders,
     int? visibleProductCount,
     bool? hasLoadedMore,
+    String? selectedDistrict,
     String? errorMessage,
   }) {
     return HomeState(
@@ -213,6 +236,7 @@ class HomeState {
       selectedGenders: selectedGenders ?? this.selectedGenders,
       visibleProductCount: visibleProductCount ?? this.visibleProductCount,
       hasLoadedMore: hasLoadedMore ?? this.hasLoadedMore,
+      selectedDistrict: selectedDistrict ?? this.selectedDistrict,
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }

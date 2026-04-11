@@ -147,5 +147,13 @@ class HomeCubit extends Cubit<HomeState> {
     ));
   }
 
+  // ── Pitch District ────────────────────────────────────────────────────────
+
+  void selectDistrict(String district) {
+    // Toggle: tap lại quận đang chọn → reset về "Tất cả"
+    final next = state.selectedDistrict == district ? '' : district;
+    emit(state.copyWith(selectedDistrict: next));
+  }
+
   Future<void> refresh() => loadAll();
 }

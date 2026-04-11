@@ -6,6 +6,7 @@ class PitchEntity {
   final double price;
   final String description;
   final List<String> imageUrls;
+  final String address;
 
   const PitchEntity({
     required this.pitchId,
@@ -15,6 +16,7 @@ class PitchEntity {
     required this.price,
     required this.description,
     required this.imageUrls,
+    this.address = '',
   });
 
   String get primaryImage => imageUrls.isNotEmpty ? imageUrls.first : '';
@@ -30,5 +32,24 @@ class PitchEntity {
       default:
         return type;
     }
+  }
+
+  /// Trích quận/huyện từ chuỗi địa chỉ.
+  /// Ví dụ: "123 Nguyễn Trãi, Phường 2, Quận 5, TP.HCM" → "Quận 5"
+  String get district {
+    if (address.isEmpty) return '';
+    final parts = address.split(',');
+    for (final part in parts) {
+      final t = part.trim();
+      if (t.startsWith('Quận') ||
+          t.startsWith('Huyện') ||
+          t.startsWith('Q.') ||
+          t.startsWith('H.')) {
+        return t;
+      }
+    }
+    // fallback: phần áp chót (thường là quận nếu cuối là tp)
+    if (parts.length >= 2) return parts[parts.length - 2].trim();
+    return parts.last.trim();
   }
 }

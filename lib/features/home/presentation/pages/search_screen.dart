@@ -28,6 +28,7 @@ class _SearchScreenState extends State<SearchScreen>
 
   SearchMode _mode = SearchMode.product;
   String _query = '';
+  String _selectedDistrict = '';
 
   @override
   void initState() {
@@ -47,7 +48,11 @@ class _SearchScreenState extends State<SearchScreen>
   }
 
   void _onQueryChanged(String value) {
-    setState(() => _query = value.trim());
+    setState(() {
+      _query = value.trim();
+      // Reset district khi xoá query
+      if (value.isEmpty) _selectedDistrict = '';
+    });
     if (value.isNotEmpty) {
       _animController.forward();
     } else {
@@ -69,12 +74,33 @@ class _SearchScreenState extends State<SearchScreen>
   List<PitchEntity> get _filteredPitches {
     if (_query.isEmpty) return [];
     final q = _query.toLowerCase();
-    return widget.pitches
-        .where((p) =>
-            p.name.toLowerCase().contains(q) ||
-            p.type.toLowerCase().contains(q) ||
-            p.environment.toLowerCase().contains(q))
+    var result = widget.pitches.where((p) =>
+        p.name.toLowerCase().contains(q) ||
+        p.displayType.toLowerCase().contains(q) ||
+        p.environment.toLowerCase().contains(q) ||
+        p.address.toLowerCase().contains(q)).toList();
+    if (_selectedDistrict.isNotEmpty) {
+      result = result.where((p) => p.district == _selectedDistrict).toList();
+    }
+    return result;
+  }
+
+  /// Quận có trong kết quả tìm kiếm hiện tại (không lọc district)
+  List<String> get _availableDistricts {
+    if (_query.isEmpty) return [];
+    final q = _query.toLowerCase();
+    final hits = widget.pitches.where((p) =>
+        p.name.toLowerCase().contains(q) ||
+        p.displayType.toLowerCase().contains(q) ||
+        p.environment.toLowerCase().contains(q) ||
+        p.address.toLowerCase().contains(q));
+    final districts = hits
+        .map((p) => p.district)
+        .where((d) => d.isNotEmpty)
+        .toSet()
         .toList();
+    districts.sort();
+    return districts;
   }
 
   @override
@@ -185,6 +211,10 @@ class _SearchScreenState extends State<SearchScreen>
             const SizedBox(height: 10),
             const Divider(height: 1, color: Color(0xFFEEEEEE)),
 
+            // ── District chips (chỉ hiện khi mode sân + có kq) ───────────
+            if (_mode == SearchMode.pitch && _availableDistricts.isNotEmpty)
+              _buildDistrictBar(),
+
             // ── Results ───────────────────────────────────────────────────
             Expanded(
               child: AnimatedSwitcher(
@@ -283,6 +313,90 @@ class _SearchScreenState extends State<SearchScreen>
             style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[350]),
           ),
         ],
+      ),
+    );
+  }
+
+  // ── District chip bar ────────────────────────────────────────────────────
+
+  Widget _buildDistrictBar() {
+    final districts = _availableDistricts;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 36,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: districts.length + 1,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (_, i) {
+              if (i == 0) {
+                // Chip "Tất cả"
+                final isActive = _selectedDistrict.isEmpty;
+                return _SearchDistrictChip(
+                  label: 'Tất cả',
+                  isActive: isActive,
+                  onTap: () => setState(() => _selectedDistrict = ''),
+                );
+              }
+              final district = districts[i - 1];
+              final isActive = _selectedDistrict == district;
+              return _SearchDistrictChip(
+                label: district,
+                isActive: isActive,
+                onTap: () => setState(() {
+                  _selectedDistrict =
+                      _selectedDistrict == district ? '' : district;
+                }),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Divider(height: 1, color: Color(0xFFEEEEEE)),
+      ],
+    );
+  }
+}
+
+// ── Search District Chip ─────────────────────────────────────────────────────
+
+class _SearchDistrictChip extends StatelessWidget {
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _SearchDistrictChip({
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primaryRed : const Color(0xFFF3F3F3),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isActive ? AppColors.primaryRed : const Color(0xFFE0E0E0),
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+            color: isActive ? Colors.white : AppColors.textGrey,
+          ),
+        ),
       ),
     );
   }
