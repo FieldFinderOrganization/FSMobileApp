@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import '../../../../../core/storage/token_storage.dart';
+import '../../../domain/entities/auth_token_entity.dart';
 import '../../../domain/repositories/auth_repository.dart';
 import 'auth_state.dart';
 
@@ -80,6 +81,70 @@ class AuthCubit extends Cubit<AuthState> {
         role: authToken.user.role,
       );
       emit(AuthSuccess(authToken));
+    } catch (e) {
+      emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
+    }
+  }
+
+  Future<void> signInWithEmail(String email, String password) async {
+    emit(const AuthLoading());
+    try {
+      final authToken = await _authRepository.loginWithEmail(email, password);
+      // Gửi OTP trước khi vào app — chưa lưu token.
+      await _authRepository.sendOtp(email);
+      emit(AuthOtpSent(pendingToken: authToken, email: email));
+    } catch (e) {
+      emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
+    }
+  }
+
+  Future<void> registerUser({
+    required String name,
+    required String email,
+    required String phone,
+    required String password,
+  }) async {
+    emit(const AuthLoading());
+    try {
+      await _authRepository.register(
+        name: name,
+        email: email,
+        phone: phone,
+        password: password,
+      );
+      // Gửi email chào mừng (không phải OTP), rồi quay về màn đăng nhập.
+      await _authRepository.sendActivationEmail(email);
+      emit(const AuthRegisterSuccess());
+    } catch (e) {
+      emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
+    }
+  }
+
+  Future<void> verifyOtp({
+    required String email,
+    required String code,
+    required AuthTokenEntity pendingToken,
+  }) async {
+    emit(const AuthLoading());
+    try {
+      await _authRepository.verifyOtp(email, code);
+      await _tokenStorage.saveTokens(
+        accessToken: pendingToken.accessToken,
+        refreshToken: pendingToken.refreshToken,
+        userId: pendingToken.user.userId,
+        role: pendingToken.user.role,
+      );
+      emit(AuthOtpVerified(pendingToken));
+    } catch (e) {
+      emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
+    }
+  }
+
+  Future<void> resendOtp(String email) async {
+    emit(const AuthLoading());
+    try {
+      await _authRepository.sendOtp(email);
+      emit(const AuthInitial()); // OtpScreen listens to AuthInitial to show "Đã gửi lại!" snackbar
     } catch (e) {
       emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
     }

@@ -6,6 +6,10 @@ import '../../../../../core/network/dio_client.dart';
 import '../../../../../core/storage/token_storage.dart';
 import '../../../data/datasources/auth_remote_datasource.dart';
 import '../../../data/repositories/auth_repository_impl.dart';
+import '../../../register/presentation/pages/register_screen.dart';
+import '../../../otp/presentation/pages/otp_screen.dart';
+import '../../../forgot_password/presentation/pages/forgot_password_screen.dart';
+import '../../../../profile/presentation/pages/profile_screen.dart';
 import '../bloc/auth_cubit.dart';
 import '../bloc/auth_state.dart';
 
@@ -20,10 +24,8 @@ class LoginScreen extends StatelessWidget {
     final repository = AuthRepositoryImpl(datasource);
 
     return BlocProvider(
-      create: (_) => AuthCubit(
-        authRepository: repository,
-        tokenStorage: tokenStorage,
-      ),
+      create: (_) =>
+          AuthCubit(authRepository: repository, tokenStorage: tokenStorage),
       child: const _LoginScreenBody(),
     );
   }
@@ -41,6 +43,10 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  // Biến lưu trạng thái lỗi
+  String? _emailError;
+  String? _passwordError;
+
   final Color primaryRed = const Color(0xFF7B0323);
 
   @override
@@ -50,14 +56,50 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
     super.dispose();
   }
 
-  void _onAuthSuccess(BuildContext context) {
-    // TODO: Navigate to home screen
-    // Navigator.of(context).pushReplacementNamed('/home');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đăng nhập thành công!'),
-        backgroundColor: Colors.green,
-      ),
+  // Kiểm tra email hợp lệ
+  void _validateEmail(String value) {
+    final email = value.trim();
+    final emailRegex = RegExp(r'^[\w\-\.+]+@([\w\-]+\.)+[\w\-]{2,}$');
+
+    setState(() {
+      if (email.isEmpty) {
+        _emailError = 'Vui lòng nhập email';
+      } else if (!emailRegex.hasMatch(email)) {
+        _emailError = 'Định dạng email không hợp lệ';
+      } else {
+        _emailError = null;
+      }
+    });
+  }
+
+  // Kiểm tra mật khẩu hợp lệ
+  void _validatePassword(String value) {
+    setState(() {
+      if (value.isEmpty) {
+        _passwordError = 'Vui lòng nhập mật khẩu';
+      } else {
+        _passwordError = null;
+      }
+    });
+  }
+
+  // Kiểm tra xem nút Login có được bật hay không
+  bool get _isFormValid {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    final emailRegex = RegExp(r'^[\w\-\.+]+@([\w\-]+\.)+[\w\-]{2,}$');
+
+    return email.isNotEmpty &&
+        password.isNotEmpty &&
+        emailRegex.hasMatch(email) &&
+        _emailError == null &&
+        _passwordError == null;
+  }
+
+  void _navigateToProfile(BuildContext context, user) {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => ProfileScreen(user: user)),
+      (route) => false,
     );
   }
 
@@ -69,7 +111,19 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthSuccess) {
-          _onAuthSuccess(context);
+          _navigateToProfile(context, state.authToken.user);
+        } else if (state is AuthOtpSent) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => BlocProvider.value(
+                value: context.read<AuthCubit>(),
+                child: OtpScreen(
+                  email: state.email,
+                  pendingToken: state.pendingToken,
+                ),
+              ),
+            ),
+          );
         } else if (state is AuthFailure) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -81,6 +135,7 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
       },
       builder: (context, state) {
         final isLoading = state is AuthLoading;
+        final bool canSubmit = _isFormValid && !isLoading;
 
         return Scaffold(
           body: Stack(
@@ -97,7 +152,9 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
               SafeArea(
                 child: Center(
                   child: SingleChildScrollView(
-                    padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                    ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -141,6 +198,9 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
                           controller: _emailController,
                           hintText: 'Enter your email address',
                           icon: Icons.email_rounded,
+                          errorText: _emailError,
+                          onChanged: _validateEmail,
+                          keyboardType: TextInputType.emailAddress,
                         ),
                         const SizedBox(height: 20),
                         _buildTextField(
@@ -148,13 +208,19 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
                           hintText: 'Password',
                           icon: Icons.lock_rounded,
                           isPassword: true,
+                          errorText: _passwordError,
+                          onChanged: _validatePassword,
                         ),
                         const SizedBox(height: 12),
                         Align(
                           alignment: Alignment.centerRight,
                           child: GestureDetector(
                             onTap: () {
-                              // TODO: Chuyển sang màn hình Quên mật khẩu
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const ForgotPasswordScreen(),
+                                ),
+                              );
                             },
                             child: Text(
                               'Forgot Password?',
@@ -170,14 +236,19 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
                         ),
                         const SizedBox(height: 32),
                         ElevatedButton(
-                          onPressed: isLoading
-                              ? null
-                              : () {
-                                  // TODO: Gọi logic đăng nhập Email/Password
-                                },
+                          onPressed: canSubmit
+                              ? () {
+                                  context.read<AuthCubit>().signInWithEmail(
+                                    _emailController.text.trim(),
+                                    _passwordController.text,
+                                  );
+                                }
+                              : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryRed,
-                            disabledBackgroundColor: primaryRed.withOpacity(0.6),
+                            disabledBackgroundColor: Colors.grey.withOpacity(
+                              0.5,
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -198,7 +269,9 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
                                   style: GoogleFonts.playfairDisplay(
                                     fontSize: 20,
                                     fontWeight: FontWeight.w900,
-                                    color: Colors.white,
+                                    color: canSubmit
+                                        ? Colors.white
+                                        : Colors.white60,
                                     letterSpacing: 3.0,
                                   ),
                                 ),
@@ -221,21 +294,28 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
                               icon: FontAwesomeIcons.google,
                               color: const Color(0xFFDB4437),
                               isLoading: isLoading,
-                              onTap: () => context.read<AuthCubit>().signInWithGoogle(),
+                              onTap: () =>
+                                  context.read<AuthCubit>().signInWithGoogle(),
                             ),
                             const SizedBox(width: 24),
                             _buildSocialButton(
                               icon: FontAwesomeIcons.facebookF,
                               color: const Color(0xFF1877F2),
                               isLoading: isLoading,
-                              onTap: () => context.read<AuthCubit>().signInWithFacebook(),
+                              onTap: () => context
+                                  .read<AuthCubit>()
+                                  .signInWithFacebook(),
                             ),
                           ],
                         ),
                         const SizedBox(height: 40),
                         GestureDetector(
                           onTap: () {
-                            // TODO: Chuyển sang màn hình Đăng ký
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const RegisterScreen(),
+                              ),
+                            );
                           },
                           child: RichText(
                             textAlign: TextAlign.center,
@@ -279,39 +359,69 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
     required TextEditingController controller,
     required String hintText,
     required IconData icon,
+    String? errorText,
+    Function(String)? onChanged,
     bool isPassword = false,
+    TextInputType keyboardType = TextInputType.text,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.85),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: TextField(
-        controller: controller,
-        obscureText: isPassword && !_isPasswordVisible,
-        style: const TextStyle(color: Colors.black87),
-        decoration: InputDecoration(
-          hintText: hintText,
-          hintStyle: GoogleFonts.inter(color: Colors.grey[600], fontSize: 15),
-          prefixIcon: Icon(icon, color: Colors.grey[700], size: 20),
-          suffixIcon: isPassword
-              ? IconButton(
-                  icon: Icon(
-                    _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                    color: Colors.grey[700],
-                    size: 20,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _isPasswordVisible = !_isPasswordVisible;
-                    });
-                  },
-                )
-              : null,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 18),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.85),
+            borderRadius: BorderRadius.circular(12),
+            border: errorText != null
+                ? Border.all(color: Colors.redAccent, width: 1.5)
+                : null,
+          ),
+          child: TextField(
+            controller: controller,
+            obscureText: isPassword && !_isPasswordVisible,
+            onChanged: onChanged,
+            keyboardType: keyboardType,
+            style: const TextStyle(color: Colors.black87),
+            decoration: InputDecoration(
+              hintText: hintText,
+              hintStyle: GoogleFonts.inter(
+                color: Colors.grey[600],
+                fontSize: 15,
+              ),
+              prefixIcon: Icon(icon, color: Colors.grey[700], size: 20),
+              suffixIcon: isPassword
+                  ? IconButton(
+                      icon: Icon(
+                        _isPasswordVisible
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: Colors.grey[700],
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isPasswordVisible = !_isPasswordVisible;
+                        });
+                      },
+                    )
+                  : null,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 18),
+            ),
+          ),
         ),
-      ),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 8, top: 6),
+            child: Text(
+              errorText,
+              style: const TextStyle(
+                color: Colors.redAccent,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+      ],
     );
   }
 

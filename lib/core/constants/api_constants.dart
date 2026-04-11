@@ -5,6 +5,13 @@ class ApiConstants {
 
   static const String googleLogin = '/auth/google';
   static const String facebookLogin = '/auth/facebook';
+  static const String emailLogin = '/auth/login';
+  static const String register = '/auth/register';
   static const String refreshToken = '/auth/refresh-token';
   static const String logout = '/auth/logout';
+  static const String sendOtp = '/auth/send-otp';
+  static const String verifyOtp = '/auth/verify-otp';
+  static const String sendActivationEmail = '/auth/send-activation-email';
+  static const String resetPasswordOtp = '/users/reset-password-otp';
+  static const String sendResetOtp = '/users/forgot-password-otp';
 }
