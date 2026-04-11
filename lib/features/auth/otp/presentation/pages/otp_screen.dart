@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../domain/entities/auth_token_entity.dart';
 import '../../../login/presentation/bloc/auth_cubit.dart';
 import '../../../login/presentation/bloc/auth_state.dart';
-import '../../../../profile/presentation/pages/profile_screen.dart';
+import '../../../../home/presentation/pages/home_screen.dart';
 
 class OtpScreen extends StatefulWidget {
   final String email;
@@ -39,9 +39,7 @@ class _OtpScreenState extends State<OtpScreen> {
       listener: (context, state) {
         if (state is AuthOtpVerified) {
           Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (_) => ProfileScreen(user: state.authToken.user),
-            ),
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
             (route) => false,
           );
         } else if (state is AuthFailure) {

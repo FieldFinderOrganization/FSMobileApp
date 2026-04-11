@@ -9,7 +9,7 @@ import '../../../data/repositories/auth_repository_impl.dart';
 import '../../../register/presentation/pages/register_screen.dart';
 import '../../../otp/presentation/pages/otp_screen.dart';
 import '../../../forgot_password/presentation/pages/forgot_password_screen.dart';
-import '../../../../profile/presentation/pages/profile_screen.dart';
+import '../../../../home/presentation/pages/home_screen.dart';
 import '../bloc/auth_cubit.dart';
 import '../bloc/auth_state.dart';
 
@@ -96,9 +96,9 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
         _passwordError == null;
   }
 
-  void _navigateToProfile(BuildContext context, user) {
+  void _navigateToHome(BuildContext context) {
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => ProfileScreen(user: user)),
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
       (route) => false,
     );
   }
@@ -111,7 +111,7 @@ class _LoginScreenBodyState extends State<_LoginScreenBody> {
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthSuccess) {
-          _navigateToProfile(context, state.authToken.user);
+          _navigateToHome(context);
         } else if (state is AuthOtpSent) {
           Navigator.of(context).push(
             MaterialPageRoute(
