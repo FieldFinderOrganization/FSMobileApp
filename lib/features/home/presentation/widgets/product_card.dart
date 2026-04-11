@@ -45,7 +45,7 @@ class ProductCard extends StatelessWidget {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(12),
                 ),
-                child: _buildImage(height: 150),
+                child: _buildImage(height: 130),
               ),
               if (product.isOnSale) SaleBadge(percent: product.salePercent!),
             ],
@@ -65,14 +65,8 @@ class ProductCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  product.brand,
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    color: AppColors.textGrey,
-                  ),
-                ),
+                const SizedBox(height: 3),
+                _buildMeta(),
                 const SizedBox(height: 6),
                 _buildPriceRow(),
               ],
@@ -129,39 +123,8 @@ class ProductCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    if (product.brand.isNotEmpty)
-                      Flexible(
-                        child: Text(
-                          product.brand,
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            color: AppColors.textGrey,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    if (product.brand.isNotEmpty && product.sex.isNotEmpty)
-                      Text(
-                        ' · ',
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          color: AppColors.textGrey,
-                        ),
-                      ),
-                    if (product.sex.isNotEmpty)
-                      Text(
-                        product.sex,
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          color: AppColors.textGrey,
-                        ),
-                      ),
-                  ],
-                ),
+                const SizedBox(height: 3),
+                _buildMeta(),
                 const SizedBox(height: 6),
                 _buildPriceRow(),
               ],
@@ -169,6 +132,24 @@ class ProductCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  /// Hiển thị brand · sex (chỉ render phần có giá trị)
+  Widget _buildMeta() {
+    final parts = <String>[
+      if (product.brand.isNotEmpty) product.brand,
+      if (product.sex.isNotEmpty) product.sex,
+    ];
+    if (parts.isEmpty) return const SizedBox.shrink();
+    return Text(
+      parts.join(' · '),
+      style: GoogleFonts.inter(
+        fontSize: 11,
+        color: AppColors.textGrey,
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 

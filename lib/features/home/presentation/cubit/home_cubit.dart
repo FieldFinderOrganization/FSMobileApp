@@ -1,6 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/repositories/home_repository.dart';
 import 'home_state.dart';
+// ignore: unused_import
+export 'home_state.dart' show kProductPageSize;
 
 class HomeCubit extends Cubit<HomeState> {
   final HomeRepository _repository;
@@ -100,7 +102,16 @@ class HomeCubit extends Cubit<HomeState> {
   }
 
   void selectCategory(String categoryName) {
-    emit(state.copyWith(selectedCategoryName: categoryName));
+    emit(state.copyWith(
+      selectedCategoryName: categoryName,
+      visibleProductCount: kProductPageSize, // reset về trang đầu
+    ));
+  }
+
+  void loadMoreProducts() {
+    emit(state.copyWith(
+      visibleProductCount: state.visibleProductCount + kProductPageSize,
+    ));
   }
 
   Future<void> refresh() => loadAll();
