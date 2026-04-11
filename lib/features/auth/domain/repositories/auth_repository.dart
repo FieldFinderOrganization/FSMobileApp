@@ -1,5 +1,3 @@
-import 'dart:isolate';
-
 import '../entities/auth_token_entity.dart';
 
 abstract class AuthRepository {
