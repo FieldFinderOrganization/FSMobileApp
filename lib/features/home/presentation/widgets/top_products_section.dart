@@ -23,7 +23,7 @@ class TopProductsSection extends StatelessWidget {
         children: [
           SectionHeader(title: 'Bán chạy nhất', onSeeAll: () {}),
           SizedBox(
-            height: 230,
+            height: 260,
             child: isLoading
                 ? _buildShimmer()
                 : state.topProducts.isEmpty
@@ -53,7 +53,7 @@ class TopProductsSection extends StatelessWidget {
         padding: const EdgeInsets.only(left: 16),
         child: ShimmerCard(
           width: 160,
-          height: 230,
+          height: 260,
           borderRadius: BorderRadius.circular(12),
         ),
       ),

@@ -100,6 +100,7 @@ class ProductCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Stack(
             children: [
@@ -107,7 +108,7 @@ class ProductCard extends StatelessWidget {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(12),
                 ),
-                child: _buildImage(height: 130),
+                child: _buildImage(height: 140),
               ),
               if (product.isOnSale) SaleBadge(percent: product.salePercent!),
             ],
@@ -116,6 +117,7 @@ class ProductCard extends StatelessWidget {
             padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   product.name,
@@ -128,6 +130,39 @@ class ProductCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
+                Row(
+                  children: [
+                    if (product.brand.isNotEmpty)
+                      Flexible(
+                        child: Text(
+                          product.brand,
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: AppColors.textGrey,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    if (product.brand.isNotEmpty && product.sex.isNotEmpty)
+                      Text(
+                        ' · ',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: AppColors.textGrey,
+                        ),
+                      ),
+                    if (product.sex.isNotEmpty)
+                      Text(
+                        product.sex,
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: AppColors.textGrey,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 6),
                 _buildPriceRow(),
               ],
             ),

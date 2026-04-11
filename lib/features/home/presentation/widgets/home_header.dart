@@ -41,9 +41,7 @@ class HomeHeader extends StatelessWidget {
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
-                          color: opacity > 0.5
-                              ? AppColors.textDark
-                              : Colors.white,
+                          color: AppColors.textDark,
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -63,19 +61,19 @@ class HomeHeader extends StatelessWidget {
                 // Action icons
                 _HeaderIcon(
                   icon: Icons.search_rounded,
-                  isDark: opacity > 0.5,
+                  isDark: true,
                   onTap: () {},
                 ),
                 const SizedBox(width: 4),
                 _HeaderIcon(
                   icon: Icons.shopping_cart_outlined,
-                  isDark: opacity > 0.5,
+                  isDark: true,
                   onTap: () {},
                 ),
                 const SizedBox(width: 4),
                 _HeaderIcon(
                   icon: Icons.notifications_outlined,
-                  isDark: opacity > 0.5,
+                  isDark: true,
                   onTap: () {},
                 ),
               ],
