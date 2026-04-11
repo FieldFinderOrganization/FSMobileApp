@@ -12,6 +12,7 @@ import '../widgets/hero_banner.dart';
 import '../widgets/home_footer.dart';
 import '../widgets/home_header.dart';
 import '../widgets/top_products_section.dart';
+import 'search_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -100,7 +101,22 @@ class _HomeBodyState extends State<_HomeBody> {
             top: 0,
             left: 0,
             right: 0,
-            child: HomeHeader(opacity: _headerOpacity),
+            child: BlocBuilder<HomeCubit, HomeState>(
+              buildWhen: (prev, curr) =>
+                  prev.products != curr.products ||
+                  prev.pitches != curr.pitches,
+              builder: (context, state) => HomeHeader(
+                opacity: _headerOpacity,
+                onSearchTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => SearchScreen(
+                      products: state.products,
+                      pitches: state.pitches,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),

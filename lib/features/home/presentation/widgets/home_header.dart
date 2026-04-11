@@ -4,8 +4,9 @@ import '../../../../core/constants/app_colors.dart';
 
 class HomeHeader extends StatelessWidget {
   final double opacity;
+  final VoidCallback? onSearchTap;
 
-  const HomeHeader({super.key, required this.opacity});
+  const HomeHeader({super.key, required this.opacity, this.onSearchTap});
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +63,7 @@ class HomeHeader extends StatelessWidget {
                 _HeaderIcon(
                   icon: Icons.search_rounded,
                   isDark: true,
-                  onTap: () {},
+                  onTap: onSearchTap ?? () {},
                 ),
                 const SizedBox(width: 4),
                 _HeaderIcon(
