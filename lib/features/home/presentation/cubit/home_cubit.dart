@@ -1,8 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/repositories/home_repository.dart';
 import 'home_state.dart';
-// ignore: unused_import
-export 'home_state.dart' show kProductPageSize;
+
+export 'home_state.dart';
 
 class HomeCubit extends Cubit<HomeState> {
   final HomeRepository _repository;
@@ -25,15 +25,10 @@ class HomeCubit extends Cubit<HomeState> {
     emit(state.copyWith(categoriesStatus: LoadStatus.loading));
     try {
       final data = await _repository.fetchCategories();
-      emit(state.copyWith(
-        categories: data,
-        categoriesStatus: LoadStatus.success,
-      ));
+      emit(state.copyWith(categories: data, categoriesStatus: LoadStatus.success));
     } catch (e) {
       emit(state.copyWith(
-        categoriesStatus: LoadStatus.failure,
-        errorMessage: e.toString(),
-      ));
+          categoriesStatus: LoadStatus.failure, errorMessage: e.toString()));
     }
   }
 
@@ -41,15 +36,10 @@ class HomeCubit extends Cubit<HomeState> {
     emit(state.copyWith(discountsStatus: LoadStatus.loading));
     try {
       final data = await _repository.fetchDiscounts();
-      emit(state.copyWith(
-        discounts: data,
-        discountsStatus: LoadStatus.success,
-      ));
+      emit(state.copyWith(discounts: data, discountsStatus: LoadStatus.success));
     } catch (e) {
       emit(state.copyWith(
-        discountsStatus: LoadStatus.failure,
-        errorMessage: e.toString(),
-      ));
+          discountsStatus: LoadStatus.failure, errorMessage: e.toString()));
     }
   }
 
@@ -57,15 +47,10 @@ class HomeCubit extends Cubit<HomeState> {
     emit(state.copyWith(pitchesStatus: LoadStatus.loading));
     try {
       final data = await _repository.fetchPitches();
-      emit(state.copyWith(
-        pitches: data,
-        pitchesStatus: LoadStatus.success,
-      ));
+      emit(state.copyWith(pitches: data, pitchesStatus: LoadStatus.success));
     } catch (e) {
       emit(state.copyWith(
-        pitchesStatus: LoadStatus.failure,
-        errorMessage: e.toString(),
-      ));
+          pitchesStatus: LoadStatus.failure, errorMessage: e.toString()));
     }
   }
 
@@ -74,14 +59,10 @@ class HomeCubit extends Cubit<HomeState> {
     try {
       final data = await _repository.fetchTopProducts();
       emit(state.copyWith(
-        topProducts: data,
-        topProductsStatus: LoadStatus.success,
-      ));
+          topProducts: data, topProductsStatus: LoadStatus.success));
     } catch (e) {
       emit(state.copyWith(
-        topProductsStatus: LoadStatus.failure,
-        errorMessage: e.toString(),
-      ));
+          topProductsStatus: LoadStatus.failure, errorMessage: e.toString()));
     }
   }
 
@@ -89,29 +70,39 @@ class HomeCubit extends Cubit<HomeState> {
     emit(state.copyWith(productsStatus: LoadStatus.loading));
     try {
       final data = await _repository.fetchProducts();
-      emit(state.copyWith(
-        products: data,
-        productsStatus: LoadStatus.success,
-      ));
+      emit(state.copyWith(products: data, productsStatus: LoadStatus.success));
     } catch (e) {
       emit(state.copyWith(
-        productsStatus: LoadStatus.failure,
-        errorMessage: e.toString(),
-      ));
+          productsStatus: LoadStatus.failure, errorMessage: e.toString()));
     }
   }
 
+  /// Chọn danh mục cha — reset sub-category và phân trang
   void selectCategory(String categoryName) {
     emit(state.copyWith(
       selectedCategoryName: categoryName,
-      visibleProductCount: kProductPageSize, // reset về trang đầu
+      selectedSubCategoryNames: {},
+      visibleProductCount: kProductPageSize,
+    ));
+  }
+
+  /// Bật/tắt một danh mục con (multi-select)
+  void toggleSubCategory(String subCategoryName) {
+    final current = Set<String>.from(state.selectedSubCategoryNames);
+    if (current.contains(subCategoryName)) {
+      current.remove(subCategoryName);
+    } else {
+      current.add(subCategoryName);
+    }
+    emit(state.copyWith(
+      selectedSubCategoryNames: current,
+      visibleProductCount: kProductPageSize,
     ));
   }
 
   void loadMoreProducts() {
     emit(state.copyWith(
-      visibleProductCount: state.visibleProductCount + kProductPageSize,
-    ));
+        visibleProductCount: state.visibleProductCount + kProductPageSize));
   }
 
   Future<void> refresh() => loadAll();

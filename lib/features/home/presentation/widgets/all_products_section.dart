@@ -25,9 +25,19 @@ class AllProductsSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SectionHeader(title: 'Tất cả sản phẩm', onSeeAll: null),
-          // Category filter chips
-          _CategoryFilter(state: state),
+
+          // ── Danh mục cha ─────────────────────────────────────────────────
+          _ParentCategoryChips(state: state),
+
+          // ── Danh mục con (hiện khi cha được chọn và có con) ──────────────
+          if (state.subCategories.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            _SubCategoryChips(state: state),
+          ],
+
           const SizedBox(height: 8),
+
+          // ── Lưới sản phẩm ─────────────────────────────────────────────
           if (isLoading)
             _buildShimmerGrid()
           else if (state.visibleProducts.isEmpty)
@@ -64,8 +74,7 @@ class AllProductsSection extends StatelessWidget {
                       context.read<HomeCubit>().loadMoreProducts(),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(44),
-                    side:
-                        const BorderSide(color: AppColors.primaryRed),
+                    side: const BorderSide(color: AppColors.primaryRed),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -108,10 +117,12 @@ class AllProductsSection extends StatelessWidget {
   }
 }
 
-class _CategoryFilter extends StatelessWidget {
+// ── Danh mục cha ────────────────────────────────────────────────────────────
+
+class _ParentCategoryChips extends StatelessWidget {
   final HomeState state;
 
-  const _CategoryFilter({required this.state});
+  const _ParentCategoryChips({required this.state});
 
   @override
   Widget build(BuildContext context) {
@@ -124,23 +135,19 @@ class _CategoryFilter extends StatelessWidget {
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: 4,
+          itemCount: 5,
           itemBuilder: (_, __) => Padding(
             padding: const EdgeInsets.only(right: 8, top: 4, bottom: 4),
             child: ShimmerCard(
-              width: 70,
-              height: 36,
-              borderRadius: BorderRadius.circular(8),
-            ),
+                width: 80,
+                height: 36,
+                borderRadius: BorderRadius.circular(8)),
           ),
         ),
       );
     }
 
-    // Lọc bỏ các danh mục bị ẩn
-    final categories = state.categories
-        .where((c) => !kHiddenCategories.contains(c.name))
-        .toList();
+    final roots = state.rootCategories;
     final selected = state.selectedCategoryName;
 
     return SizedBox(
@@ -148,18 +155,21 @@ class _CategoryFilter extends StatelessWidget {
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: categories.length + 1,
+        itemCount: roots.length + 1, // +1 cho "Tất cả"
         itemBuilder: (context, index) {
           final isAll = index == 0;
-          final label = isAll ? 'Tất cả' : categories[index - 1].name;
-          final categoryName = isAll ? '' : categories[index - 1].name;
-          final isActive = selected == categoryName;
+          final label = isAll ? 'Tất cả' : roots[index - 1].name;
+          final value = isAll ? '' : roots[index - 1].name;
+          final isActive = selected == value;
+          final hasChildren = isAll
+              ? false
+              : state.categories
+                  .any((c) => c.parentName == roots[index - 1].name);
 
           return Padding(
             padding: const EdgeInsets.only(right: 8, top: 4, bottom: 4),
             child: GestureDetector(
-              onTap: () =>
-                  context.read<HomeCubit>().selectCategory(categoryName),
+              onTap: () => context.read<HomeCubit>().selectCategory(value),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding:
@@ -170,18 +180,121 @@ class _CategoryFilter extends StatelessWidget {
                       : const Color(0xFFF5F5F5),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
-                  label,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: isActive ? Colors.white : AppColors.textGrey,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      label,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isActive ? Colors.white : AppColors.textGrey,
+                      ),
+                    ),
+                    // Mũi tên nhỏ nếu có danh mục con
+                    if (hasChildren) ...[
+                      const SizedBox(width: 3),
+                      Icon(
+                        isActive
+                            ? Icons.keyboard_arrow_up_rounded
+                            : Icons.keyboard_arrow_down_rounded,
+                        size: 14,
+                        color: isActive ? Colors.white : AppColors.textGrey,
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+// ── Danh mục con (multi-select checkboxes) ───────────────────────────────────
+
+class _SubCategoryChips extends StatelessWidget {
+  final HomeState state;
+
+  const _SubCategoryChips({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final subs = state.subCategories;
+    final selectedSubs = state.selectedSubCategoryNames;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAFAFA),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFEEEEEE)),
+      ),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: subs.map((cat) {
+          final isSelected = selectedSubs.contains(cat.name);
+          return GestureDetector(
+            onTap: () =>
+                context.read<HomeCubit>().toggleSubCategory(cat.name),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.primaryRed.withOpacity(0.08)
+                    : Colors.white,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.primaryRed
+                      : const Color(0xFFDDDDDD),
+                  width: isSelected ? 1.5 : 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Checkbox icon
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 150),
+                    child: isSelected
+                        ? const Icon(
+                            Icons.check_box_rounded,
+                            size: 14,
+                            color: AppColors.primaryRed,
+                            key: ValueKey('checked'),
+                          )
+                        : const Icon(
+                            Icons.check_box_outline_blank_rounded,
+                            size: 14,
+                            color: Color(0xFFBBBBBB),
+                            key: ValueKey('unchecked'),
+                          ),
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    cat.name,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                      color: isSelected
+                          ? AppColors.primaryRed
+                          : AppColors.textDark,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
