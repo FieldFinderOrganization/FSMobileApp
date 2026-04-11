@@ -72,7 +72,7 @@ class PitchCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${pitch.type} · ${pitch.environment}',
+                    '${pitch.displayType} · ${pitch.environment}',
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       color: Colors.white70,

@@ -18,4 +18,17 @@ class PitchEntity {
   });
 
   String get primaryImage => imageUrls.isNotEmpty ? imageUrls.first : '';
+
+  String get displayType {
+    switch (type) {
+      case 'FIVE_A_SIDE':
+        return 'Sân 5';
+      case 'SEVEN_A_SIDE':
+        return 'Sân 7';
+      case 'ELEVEN_A_SIDE':
+        return 'Sân 11';
+      default:
+        return type;
+    }
+  }
 }
