@@ -5,14 +5,12 @@ import '../../domain/entities/discount_entity.dart';
 
 enum LoadStatus { initial, loading, success, failure }
 
+enum SortOption { none, priceAsc, priceDesc }
+
 const int kProductPageSize = 6;
 
-/// Danh mục bị ẩn khỏi bộ lọc chính
 const Set<String> kHiddenCategories = {'All Shoes', 'All Clothing'};
 
-/// Từ khoá tìm trong tên sản phẩm cho từng danh mục chức năng.
-/// Giúp sản phẩm như "Football Gloves" xuất hiện khi chọn "Gloves"
-/// dù categoryName của nó là "Football Accessories".
 const Map<String, List<String>> kCategoryKeywords = {
   'Gloves': ['glove'],
   'Socks': ['sock'],
@@ -28,7 +26,6 @@ const Map<String, List<String>> kCategoryKeywords = {
   'Lifestyle': ['lifestyle', 'casual'],
 };
 
-/// Trả về Set tên của [parentName] + toàn bộ con cháu (đệ quy).
 Set<String> getDescendantNames(
   List<CategoryEntity> categories,
   String parentName,
@@ -59,13 +56,15 @@ class HomeState {
   final List<CategoryEntity> categories;
   final List<DiscountEntity> discounts;
 
-  /// Danh mục cha đang chọn ('' = Tất cả)
   final String selectedCategoryName;
-
-  /// Các danh mục con đang được chọn (multi-select)
   final Set<String> selectedSubCategoryNames;
 
+  final SortOption sortOption;
+  final Set<String> selectedGenders; // 'Men', 'Women', 'Unisex'
+
   final int visibleProductCount;
+  final bool hasLoadedMore; // true sau khi nhấn "Xem thêm" ít nhất 1 lần
+
   final String? errorMessage;
 
   const HomeState({
@@ -81,20 +80,21 @@ class HomeState {
     this.discounts = const [],
     this.selectedCategoryName = '',
     this.selectedSubCategoryNames = const {},
+    this.sortOption = SortOption.none,
+    this.selectedGenders = const {},
     this.visibleProductCount = kProductPageSize,
+    this.hasLoadedMore = false,
     this.errorMessage,
   });
 
-  // ─── Derived helpers ────────────────────────────────────────────────────
+  // ── Derived ─────────────────────────────────────────────────────────────
 
-  /// Danh mục cha (không có parentName, hoặc parentName không nằm trong DS)
   List<CategoryEntity> get rootCategories => categories
       .where((c) =>
           (c.parentName == null || c.parentName!.isEmpty) &&
           !kHiddenCategories.contains(c.name))
       .toList();
 
-  /// Danh mục con trực tiếp của [selectedCategoryName]
   List<CategoryEntity> get subCategories => selectedCategoryName.isEmpty
       ? []
       : categories
@@ -103,18 +103,14 @@ class HomeState {
               !kHiddenCategories.contains(c.name))
           .toList();
 
-  // ─── Filter logic ────────────────────────────────────────────────────────
+  // ── Filter → Gender → Sort ───────────────────────────────────────────────
 
-  List<ProductEntity> get _filtered {
+  List<ProductEntity> get _categoryFiltered {
     if (selectedCategoryName.isEmpty) return products;
-
-    // Bestseller → dùng top-selling API
     if (selectedCategoryName == 'Bestseller') return topProducts;
 
-    // Xác định tập category target
     final Set<String> targetNames;
     if (selectedSubCategoryNames.isNotEmpty) {
-      // Mở rộng mỗi sub-category đã chọn theo cây con
       targetNames = {};
       for (final sub in selectedSubCategoryNames) {
         targetNames.addAll(getDescendantNames(categories, sub));
@@ -123,7 +119,6 @@ class HomeState {
       targetNames = getDescendantNames(categories, selectedCategoryName);
     }
 
-    // Tổng hợp keyword từ tất cả target category
     final keywords = <String>{};
     for (final name in targetNames) {
       final kws = kCategoryKeywords[name];
@@ -131,11 +126,8 @@ class HomeState {
     }
 
     return products.where((p) {
-      // 1. Khớp categoryName theo cây
       if (targetNames.contains(p.categoryName)) return true;
-      // 2. Khớp brand (cho category là tên brand: Nike, Adidas…)
       if (targetNames.contains(p.brand)) return true;
-      // 3. Khớp tên sản phẩm theo keyword
       if (keywords.isNotEmpty) {
         final nameLower = p.name.toLowerCase();
         if (keywords.any((kw) => nameLower.contains(kw))) return true;
@@ -144,15 +136,45 @@ class HomeState {
     }).toList();
   }
 
-  List<ProductEntity> get visibleProducts =>
-      _filtered.take(visibleProductCount).toList();
+  List<ProductEntity> get _processed {
+    var result = _categoryFiltered;
 
-  bool get hasMoreProducts => visibleProductCount < _filtered.length;
+    // Gender filter
+    if (selectedGenders.isNotEmpty) {
+      final targets = Set<String>.from(selectedGenders);
+      // Nếu chọn Men hoặc Women thì Unisex cũng pass
+      if (targets.contains('Men') || targets.contains('Women')) {
+        targets.add('Unisex');
+      }
+      result = result.where((p) => targets.contains(p.sex)).toList();
+    }
+
+    // Sort
+    switch (sortOption) {
+      case SortOption.priceAsc:
+        result = [...result]
+          ..sort((a, b) =>
+              (a.salePrice ?? a.price).compareTo(b.salePrice ?? b.price));
+      case SortOption.priceDesc:
+        result = [...result]
+          ..sort((a, b) =>
+              (b.salePrice ?? b.price).compareTo(a.salePrice ?? a.price));
+      case SortOption.none:
+        break;
+    }
+
+    return result;
+  }
+
+  List<ProductEntity> get visibleProducts =>
+      _processed.take(visibleProductCount).toList();
+
+  bool get hasMoreProducts => visibleProductCount < _processed.length;
 
   List<DiscountEntity> get activeDiscounts =>
       discounts.where((d) => d.isActive).toList();
 
-  // ─── copyWith ─────────────────────────────────────────────────────────────
+  // ── copyWith ─────────────────────────────────────────────────────────────
 
   HomeState copyWith({
     LoadStatus? productsStatus,
@@ -167,7 +189,10 @@ class HomeState {
     List<DiscountEntity>? discounts,
     String? selectedCategoryName,
     Set<String>? selectedSubCategoryNames,
+    SortOption? sortOption,
+    Set<String>? selectedGenders,
     int? visibleProductCount,
+    bool? hasLoadedMore,
     String? errorMessage,
   }) {
     return HomeState(
@@ -184,7 +209,10 @@ class HomeState {
       selectedCategoryName: selectedCategoryName ?? this.selectedCategoryName,
       selectedSubCategoryNames:
           selectedSubCategoryNames ?? this.selectedSubCategoryNames,
+      sortOption: sortOption ?? this.sortOption,
+      selectedGenders: selectedGenders ?? this.selectedGenders,
       visibleProductCount: visibleProductCount ?? this.visibleProductCount,
+      hasLoadedMore: hasLoadedMore ?? this.hasLoadedMore,
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }

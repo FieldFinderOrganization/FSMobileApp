@@ -77,16 +77,17 @@ class HomeCubit extends Cubit<HomeState> {
     }
   }
 
-  /// Chọn danh mục cha — reset sub-category và phân trang
+  // ── Category ─────────────────────────────────────────────────────────────
+
   void selectCategory(String categoryName) {
     emit(state.copyWith(
       selectedCategoryName: categoryName,
       selectedSubCategoryNames: {},
       visibleProductCount: kProductPageSize,
+      hasLoadedMore: false,
     ));
   }
 
-  /// Bật/tắt một danh mục con (multi-select)
   void toggleSubCategory(String subCategoryName) {
     final current = Set<String>.from(state.selectedSubCategoryNames);
     if (current.contains(subCategoryName)) {
@@ -97,12 +98,53 @@ class HomeCubit extends Cubit<HomeState> {
     emit(state.copyWith(
       selectedSubCategoryNames: current,
       visibleProductCount: kProductPageSize,
+      hasLoadedMore: false,
     ));
   }
 
+  // ── Pagination ────────────────────────────────────────────────────────────
+
+  /// Xem thêm: tăng số sản phẩm, đánh dấu hasLoadedMore = true
   void loadMoreProducts() {
     emit(state.copyWith(
-        visibleProductCount: state.visibleProductCount + kProductPageSize));
+      visibleProductCount: state.visibleProductCount + kProductPageSize,
+      hasLoadedMore: true,
+    ));
+  }
+
+  /// Ẩn bớt: trở về số sản phẩm ban đầu
+  void collapseProducts() {
+    emit(state.copyWith(
+      visibleProductCount: kProductPageSize,
+      hasLoadedMore: false,
+    ));
+  }
+
+  // ── Filters ───────────────────────────────────────────────────────────────
+
+  void setSortOption(SortOption option) {
+    // Toggle: nếu đang chọn cái này thì bỏ (về none)
+    final next =
+        state.sortOption == option ? SortOption.none : option;
+    emit(state.copyWith(
+      sortOption: next,
+      visibleProductCount: kProductPageSize,
+      hasLoadedMore: false,
+    ));
+  }
+
+  void toggleGender(String gender) {
+    final current = Set<String>.from(state.selectedGenders);
+    if (current.contains(gender)) {
+      current.remove(gender);
+    } else {
+      current.add(gender);
+    }
+    emit(state.copyWith(
+      selectedGenders: current,
+      visibleProductCount: kProductPageSize,
+      hasLoadedMore: false,
+    ));
   }
 
   Future<void> refresh() => loadAll();

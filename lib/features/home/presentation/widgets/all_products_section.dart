@@ -26,10 +26,10 @@ class AllProductsSection extends StatelessWidget {
         children: [
           SectionHeader(title: 'Tất cả sản phẩm', onSeeAll: null),
 
-          // ── Danh mục cha ─────────────────────────────────────────────────
+          // ── Danh mục cha ────────────────────────────────────────────────
           _ParentCategoryChips(state: state),
 
-          // ── Danh mục con (hiện khi cha được chọn và có con) ──────────────
+          // ── Danh mục con ────────────────────────────────────────────────
           if (state.subCategories.isNotEmpty) ...[
             const SizedBox(height: 4),
             _SubCategoryChips(state: state),
@@ -37,7 +37,12 @@ class AllProductsSection extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          // ── Lưới sản phẩm ─────────────────────────────────────────────
+          // ── Bộ lọc giá & giới tính ──────────────────────────────────────
+          _FilterBar(state: state),
+
+          const SizedBox(height: 8),
+
+          // ── Lưới sản phẩm ───────────────────────────────────────────────
           if (isLoading)
             _buildShimmerGrid()
           else if (state.visibleProducts.isEmpty)
@@ -66,29 +71,8 @@ class AllProductsSection extends StatelessWidget {
               itemBuilder: (_, i) =>
                   ProductCard(product: state.visibleProducts[i]),
             ),
-            if (state.hasMoreProducts)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                child: OutlinedButton(
-                  onPressed: () =>
-                      context.read<HomeCubit>().loadMoreProducts(),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(44),
-                    side: const BorderSide(color: AppColors.primaryRed),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: Text(
-                    'Xem thêm',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primaryRed,
-                    ),
-                  ),
-                ),
-              ),
+            const SizedBox(height: 12),
+            _PaginationButtons(state: state),
           ],
           const SizedBox(height: 16),
         ],
@@ -112,6 +96,245 @@ class AllProductsSection extends StatelessWidget {
         width: double.infinity,
         height: double.infinity,
         borderRadius: BorderRadius.circular(12),
+      ),
+    );
+  }
+}
+
+// ── Bộ lọc giá & giới tính ──────────────────────────────────────────────────
+
+class _FilterBar extends StatelessWidget {
+  final HomeState state;
+
+  const _FilterBar({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Hàng 1: Sắp xếp theo giá
+          Row(
+            children: [
+              Text(
+                'Giá:',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textGrey,
+                ),
+              ),
+              const SizedBox(width: 8),
+              _SortChip(
+                label: '↑ Tăng dần',
+                isActive: state.sortOption == SortOption.priceAsc,
+                onTap: () => context
+                    .read<HomeCubit>()
+                    .setSortOption(SortOption.priceAsc),
+              ),
+              const SizedBox(width: 6),
+              _SortChip(
+                label: '↓ Giảm dần',
+                isActive: state.sortOption == SortOption.priceDesc,
+                onTap: () => context
+                    .read<HomeCubit>()
+                    .setSortOption(SortOption.priceDesc),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Hàng 2: Lọc theo giới tính
+          Row(
+            children: [
+              Text(
+                'Giới tính:',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textGrey,
+                ),
+              ),
+              const SizedBox(width: 8),
+              _GenderChip(
+                label: 'Nam',
+                value: 'Men',
+                selectedGenders: state.selectedGenders,
+              ),
+              const SizedBox(width: 6),
+              _GenderChip(
+                label: 'Nữ',
+                value: 'Women',
+                selectedGenders: state.selectedGenders,
+              ),
+              const SizedBox(width: 6),
+              _GenderChip(
+                label: 'Unisex',
+                value: 'Unisex',
+                selectedGenders: state.selectedGenders,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SortChip extends StatelessWidget {
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _SortChip({
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primaryRed : const Color(0xFFF5F5F5),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isActive ? AppColors.primaryRed : const Color(0xFFDDDDDD),
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: isActive ? Colors.white : AppColors.textGrey,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GenderChip extends StatelessWidget {
+  final String label;
+  final String value;
+  final Set<String> selectedGenders;
+
+  const _GenderChip({
+    required this.label,
+    required this.value,
+    required this.selectedGenders,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = selectedGenders.contains(value);
+    return GestureDetector(
+      onTap: () => context.read<HomeCubit>().toggleGender(value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primaryRed : const Color(0xFFF5F5F5),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isActive ? AppColors.primaryRed : const Color(0xFFDDDDDD),
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: isActive ? Colors.white : AppColors.textGrey,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Nút Ẩn bớt / Xem thêm ───────────────────────────────────────────────────
+
+class _PaginationButtons extends StatelessWidget {
+  final HomeState state;
+
+  const _PaginationButtons({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final canCollapse = state.hasLoadedMore;
+    final canLoadMore = state.hasMoreProducts;
+
+    if (!canCollapse && !canLoadMore) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          // ── Nút Ẩn bớt ────────────────────────────────────────────────
+          Expanded(
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 250),
+              opacity: canCollapse ? 1.0 : 0.35,
+              child: OutlinedButton.icon(
+                onPressed:
+                    canCollapse ? () => context.read<HomeCubit>().collapseProducts() : null,
+                icon: const Icon(Icons.keyboard_arrow_up_rounded, size: 16),
+                label: Text(
+                  'Ẩn bớt',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textDark,
+                  disabledForegroundColor: AppColors.textGrey,
+                  side: BorderSide(
+                    color: canCollapse
+                        ? const Color(0xFFCCCCCC)
+                        : const Color(0xFFDDDDDD),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (canLoadMore) ...[
+            const SizedBox(width: 10),
+            // ── Nút Xem thêm ──────────────────────────────────────────────
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => context.read<HomeCubit>().loadMoreProducts(),
+                icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 16),
+                label: Text(
+                  'Xem thêm',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primaryRed,
+                  side: const BorderSide(color: AppColors.primaryRed),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -155,16 +378,14 @@ class _ParentCategoryChips extends StatelessWidget {
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: roots.length + 1, // +1 cho "Tất cả"
+        itemCount: roots.length + 1,
         itemBuilder: (context, index) {
           final isAll = index == 0;
           final label = isAll ? 'Tất cả' : roots[index - 1].name;
           final value = isAll ? '' : roots[index - 1].name;
           final isActive = selected == value;
-          final hasChildren = isAll
-              ? false
-              : state.categories
-                  .any((c) => c.parentName == roots[index - 1].name);
+          final hasChildren = !isAll &&
+              state.categories.any((c) => c.parentName == roots[index - 1].name);
 
           return Padding(
             padding: const EdgeInsets.only(right: 8, top: 4, bottom: 4),
@@ -191,7 +412,6 @@ class _ParentCategoryChips extends StatelessWidget {
                         color: isActive ? Colors.white : AppColors.textGrey,
                       ),
                     ),
-                    // Mũi tên nhỏ nếu có danh mục con
                     if (hasChildren) ...[
                       const SizedBox(width: 3),
                       Icon(
@@ -213,7 +433,7 @@ class _ParentCategoryChips extends StatelessWidget {
   }
 }
 
-// ── Danh mục con (multi-select checkboxes) ───────────────────────────────────
+// ── Danh mục con (multi-select) ──────────────────────────────────────────────
 
 class _SubCategoryChips extends StatelessWidget {
   final HomeState state;
@@ -260,31 +480,25 @@ class _SubCategoryChips extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Checkbox icon
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 150),
                     child: isSelected
-                        ? const Icon(
-                            Icons.check_box_rounded,
+                        ? const Icon(Icons.check_box_rounded,
                             size: 14,
                             color: AppColors.primaryRed,
-                            key: ValueKey('checked'),
-                          )
-                        : const Icon(
-                            Icons.check_box_outline_blank_rounded,
+                            key: ValueKey('checked'))
+                        : const Icon(Icons.check_box_outline_blank_rounded,
                             size: 14,
                             color: Color(0xFFBBBBBB),
-                            key: ValueKey('unchecked'),
-                          ),
+                            key: ValueKey('unchecked')),
                   ),
                   const SizedBox(width: 5),
                   Text(
                     cat.name,
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w400,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w400,
                       color: isSelected
                           ? AppColors.primaryRed
                           : AppColors.textDark,
