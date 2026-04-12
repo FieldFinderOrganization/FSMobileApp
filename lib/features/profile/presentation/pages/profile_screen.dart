@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../features/auth/data/datasources/auth_remote_datasource.dart';
@@ -9,6 +10,7 @@ import '../../../../features/auth/login/presentation/bloc/auth_state.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/storage/token_storage.dart';
 import '../../../../features/auth/login/presentation/pages/login_screen.dart';
+import '../../../../core/constants/app_colors.dart';
 
 /// Wrapper tạo BlocProvider riêng — tránh ProviderNotFoundError
 /// khi LoginScreen bị xóa khỏi widget tree sau pushAndRemoveUntil.
@@ -39,81 +41,116 @@ class _ProfileBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthCubit, AuthState>(
-      listener: (context, state) {
-        if (state is AuthInitial) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const LoginScreen()),
-            (route) => false,
-          );
-        }
-      },
-      child: Scaffold(
-        backgroundColor: const Color(0xFF1A1A2E),
-        body: Stack(
-          children: [
-            // Background
-            Positioned.fill(
-              child: Image.asset('assets/images/mainbg.jpg', fit: BoxFit.cover),
-            ),
-            Positioned.fill(
-              child: Container(color: Colors.black.withOpacity(0.55)),
-            ),
-            // Content
-            SafeArea(
-              child: Column(
-                children: [
-                  _buildAppBar(context),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 16,
-                      ),
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 24),
-                          _buildAvatar(),
-                          const SizedBox(height: 20),
-                          _buildName(),
-                          const SizedBox(height: 6),
-                          _buildRoleBadge(),
-                          const SizedBox(height: 36),
-                          _buildInfoCard(),
-                          const SizedBox(height: 36),
-                          _buildLogoutButton(context),
-                          const SizedBox(height: 32),
-                        ],
-                      ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: BlocListener<AuthCubit, AuthState>(
+        listener: (context, state) {
+          if (state is AuthInitial) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const LoginScreen()),
+              (route) => false,
+            );
+          }
+        },
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            child: Column(
+              children: [
+                // ── App Bar ───────────────────────────────────────────────
+                _buildAppBar(),
+                // ── Scrollable body ───────────────────────────────────────
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 28),
+                        // ── Avatar ───────────────────────────────────────
+                        _buildAvatar(),
+                        const SizedBox(height: 16),
+                        // ── Name ─────────────────────────────────────────
+                        Text(
+                          user.name,
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.textDark,
+                            height: 1.2,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        // ── Role badge ───────────────────────────────────
+                        _buildRoleBadge(),
+                        const SizedBox(height: 28),
+                        // ── Info Card ─────────────────────────────────────
+                        _buildInfoCard(),
+                        const SizedBox(height: 20),
+                        // ── Quick actions ─────────────────────────────────
+                        _buildQuickActions(context),
+                        const SizedBox(height: 20),
+                        // ── Logout button ─────────────────────────────────
+                        _buildLogoutButton(context),
+                        const SizedBox(height: 32),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildAppBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+  // ─────────────────────────────────────────────────────────────────────────
+  // App Bar
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Widget _buildAppBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(color: const Color(0xFFF0F0F0), width: 1),
+        ),
+      ),
       child: Row(
         children: [
           Text(
-            'FieldFinder',
+            'Trang cá nhân',
             style: GoogleFonts.playfairDisplay(
-              fontSize: 22,
+              fontSize: 20,
               fontWeight: FontWeight.w900,
-              color: Colors.white,
-              letterSpacing: 1.5,
+              color: AppColors.textDark,
+            ),
+          ),
+          const Spacer(),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F5F5),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.edit_outlined,
+              size: 18,
+              color: AppColors.textGrey,
             ),
           ),
         ],
       ),
     );
   }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Avatar
+  // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildAvatar() {
     final hasImage = user.imageUrl != null && user.imageUrl!.isNotEmpty;
@@ -127,40 +164,67 @@ class _ProfileBody extends StatelessWidget {
               .toUpperCase()
         : '?';
 
-    return Container(
-      width: 110,
-      height: 110,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFF7B0323), width: 3),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF7B0323).withOpacity(0.4),
-            blurRadius: 20,
-            spreadRadius: 2,
+    return Stack(
+      children: [
+        Container(
+          width: 100,
+          height: 100,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: AppColors.primaryRed, width: 2.5),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primaryRed.withOpacity(0.18),
+                blurRadius: 18,
+                spreadRadius: 2,
+              ),
+            ],
           ),
-        ],
-      ),
-      child: ClipOval(
-        child: hasImage
-            ? Image.network(
-                user.imageUrl!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => _buildInitialsAvatar(initials),
-              )
-            : _buildInitialsAvatar(initials),
-      ),
+          child: ClipOval(
+            child: hasImage
+                ? Image.network(
+                    user.imageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        _buildInitialsAvatar(initials),
+                  )
+                : _buildInitialsAvatar(initials),
+          ),
+        ),
+        // Online indicator
+        Positioned(
+          bottom: 4,
+          right: 4,
+          child: Container(
+            width: 16,
+            height: 16,
+            decoration: BoxDecoration(
+              color: user.status == 'ACTIVE'
+                  ? const Color(0xFF4CAF50)
+                  : Colors.orange,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildInitialsAvatar(String initials) {
     return Container(
-      color: const Color(0xFF7B0323),
+      color: AppColors.primaryRed,
       child: Center(
         child: Text(
           initials,
           style: GoogleFonts.playfairDisplay(
-            fontSize: 38,
+            fontSize: 34,
             fontWeight: FontWeight.w900,
             color: Colors.white,
           ),
@@ -169,145 +233,352 @@ class _ProfileBody extends StatelessWidget {
     );
   }
 
-  Widget _buildName() {
-    return Text(
-      user.name,
-      style: GoogleFonts.playfairDisplay(
-        fontSize: 26,
-        fontWeight: FontWeight.w900,
-        color: Colors.white,
-        letterSpacing: 0.5,
-      ),
-      textAlign: TextAlign.center,
-    );
-  }
+  // ─────────────────────────────────────────────────────────────────────────
+  // Role Badge
+  // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildRoleBadge() {
-    final roleLabel = user.role.toUpperCase();
+    final roleLabel = _localizeRole(user.role);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0xFF7B0323).withOpacity(0.85),
+        color: AppColors.primaryRed.withOpacity(0.08),
         borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        roleLabel,
-        style: GoogleFonts.inter(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
-          letterSpacing: 2,
+        border: Border.all(
+          color: AppColors.primaryRed.withOpacity(0.2),
         ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.verified_user_rounded,
+              size: 13, color: AppColors.primaryRed),
+          const SizedBox(width: 5),
+          Text(
+            roleLabel,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primaryRed,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
       ),
     );
   }
 
+  String _localizeRole(String role) {
+    switch (role.toUpperCase()) {
+      case 'ADMIN':
+        return 'Quản trị viên';
+      case 'OWNER':
+        return 'Chủ sân';
+      case 'CUSTOMER':
+        return 'Người dùng';
+      default:
+        return role;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Info Card
+  // ─────────────────────────────────────────────────────────────────────────
+
   Widget _buildInfoCard() {
+    // Phone: luôn hiển thị, dùng "N/A" nếu null hoặc rỗng
+    final phone = (user.phone == null ||
+            user.phone!.isEmpty ||
+            user.phone == 'N/A')
+        ? 'N/A'
+        : user.phone!;
+
+    final statusLabel =
+        user.status == 'ACTIVE' ? 'Đang hoạt động' : user.status;
+    final statusColor =
+        user.status == 'ACTIVE' ? const Color(0xFF2E7D32) : Colors.orange[700]!;
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.12)),
+        border: Border.all(color: const Color(0xFFEEEEEE)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          _buildInfoRow(Icons.email_rounded, 'Email', user.email),
-          if (user.phone != null && user.phone!.isNotEmpty)
-            _buildInfoRowWithDivider(
-              Icons.phone_rounded,
-              'Điện thoại',
-              user.phone!,
-            ),
-          _buildInfoRowWithDivider(
-            Icons.circle,
-            'Trạng thái',
-            user.status == 'ACTIVE' ? 'Hoạt động' : user.status,
-            valueColor: user.status == 'ACTIVE'
-                ? Colors.greenAccent
-                : Colors.orange,
+          _InfoRow(
+            icon: Icons.person_outline_rounded,
+            label: 'Họ và tên',
+            value: user.name,
+            isFirst: true,
+          ),
+          _InfoRow(
+            icon: Icons.email_outlined,
+            label: 'Email',
+            value: user.email,
+          ),
+          _InfoRow(
+            icon: Icons.phone_outlined,
+            label: 'Số điện thoại',
+            value: phone,
+            valueColor: phone == 'N/A' ? AppColors.textGrey : AppColors.textDark,
+          ),
+          _InfoRow(
+            icon: Icons.circle_rounded,
+            label: 'Trạng thái',
+            value: statusLabel,
+            valueColor: statusColor,
+            isLast: true,
+            iconColor: statusColor,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(
-    IconData icon,
-    String label,
-    String value, {
-    Color? valueColor,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
+  // ─────────────────────────────────────────────────────────────────────────
+  // Quick Actions
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Widget _buildQuickActions(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFEEEEEE)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
         children: [
-          Icon(icon, color: const Color(0xFF7B0323), size: 20),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: Colors.white54,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: GoogleFonts.inter(
-                    fontSize: 15,
-                    color: valueColor ?? Colors.white,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
+          _ActionRow(
+            icon: Icons.history_rounded,
+            label: 'Lịch sử đặt sân',
+            onTap: () {},
+            isFirst: true,
+          ),
+          _ActionRow(
+            icon: Icons.favorite_border_rounded,
+            label: 'Sân yêu thích',
+            onTap: () {},
+          ),
+          _ActionRow(
+            icon: Icons.lock_outline_rounded,
+            label: 'Đổi mật khẩu',
+            onTap: () {},
+          ),
+          _ActionRow(
+            icon: Icons.help_outline_rounded,
+            label: 'Trợ giúp & Hỗ trợ',
+            onTap: () {},
+            isLast: true,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRowWithDivider(
-    IconData icon,
-    String label,
-    String value, {
-    Color? valueColor,
-  }) {
-    return Column(
-      children: [
-        Divider(height: 1, color: Colors.white.withOpacity(0.1)),
-        _buildInfoRow(icon, label, value, valueColor: valueColor),
-      ],
-    );
-  }
+  // ─────────────────────────────────────────────────────────────────────────
+  // Logout Button
+  // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildLogoutButton(BuildContext context) {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
-        onPressed: () => context.read<AuthCubit>().logout(),
-        icon: const Icon(Icons.logout_rounded, color: Colors.white70, size: 20),
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          context.read<AuthCubit>().logout();
+        },
+        icon: const Icon(Icons.logout_rounded,
+            color: AppColors.primaryRed, size: 19),
         label: Text(
           'Đăng xuất',
           style: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.white70,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: AppColors.primaryRed,
           ),
         ),
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 14),
-          side: BorderSide(color: Colors.white.withOpacity(0.3)),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+          side: BorderSide(
+            color: AppColors.primaryRed.withOpacity(0.4),
+            width: 1.5,
           ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          backgroundColor: AppColors.primaryRed.withOpacity(0.04),
         ),
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Info Row Widget
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color? valueColor;
+  final Color? iconColor;
+  final bool isFirst;
+  final bool isLast;
+
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.valueColor,
+    this.iconColor,
+    this.isFirst = false,
+    this.isLast = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        if (!isFirst)
+          const Divider(height: 1, indent: 56, color: Color(0xFFF0F0F0)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: (iconColor ?? AppColors.primaryRed).withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  icon,
+                  size: 18,
+                  color: iconColor ?? AppColors.primaryRed,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: AppColors.textGrey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      value,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: valueColor ?? AppColors.textDark,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Action Row Widget
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ActionRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool isFirst;
+  final bool isLast;
+
+  const _ActionRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.isFirst = false,
+    this.isLast = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        if (!isFirst)
+          const Divider(height: 1, indent: 56, color: Color(0xFFF0F0F0)),
+        InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          borderRadius: BorderRadius.vertical(
+            top: isFirst ? const Radius.circular(16) : Radius.zero,
+            bottom: isLast ? const Radius.circular(16) : Radius.zero,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 18,
+                    color: AppColors.textGrey,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: AppColors.textGrey,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -82,28 +82,35 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
       child: BlocConsumer<ForgotPasswordCubit, ForgotPasswordState>(
+        // Chỉ gọi listener khi state thực sự thay đổi kiểu,
+        // tránh setState rebuild khiến listener kích hoạt nhiều lần.
+        listenWhen: (previous, current) => previous.runtimeType != current.runtimeType,
         listener: (context, state) {
           if (state is PasswordResetSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content:
-                    Text('Đặt lại mật khẩu thành công! Vui lòng đăng nhập.'),
-                backgroundColor: Colors.green,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            ScaffoldMessenger.of(context)
+              ..clearSnackBars()
+              ..showSnackBar(
+                const SnackBar(
+                  content: Text(
+                      'Đặt lại mật khẩu thành công! Vui lòng đăng nhập.'),
+                  backgroundColor: Colors.green,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(builder: (_) => const LoginScreen()),
               (route) => false,
             );
           } else if (state is ForgotPasswordFailure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red[700],
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            ScaffoldMessenger.of(context)
+              ..clearSnackBars()
+              ..showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red[700],
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
           }
         },
         builder: (context, state) {

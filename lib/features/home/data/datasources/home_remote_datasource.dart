@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import '../../../../core/constants/api_constants.dart';
-import '../models/product_model.dart';
-import '../models/pitch_model.dart';
+import '../../../product/data/models/product_model.dart';
+import '../../../pitch/data/models/pitch_model.dart';
 import '../models/category_model.dart';
 import '../models/discount_model.dart';
 

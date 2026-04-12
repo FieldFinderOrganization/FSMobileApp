@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../cubit/home_cubit.dart';
-import '../cubit/home_state.dart';
-import 'fade_in_section.dart';
+import '../../../home/presentation/cubit/home_cubit.dart';
+import '../../../home/presentation/cubit/home_state.dart';
+import '../../../home/presentation/widgets/fade_in_section.dart';
 import 'product_card.dart';
-import 'section_header.dart';
-import 'shimmer_card.dart';
+import '../../../home/presentation/widgets/section_header.dart';
+import '../../../home/presentation/widgets/shimmer_card.dart';
 
 class AllProductsSection extends StatelessWidget {
   final HomeState state;

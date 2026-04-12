@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../domain/entities/product_entity.dart';
-import '../../domain/entities/pitch_entity.dart';
+import '../../../product/domain/entities/product_entity.dart';
+import '../../../pitch/domain/entities/pitch_entity.dart';
 
 enum SearchMode { product, pitch }
 

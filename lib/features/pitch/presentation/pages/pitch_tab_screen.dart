@@ -4,11 +4,12 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/storage/token_storage.dart';
-import '../../data/datasources/home_remote_datasource.dart';
-import '../../data/repositories/home_repository_impl.dart';
+import '../../../home/data/datasources/home_remote_datasource.dart';
+import '../../../home/data/repositories/home_repository_impl.dart';
 import '../../domain/entities/pitch_entity.dart';
-import '../../domain/entities/product_entity.dart';
-import '../cubit/home_cubit.dart';
+import '../../../product/domain/entities/product_entity.dart';
+import '../../../home/presentation/cubit/home_cubit.dart';
+import 'pitch_detail_screen.dart';
 
 /// Tab "Sân" độc lập — tự fetch data qua HomeCubit riêng,
 /// không cần data truyền từ ngoài vào. Dùng trong [MainShell] IndexedStack.
@@ -406,8 +407,14 @@ class _PitchListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => PitchDetailScreen(pitch: pitch),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
           // Thumbnail
@@ -490,6 +497,7 @@ class _PitchListItem extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 

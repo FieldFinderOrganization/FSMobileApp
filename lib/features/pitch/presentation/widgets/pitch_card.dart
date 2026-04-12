@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../domain/entities/pitch_entity.dart';
+import '../pages/pitch_detail_screen.dart';
 
 class PitchCard extends StatelessWidget {
   final PitchEntity pitch;
@@ -10,7 +11,13 @@ class PitchCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => PitchDetailScreen(pitch: pitch),
+        ),
+      ),
+      child: Container(
       width: 200,
       margin: const EdgeInsets.only(left: 16),
       decoration: BoxDecoration(
@@ -106,6 +113,7 @@ class PitchCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

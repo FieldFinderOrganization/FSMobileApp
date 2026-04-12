@@ -1,5 +1,5 @@
-import '../../domain/entities/product_entity.dart';
-import '../../domain/entities/pitch_entity.dart';
+import '../../../product/domain/entities/product_entity.dart';
+import '../../../pitch/domain/entities/pitch_entity.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/entities/discount_entity.dart';
 

@@ -6,12 +6,12 @@ import '../../data/datasources/home_remote_datasource.dart';
 import '../../data/repositories/home_repository_impl.dart';
 import '../cubit/home_cubit.dart';
 import '../cubit/home_state.dart';
-import '../widgets/all_products_section.dart';
-import '../widgets/featured_pitches_section.dart';
+import '../../../product/presentation/widgets/all_products_section.dart';
+import '../../../pitch/presentation/widgets/featured_pitches_section.dart';
 import '../widgets/hero_banner.dart';
 import '../widgets/home_footer.dart';
 import '../widgets/home_header.dart';
-import '../widgets/top_products_section.dart';
+import '../../../product/presentation/widgets/top_products_section.dart';
 import 'search_screen.dart';
 
 class HomeScreen extends StatelessWidget {
