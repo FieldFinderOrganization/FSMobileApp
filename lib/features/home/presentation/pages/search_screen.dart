@@ -64,21 +64,27 @@ class _SearchScreenState extends State<SearchScreen>
     if (_query.isEmpty) return [];
     final q = _query.toLowerCase();
     return widget.products
-        .where((p) =>
-            p.name.toLowerCase().contains(q) ||
-            p.brand.toLowerCase().contains(q) ||
-            p.categoryName.toLowerCase().contains(q))
+        .where(
+          (p) =>
+              p.name.toLowerCase().contains(q) ||
+              p.brand.toLowerCase().contains(q) ||
+              p.categoryName.toLowerCase().contains(q),
+        )
         .toList();
   }
 
   List<PitchEntity> get _filteredPitches {
     if (_query.isEmpty) return [];
     final q = _query.toLowerCase();
-    var result = widget.pitches.where((p) =>
-        p.name.toLowerCase().contains(q) ||
-        p.displayType.toLowerCase().contains(q) ||
-        p.environment.toLowerCase().contains(q) ||
-        p.address.toLowerCase().contains(q)).toList();
+    var result = widget.pitches
+        .where(
+          (p) =>
+              p.name.toLowerCase().contains(q) ||
+              p.displayType.toLowerCase().contains(q) ||
+              p.environment.toLowerCase().contains(q) ||
+              p.address.toLowerCase().contains(q),
+        )
+        .toList();
     if (_selectedDistrict.isNotEmpty) {
       result = result.where((p) => p.district == _selectedDistrict).toList();
     }
@@ -89,11 +95,13 @@ class _SearchScreenState extends State<SearchScreen>
   List<String> get _availableDistricts {
     if (_query.isEmpty) return [];
     final q = _query.toLowerCase();
-    final hits = widget.pitches.where((p) =>
-        p.name.toLowerCase().contains(q) ||
-        p.displayType.toLowerCase().contains(q) ||
-        p.environment.toLowerCase().contains(q) ||
-        p.address.toLowerCase().contains(q));
+    final hits = widget.pitches.where(
+      (p) =>
+          p.name.toLowerCase().contains(q) ||
+          p.displayType.toLowerCase().contains(q) ||
+          p.environment.toLowerCase().contains(q) ||
+          p.address.toLowerCase().contains(q),
+    );
     final districts = hits
         .map((p) => p.district)
         .where((d) => d.isNotEmpty)
@@ -164,8 +172,9 @@ class _SearchScreenState extends State<SearchScreen>
                                 )
                               : null,
                           border: InputBorder.none,
-                          contentPadding:
-                              const EdgeInsets.symmetric(vertical: 13),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 13,
+                          ),
                         ),
                       ),
                     ),
@@ -222,8 +231,8 @@ class _SearchScreenState extends State<SearchScreen>
                 child: _query.isEmpty
                     ? _buildEmptyHint(key: const ValueKey('hint'))
                     : _mode == SearchMode.product
-                        ? _buildProductResults(key: const ValueKey('products'))
-                        : _buildPitchResults(key: const ValueKey('pitches')),
+                    ? _buildProductResults(key: const ValueKey('products'))
+                    : _buildPitchResults(key: const ValueKey('pitches')),
               ),
             ),
           ],
@@ -242,10 +251,7 @@ class _SearchScreenState extends State<SearchScreen>
           const SizedBox(height: 16),
           Text(
             'Nhập tên để tìm kiếm',
-            style: GoogleFonts.inter(
-              fontSize: 15,
-              color: Colors.grey[400],
-            ),
+            style: GoogleFonts.inter(fontSize: 15, color: Colors.grey[400]),
           ),
           const SizedBox(height: 6),
           Text(
@@ -270,7 +276,7 @@ class _SearchScreenState extends State<SearchScreen>
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: results.length,
-        separatorBuilder: (_, __) =>
+        separatorBuilder: (_, _) =>
             const Divider(height: 1, indent: 80, color: Color(0xFFF0F0F0)),
         itemBuilder: (_, i) => _ProductResultItem(product: results[i]),
       ),
@@ -288,7 +294,7 @@ class _SearchScreenState extends State<SearchScreen>
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: results.length,
-        separatorBuilder: (_, __) =>
+        separatorBuilder: (_, _) =>
             const Divider(height: 1, indent: 80, color: Color(0xFFF0F0F0)),
         itemBuilder: (_, i) => _PitchResultItem(pitch: results[i]),
       ),
@@ -331,7 +337,7 @@ class _SearchScreenState extends State<SearchScreen>
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: districts.length + 1,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemBuilder: (_, i) {
               if (i == 0) {
                 // Chip "Tất cả"
@@ -348,8 +354,9 @@ class _SearchScreenState extends State<SearchScreen>
                 label: district,
                 isActive: isActive,
                 onTap: () => setState(() {
-                  _selectedDistrict =
-                      _selectedDistrict == district ? '' : district;
+                  _selectedDistrict = _selectedDistrict == district
+                      ? ''
+                      : district;
                 }),
               );
             },
@@ -474,7 +481,7 @@ class _ProductResultItem extends StatelessWidget {
                     width: 60,
                     height: 60,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _placeholder(),
+                    errorBuilder: (_, _, _) => _placeholder(),
                   )
                 : _placeholder(),
           ),
@@ -547,12 +554,11 @@ class _ProductResultItem extends StatelessWidget {
   }
 
   Widget _placeholder() => Container(
-        width: 60,
-        height: 60,
-        color: const Color(0xFFF0F0F0),
-        child: const Icon(Icons.image_not_supported,
-            color: Colors.grey, size: 24),
-      );
+    width: 60,
+    height: 60,
+    color: const Color(0xFFF0F0F0),
+    child: const Icon(Icons.image_not_supported, color: Colors.grey, size: 24),
+  );
 
   String _fmt(double price) {
     // Format số: 1000000 → 1.000.000
@@ -584,7 +590,7 @@ class _PitchResultItem extends StatelessWidget {
                     width: 60,
                     height: 60,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _placeholder(),
+                    errorBuilder: (_, _, _) => _placeholder(),
                   )
                 : _placeholder(),
           ),
@@ -618,8 +624,7 @@ class _PitchResultItem extends StatelessWidget {
           const SizedBox(width: 8),
           // Price
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: AppColors.primaryRed,
               borderRadius: BorderRadius.circular(6),
@@ -639,10 +644,9 @@ class _PitchResultItem extends StatelessWidget {
   }
 
   Widget _placeholder() => Container(
-        width: 60,
-        height: 60,
-        color: const Color(0xFFF0F0F0),
-        child: const Icon(Icons.sports_soccer,
-            color: Colors.grey, size: 24),
-      );
+    width: 60,
+    height: 60,
+    color: const Color(0xFFF0F0F0),
+    child: const Icon(Icons.sports_soccer, color: Colors.grey, size: 24),
+  );
 }

@@ -123,7 +123,7 @@ class _AppBottomBar extends StatelessWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, -4),
           ),
@@ -180,7 +180,7 @@ class _TabBarItem extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           decoration: BoxDecoration(
             color: isActive
-                ? AppColors.primaryRed.withOpacity(0.1)
+                ? AppColors.primaryRed.withValues(alpha: 0.1)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
@@ -231,7 +231,7 @@ class _PlaceholderTab extends StatelessWidget {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: AppColors.primaryRed.withOpacity(0.08),
+                  color: AppColors.primaryRed.withValues(alpha: 0.08),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, size: 36, color: AppColors.primaryRed),

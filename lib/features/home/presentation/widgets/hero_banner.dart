@@ -51,7 +51,8 @@ class _HeroBannerState extends State<HeroBanner> {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = widget.state.discountsStatus == LoadStatus.loading ||
+    final isLoading =
+        widget.state.discountsStatus == LoadStatus.loading ||
         widget.state.discountsStatus == LoadStatus.initial;
     final discounts = widget.state.activeDiscounts;
 
@@ -110,7 +111,7 @@ class _HeroBannerState extends State<HeroBanner> {
                           height: 160,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(0.08),
+                            color: Colors.white.withValues(alpha: 0.08),
                           ),
                         ),
                       ),
@@ -122,7 +123,7 @@ class _HeroBannerState extends State<HeroBanner> {
                           height: 200,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(0.05),
+                            color: Colors.white.withValues(alpha: 0.05),
                           ),
                         ),
                       ),
@@ -139,10 +140,10 @@ class _HeroBannerState extends State<HeroBanner> {
                                 vertical: 5,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                                color: Colors.white.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: Colors.white.withOpacity(0.4),
+                                  color: Colors.white.withValues(alpha: 0.4),
                                 ),
                               ),
                               child: Text(
@@ -200,9 +201,7 @@ class _HeroBannerState extends State<HeroBanner> {
               height: 6,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(3),
-                color: isActive
-                    ? AppColors.primaryRed
-                    : AppColors.inactiveDot,
+                color: isActive ? AppColors.primaryRed : AppColors.inactiveDot,
               ),
             );
           }),
@@ -223,10 +222,7 @@ class _HeroBannerState extends State<HeroBanner> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                const Color(0xFF3A0010),
-                AppColors.primaryRed,
-              ],
+              colors: [const Color(0xFF3A0010), AppColors.primaryRed],
             ),
           ),
           child: Stack(
@@ -239,7 +235,7 @@ class _HeroBannerState extends State<HeroBanner> {
                   height: 150,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.08),
+                    color: Colors.white.withValues(alpha: 0.08),
                   ),
                 ),
               ),

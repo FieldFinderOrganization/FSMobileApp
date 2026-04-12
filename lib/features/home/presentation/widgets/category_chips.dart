@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../cubit/home_cubit.dart';
-import '../cubit/home_state.dart';
 import 'shimmer_card.dart';
 
 class CategoryChips extends StatelessWidget {
@@ -13,7 +12,8 @@ class CategoryChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = state.categoriesStatus == LoadStatus.loading ||
+    final isLoading =
+        state.categoriesStatus == LoadStatus.loading ||
         state.categoriesStatus == LoadStatus.initial;
 
     if (isLoading) {
@@ -69,10 +69,10 @@ class CategoryChips extends StatelessWidget {
                   boxShadow: isActive
                       ? [
                           BoxShadow(
-                            color: AppColors.primaryRed.withOpacity(0.3),
+                            color: AppColors.primaryRed.withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
-                          )
+                          ),
                         ]
                       : null,
                 ),

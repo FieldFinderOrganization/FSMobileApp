@@ -30,7 +30,7 @@ class ProductCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.07),
+            color: Colors.black.withValues(alpha: 0.07),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -86,7 +86,7 @@ class ProductCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.07),
+            color: Colors.black.withValues(alpha: 0.07),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -144,10 +144,7 @@ class ProductCard extends StatelessWidget {
     if (parts.isEmpty) return const SizedBox.shrink();
     return Text(
       parts.join(' · '),
-      style: GoogleFonts.inter(
-        fontSize: 11,
-        color: AppColors.textGrey,
-      ),
+      style: GoogleFonts.inter(fontSize: 11, color: AppColors.textGrey),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );

@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/network/dio_client.dart';
-import '../../../../core/storage/token_storage.dart';
+// import '../../../../core/storage/token_storage.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../cubit/pitch_detail_cubit.dart';
 import '../cubit/pitch_detail_state.dart';
@@ -58,7 +58,7 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) {
-        final tokenStorage = context.read<TokenStorage>();
+        // final tokenStorage = context.read<TokenStorage>();
         final dioClient = context.read<DioClient>();
         final pitchDatasource = PitchRemoteDatasource(dioClient.dio);
         final reviewDatasource = ReviewRemoteDatasource(dioClient.dio);
@@ -216,7 +216,7 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
                     colors: [
-                      Colors.black.withOpacity(0.45),
+                      Colors.black.withValues(alpha: 0.45),
                       Colors.transparent,
                     ],
                   ),
@@ -240,7 +240,7 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                       decoration: BoxDecoration(
                         color: _currentImagePage == i
                             ? Colors.white
-                            : Colors.white.withOpacity(0.5),
+                            : Colors.white.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(3),
                       ),
                     );
@@ -457,14 +457,16 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                         color: isSelected
                             ? AppColors.primaryRed
                             : isToday
-                            ? AppColors.primaryRed.withOpacity(0.3)
+                            ? AppColors.primaryRed.withValues(alpha: 0.3)
                             : const Color(0xFFEEEEEE),
                         width: isToday && !isSelected ? 1.5 : 1,
                       ),
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: AppColors.primaryRed.withOpacity(0.3),
+                                color: AppColors.primaryRed.withValues(
+                                  alpha: 0.3,
+                                ),
                                 blurRadius: 8,
                                 offset: const Offset(0, 3),
                               ),
@@ -583,7 +585,7 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryRed.withOpacity(0.1),
+                    color: AppColors.primaryRed.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -956,7 +958,10 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: LinearGradient(
-          colors: [AppColors.primaryRed, AppColors.primaryRed.withOpacity(0.7)],
+          colors: [
+            AppColors.primaryRed,
+            AppColors.primaryRed.withValues(alpha: 0.7),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -983,7 +988,7 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, -6),
           ),
@@ -1059,7 +1064,7 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primaryRed.withOpacity(0.4),
+                            color: AppColors.primaryRed.withValues(alpha: 0.4),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -1125,11 +1130,11 @@ class _CircleButton extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.45),
+          color: Colors.black.withValues(alpha: 0.45),
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withValues(alpha: 0.15),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -1157,9 +1162,9 @@ class _InfoChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1231,16 +1236,16 @@ class _ExpandableTextState extends State<_ExpandableText> {
 // Data Models
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _PitchTypeVariant {
-  final String label;
-  final String type;
-  final double price;
-  final bool available;
+// class _PitchTypeVariant {
+//   final String label;
+//   final String type;
+//   final double price;
+//   final bool available;
 
-  const _PitchTypeVariant({
-    required this.label,
-    required this.type,
-    required this.price,
-    required this.available,
-  });
-}
+//   const _PitchTypeVariant({
+//     required this.label,
+//     required this.type,
+//     required this.price,
+//     required this.available,
+//   });
+// }

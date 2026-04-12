@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../home/presentation/cubit/home_cubit.dart';
-import '../../../home/presentation/cubit/home_state.dart';
 import '../../../home/presentation/widgets/fade_in_section.dart';
 import 'pitch_card.dart';
 import '../../../home/presentation/widgets/section_header.dart';
@@ -38,9 +37,9 @@ class FeaturedPitchesSection extends StatelessWidget {
                     padding: const EdgeInsets.only(right: 16),
                     itemCount: state.filteredPitches.length,
                     itemBuilder: (_, i) => SizedBox(
-                          height: 200,
-                          child: PitchCard(pitch: state.filteredPitches[i]),
-                        ),
+                      height: 200,
+                      child: PitchCard(pitch: state.filteredPitches[i]),
+                    ),
                   ),
           ),
           const SizedBox(height: 12),
@@ -99,7 +98,7 @@ class _DistrictChipBar extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: districts.length + 1, // +1 cho chip "Tất cả"
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (_, i) {
           if (i == 0) {
             // Chip "Tất cả"
