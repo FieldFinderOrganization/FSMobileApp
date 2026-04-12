@@ -2,13 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../features/auth/data/datasources/auth_remote_datasource.dart';
-import '../../../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../../../features/auth/domain/entities/user_entity.dart';
 import '../../../../features/auth/login/presentation/bloc/auth_cubit.dart';
 import '../../../../features/auth/login/presentation/bloc/auth_state.dart';
-import '../../../../core/network/dio_client.dart';
-import '../../../../core/storage/token_storage.dart';
 import '../../../../features/auth/login/presentation/pages/login_screen.dart';
 import '../../../../core/constants/app_colors.dart';
 
@@ -174,8 +170,7 @@ class _ProfileBody extends StatelessWidget {
                 ? Image.network(
                     user.imageUrl!,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        _buildInitialsAvatar(initials),
+                    errorBuilder: (_, _, _) => _buildInitialsAvatar(initials),
                   )
                 : _buildInitialsAvatar(initials),
           ),
@@ -194,10 +189,7 @@ class _ProfileBody extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 2.5),
               boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
-                ),
+                BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4),
               ],
             ),
           ),
@@ -233,15 +225,16 @@ class _ProfileBody extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.primaryRed.withOpacity(0.08),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.primaryRed.withOpacity(0.2),
-        ),
+        border: Border.all(color: AppColors.primaryRed.withOpacity(0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.verified_user_rounded,
-              size: 13, color: AppColors.primaryRed),
+          const Icon(
+            Icons.verified_user_rounded,
+            size: 13,
+            color: AppColors.primaryRed,
+          ),
           const SizedBox(width: 5),
           Text(
             roleLabel,
@@ -276,16 +269,17 @@ class _ProfileBody extends StatelessWidget {
 
   Widget _buildInfoCard() {
     // Phone: luôn hiển thị, dùng "N/A" nếu null hoặc rỗng
-    final phone = (user.phone == null ||
-            user.phone!.isEmpty ||
-            user.phone == 'N/A')
+    final phone =
+        (user.phone == null || user.phone!.isEmpty || user.phone == 'N/A')
         ? 'N/A'
         : user.phone!;
 
-    final statusLabel =
-        user.status == 'ACTIVE' ? 'Đang hoạt động' : user.status;
-    final statusColor =
-        user.status == 'ACTIVE' ? const Color(0xFF2E7D32) : Colors.orange[700]!;
+    final statusLabel = user.status == 'ACTIVE'
+        ? 'Đang hoạt động'
+        : user.status;
+    final statusColor = user.status == 'ACTIVE'
+        ? const Color(0xFF2E7D32)
+        : Colors.orange[700]!;
 
     return Container(
       decoration: BoxDecoration(
@@ -317,7 +311,9 @@ class _ProfileBody extends StatelessWidget {
             icon: Icons.phone_outlined,
             label: 'Số điện thoại',
             value: phone,
-            valueColor: phone == 'N/A' ? AppColors.textGrey : AppColors.textDark,
+            valueColor: phone == 'N/A'
+                ? AppColors.textGrey
+                : AppColors.textDark,
           ),
           _InfoRow(
             icon: Icons.circle_rounded,
@@ -391,8 +387,11 @@ class _ProfileBody extends StatelessWidget {
           HapticFeedback.lightImpact();
           context.read<AuthCubit>().logout();
         },
-        icon: const Icon(Icons.logout_rounded,
-            color: AppColors.primaryRed, size: 19),
+        icon: const Icon(
+          Icons.logout_rounded,
+          color: AppColors.primaryRed,
+          size: 19,
+        ),
         label: Text(
           'Đăng xuất',
           style: GoogleFonts.inter(
@@ -541,11 +540,7 @@ class _ActionRow extends StatelessWidget {
                     color: const Color(0xFFF5F5F5),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(
-                    icon,
-                    size: 18,
-                    color: AppColors.textGrey,
-                  ),
+                  child: Icon(icon, size: 18, color: AppColors.textGrey),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

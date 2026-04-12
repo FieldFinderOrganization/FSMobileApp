@@ -51,10 +51,7 @@ class _BookingView extends StatelessWidget {
       listener: (context, state) {
         if (state is BookingError) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red,
-            ),
+            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
           );
         } else if (state is BookingConfirmed) {
           _showSuccessDialog(context);
@@ -66,7 +63,11 @@ class _BookingView extends StatelessWidget {
           backgroundColor: Colors.white,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textDark, size: 20),
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: AppColors.textDark,
+              size: 20,
+            ),
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
@@ -74,7 +75,9 @@ class _BookingView extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.w800,
-              color: const Color(0xFF1B5E20), // Dark green as requested in image
+              color: const Color(
+                0xFF1B5E20,
+              ), // Dark green as requested in image
               letterSpacing: 0.5,
             ),
           ),
@@ -86,7 +89,9 @@ class _BookingView extends StatelessWidget {
         body: BlocBuilder<BookingCubit, BookingState>(
           builder: (context, state) {
             if (state is BookingLoading) {
-              return const Center(child: CircularProgressIndicator(color: AppColors.primaryRed));
+              return const Center(
+                child: CircularProgressIndicator(color: AppColors.primaryRed),
+              );
             }
             if (state is BookingError) {
               return _buildErrorView(context, state.message);
@@ -142,11 +147,19 @@ class _BookingView extends StatelessWidget {
           const Divider(height: 32, color: Color(0xFFEEEEEE)),
           Row(
             children: [
-              const Icon(Icons.calendar_today_rounded, size: 18, color: Color(0xFF1B5E20)),
+              const Icon(
+                Icons.calendar_today_rounded,
+                size: 18,
+                color: Color(0xFF1B5E20),
+              ),
               const SizedBox(width: 12),
               Text(
                 'Ngày đặt:',
-                style: GoogleFonts.inter(fontSize: 14, color: AppColors.textGrey, fontWeight: FontWeight.w500),
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: AppColors.textGrey,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               const Spacer(),
               Text(
@@ -197,7 +210,11 @@ class _BookingView extends StatelessWidget {
           children: [
             Text(
               'Chọn khung giờ',
-              style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textDark),
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textDark,
+              ),
             ),
             Text(
               'Đã chọn: ${state.selectedSlotIds.length}',
@@ -262,7 +279,9 @@ class _BookingView extends StatelessWidget {
     }
 
     return GestureDetector(
-      onTap: (slot.status == SlotStatus.available || slot.status == SlotStatus.selected)
+      onTap:
+          (slot.status == SlotStatus.available ||
+              slot.status == SlotStatus.selected)
           ? () {
               HapticFeedback.lightImpact();
               context.read<BookingCubit>().toggleSlotSelection(slot.slotId);
@@ -280,7 +299,9 @@ class _BookingView extends StatelessWidget {
             slot.timeRange,
             style: GoogleFonts.inter(
               fontSize: 13,
-              fontWeight: slot.status == SlotStatus.selected ? FontWeight.w800 : FontWeight.w600,
+              fontWeight: slot.status == SlotStatus.selected
+                  ? FontWeight.w800
+                  : FontWeight.w600,
               color: textColor,
             ),
           ),
@@ -298,13 +319,19 @@ class _BookingView extends StatelessWidget {
           decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(3),
-            border: hasBorder ? Border.all(color: const Color(0xFFDDDDDD)) : null,
+            border: hasBorder
+                ? Border.all(color: const Color(0xFFDDDDDD))
+                : null,
           ),
         ),
         const SizedBox(width: 6),
         Text(
           label,
-          style: GoogleFonts.inter(fontSize: 10, color: AppColors.textGrey, fontWeight: FontWeight.w500),
+          style: GoogleFonts.inter(
+            fontSize: 10,
+            color: AppColors.textGrey,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );
@@ -316,7 +343,11 @@ class _BookingView extends StatelessWidget {
       children: [
         Text(
           'THANH TOÁN',
-          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF1B5E20)),
+          style: GoogleFonts.inter(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF1B5E20),
+          ),
         ),
         const SizedBox(height: 16),
         // Promotion Card
@@ -334,7 +365,11 @@ class _BookingView extends StatelessWidget {
         // Payment Method
         Text(
           'Hình thức thanh toán',
-          style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark),
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textDark,
+          ),
         ),
         const SizedBox(height: 12),
         Row(
@@ -370,16 +405,26 @@ class _BookingView extends StatelessWidget {
           ),
           child: Column(
             children: [
-              _buildPriceRow('Đơn giá:', '${context.read<BookingCubit>().pitch.price.toStringAsFixed(0)}k đ/h'),
+              _buildPriceRow(
+                'Đơn giá:',
+                '${context.read<BookingCubit>().pitch.price.toStringAsFixed(0)}k đ/h',
+              ),
               const SizedBox(height: 8),
-              _buildPriceRow('Số giờ chọn:', '${state.selectedSlotIds.length} giờ'),
+              _buildPriceRow(
+                'Số giờ chọn:',
+                '${state.selectedSlotIds.length} giờ',
+              ),
               const Divider(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     'Tổng thanh toán:',
-                    style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark),
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textDark,
+                    ),
                   ),
                   Text(
                     '${state.totalAmount.toStringAsFixed(0)}k đ',
@@ -404,8 +449,8 @@ class _BookingView extends StatelessWidget {
         final user = (authState is AuthSuccess)
             ? authState.authToken.user
             : (authState is AuthOtpVerified)
-                ? authState.authToken.user
-                : null;
+            ? authState.authToken.user
+            : null;
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -449,8 +494,21 @@ class _BookingView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark)),
-                  Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textGrey)),
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: AppColors.textGrey,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -462,7 +520,11 @@ class _BookingView extends StatelessWidget {
               ),
               child: Text(
                 actionLabel,
-                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primaryRed),
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primaryRed,
+                ),
               ),
             ),
           ],
@@ -471,7 +533,13 @@ class _BookingView extends StatelessWidget {
     );
   }
 
-  Widget _buildPaymentMethod(BuildContext context, String label, IconData icon, bool isSelected, VoidCallback onTap) {
+  Widget _buildPaymentMethod(
+    BuildContext context,
+    String label,
+    IconData icon,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -511,8 +579,18 @@ class _BookingView extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: GoogleFonts.inter(fontSize: 13, color: AppColors.textGrey)),
-        Text(value, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+        Text(
+          label,
+          style: GoogleFonts.inter(fontSize: 13, color: AppColors.textGrey),
+        ),
+        Text(
+          value,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textDark,
+          ),
+        ),
       ],
     );
   }
@@ -526,13 +604,15 @@ class _BookingView extends StatelessWidget {
               final user = (authState is AuthSuccess)
                   ? authState.authToken.user
                   : (authState is AuthOtpVerified)
-                      ? authState.authToken.user
-                      : null;
+                  ? authState.authToken.user
+                  : null;
               if (user != null) {
                 context.read<BookingCubit>().confirmBooking(user.userId);
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Vui lòng đăng nhập để đặt sân')),
+                  const SnackBar(
+                    content: Text('Vui lòng đăng nhập để đặt sân'),
+                  ),
                 );
               }
             },
@@ -591,62 +671,64 @@ class _BookingView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.error_outline_rounded,
-              color: AppColors.primaryRed,
-              size: 48,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Đã có lỗi xảy ra',
-            style: GoogleFonts.inter(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textDark,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            message.contains('404')
-                ? 'Không tìm thấy thông tin khung giờ cho sân này. Vui lòng kiểm tra lại.'
-                : 'Không thể tải thông tin khung giờ. Vui lòng kiểm tra kết nối mạng và thử lại.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: AppColors.textGrey,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: 160,
-            child: ElevatedButton(
-              onPressed: () => context.read<BookingCubit>().loadSlots(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1B5E20), // Dark green
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                shape: BoxShape.circle,
               ),
-              child: Text(
-                'Thử lại',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+              child: const Icon(
+                Icons.error_outline_rounded,
+                color: AppColors.primaryRed,
+                size: 48,
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 24),
+            Text(
+              'Đã có lỗi xảy ra',
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textDark,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message.contains('404')
+                  ? 'Không tìm thấy thông tin khung giờ cho sân này. Vui lòng kiểm tra lại.'
+                  : 'Không thể tải thông tin khung giờ. Vui lòng kiểm tra kết nối mạng và thử lại.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: AppColors.textGrey,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: 160,
+              child: ElevatedButton(
+                onPressed: () => context.read<BookingCubit>().loadSlots(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1B5E20), // Dark green
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  'Thử lại',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   void _showSuccessDialog(BuildContext context) {
     showDialog(
@@ -657,17 +739,29 @@ class _BookingView extends StatelessWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.check_circle_outline_rounded, color: Colors.green, size: 80),
+            const Icon(
+              Icons.check_circle_outline_rounded,
+              color: Colors.green,
+              size: 80,
+            ),
             const SizedBox(height: 16),
             Text(
               'ĐẶT SÂN THÀNH CÔNG',
-              style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textDark),
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: AppColors.textDark,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               'Đơn đặt sân của bạn đang được xử lý. Bạn có thể xem lại trong lịch sử đặt sân.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.textGrey, height: 1.5),
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: AppColors.textGrey,
+                height: 1.5,
+              ),
             ),
           ],
         ),
@@ -679,7 +773,10 @@ class _BookingView extends StatelessWidget {
             },
             child: Text(
               'Xong',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w800, color: AppColors.primaryRed),
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w800,
+                color: AppColors.primaryRed,
+              ),
             ),
           ),
         ],

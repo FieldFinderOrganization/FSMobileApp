@@ -1036,18 +1036,18 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                 child: ScaleTransition(
                   scale: _fabScaleAnimation,
                   child: GestureDetector(
-                      onTap: () {
-                        HapticFeedback.mediumImpact();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => BookingScreen(
-                              pitch: widget.pitch,
-                              selectedDate: _selectedDate,
-                            ),
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => BookingScreen(
+                            pitch: widget.pitch,
+                            selectedDate: _selectedDate,
                           ),
-                        );
-                      },
+                        ),
+                      );
+                    },
                     child: Container(
                       height: 52,
                       decoration: BoxDecoration(
