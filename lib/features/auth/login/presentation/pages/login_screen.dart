@@ -3,10 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../../../core/network/dio_client.dart';
-import '../../../../../core/storage/token_storage.dart';
-import '../../../data/datasources/auth_remote_datasource.dart';
-import '../../../data/repositories/auth_repository_impl.dart';
+
 import '../../../register/presentation/pages/register_screen.dart';
 import '../../../otp/presentation/pages/otp_screen.dart';
 import '../../../forgot_password/presentation/pages/forgot_password_screen.dart';
@@ -20,16 +17,7 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokenStorage = TokenStorage();
-    final dioClient = DioClient(tokenStorage);
-    final datasource = AuthRemoteDatasource(dioClient.dio);
-    final repository = AuthRepositoryImpl(datasource);
-
-    return BlocProvider(
-      create: (_) =>
-          AuthCubit(authRepository: repository, tokenStorage: tokenStorage),
-      child: const _LoginScreenBody(),
-    );
+    return const _LoginScreenBody();
   }
 }
 

@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../../core/network/dio_client.dart';
-import '../../../../../core/storage/token_storage.dart';
-import '../../../data/datasources/auth_remote_datasource.dart';
-import '../../../data/repositories/auth_repository_impl.dart';
+
+import '../../../domain/repositories/auth_repository.dart';
 import '../../../shared/auth_widgets.dart';
 import '../bloc/forgot_password_cubit.dart';
 import '../bloc/forgot_password_state.dart';
@@ -16,13 +14,10 @@ class ForgotPasswordScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokenStorage = TokenStorage();
-    final dioClient = DioClient(tokenStorage);
-    final datasource = AuthRemoteDatasource(dioClient.dio);
-    final repository = AuthRepositoryImpl(datasource);
-
     return BlocProvider(
-      create: (_) => ForgotPasswordCubit(authRepository: repository),
+      create: (context) => ForgotPasswordCubit(
+        authRepository: context.read<AuthRepository>(),
+      ),
       child: const _ForgotPasswordBody(),
     );
   }

@@ -12,8 +12,6 @@ import '../../../../core/storage/token_storage.dart';
 import '../../../../features/auth/login/presentation/pages/login_screen.dart';
 import '../../../../core/constants/app_colors.dart';
 
-/// Wrapper tạo BlocProvider riêng — tránh ProviderNotFoundError
-/// khi LoginScreen bị xóa khỏi widget tree sau pushAndRemoveUntil.
 class ProfileScreen extends StatelessWidget {
   final UserEntity user;
 
@@ -21,16 +19,7 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokenStorage = TokenStorage();
-    final dioClient = DioClient(tokenStorage);
-    final datasource = AuthRemoteDatasource(dioClient.dio);
-    final repository = AuthRepositoryImpl(datasource);
-
-    return BlocProvider(
-      create: (_) =>
-          AuthCubit(authRepository: repository, tokenStorage: tokenStorage),
-      child: _ProfileBody(user: user),
-    );
+    return _ProfileBody(user: user);
   }
 }
 

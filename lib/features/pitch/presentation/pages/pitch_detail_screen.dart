@@ -12,6 +12,7 @@ import '../../data/datasources/review_remote_datasource.dart';
 import '../../data/repositories/pitch_repository_impl.dart';
 import '../../domain/entities/pitch_entity.dart';
 import '../../domain/entities/review_entity.dart';
+import './booking_screen.dart';
 
 class PitchDetailScreen extends StatefulWidget {
   final PitchEntity pitch;
@@ -57,8 +58,8 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) {
-        final tokenStorage = TokenStorage();
-        final dioClient = DioClient(tokenStorage);
+        final tokenStorage = context.read<TokenStorage>();
+        final dioClient = context.read<DioClient>();
         final pitchDatasource = PitchRemoteDatasource(dioClient.dio);
         final reviewDatasource = ReviewRemoteDatasource(dioClient.dio);
         final repository = PitchRepositoryImpl(
@@ -1035,22 +1036,18 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                 child: ScaleTransition(
                   scale: _fabScaleAnimation,
                   child: GestureDetector(
-                    onTap: () {
-                      HapticFeedback.mediumImpact();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Đặt sân ${widget.pitch.name} - ${_formatDate(_selectedDate)}',
-                            style: GoogleFonts.inter(color: Colors.white),
+                      onTap: () {
+                        HapticFeedback.mediumImpact();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => BookingScreen(
+                              pitch: widget.pitch,
+                              selectedDate: _selectedDate,
+                            ),
                           ),
-                          backgroundColor: AppColors.primaryRed,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                      );
-                    },
+                        );
+                      },
                     child: Container(
                       height: 52,
                       decoration: BoxDecoration(

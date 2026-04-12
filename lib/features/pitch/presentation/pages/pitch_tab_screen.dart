@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/dio_client.dart';
-import '../../../../core/storage/token_storage.dart';
 import '../../../home/data/datasources/home_remote_datasource.dart';
 import '../../../home/data/repositories/home_repository_impl.dart';
 import '../../domain/entities/pitch_entity.dart';
@@ -18,13 +17,12 @@ class PitchTabScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokenStorage = TokenStorage();
-    final dioClient = DioClient(tokenStorage);
-    final datasource = HomeRemoteDatasource(dioClient.dio);
-    final repository = HomeRepositoryImpl(datasource);
-
     return BlocProvider(
-      create: (_) => HomeCubit(repository: repository)..loadAll(),
+      create: (_) => HomeCubit(
+        repository: HomeRepositoryImpl(
+          HomeRemoteDatasource(context.read<DioClient>().dio),
+        ),
+      )..loadAll(),
       child: const _PitchTabBody(),
     );
   }
