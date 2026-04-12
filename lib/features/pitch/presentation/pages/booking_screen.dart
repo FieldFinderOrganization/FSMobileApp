@@ -271,7 +271,7 @@ class _BookingView extends StatelessWidget {
         border = Border.all(color: const Color(0xFF2E7D32), width: 1.5);
         break;
       case SlotStatus.available:
-      default:
+        // default:
         bgColor = Colors.white;
         textColor = AppColors.textDark;
         border = Border.all(color: const Color(0xFFEEEEEE));
@@ -632,7 +632,7 @@ class _BookingView extends StatelessWidget {
               ? []
               : [
                   BoxShadow(
-                    color: Colors.red.withOpacity(0.3),
+                    color: Colors.red.withValues(alpha: 0.3),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -674,7 +674,7 @@ class _BookingView extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(

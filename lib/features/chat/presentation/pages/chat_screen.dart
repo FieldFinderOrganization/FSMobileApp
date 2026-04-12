@@ -19,7 +19,7 @@ class ChatScreen extends StatelessWidget {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: AppColors.primaryRed.withOpacity(0.08),
+                  color: AppColors.primaryRed.withValues(alpha: 0.08),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(

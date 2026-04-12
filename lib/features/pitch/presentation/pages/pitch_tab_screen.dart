@@ -74,11 +74,15 @@ class _PitchTabBodyState extends State<_PitchTabBody>
   List<PitchEntity> _filteredPitches(List<PitchEntity> pitches) {
     if (_query.isEmpty) return pitches; // show all khi chưa search
     final q = _query.toLowerCase();
-    var result = pitches.where((p) =>
-        p.name.toLowerCase().contains(q) ||
-        p.displayType.toLowerCase().contains(q) ||
-        p.environment.toLowerCase().contains(q) ||
-        p.address.toLowerCase().contains(q)).toList();
+    var result = pitches
+        .where(
+          (p) =>
+              p.name.toLowerCase().contains(q) ||
+              p.displayType.toLowerCase().contains(q) ||
+              p.environment.toLowerCase().contains(q) ||
+              p.address.toLowerCase().contains(q),
+        )
+        .toList();
     if (_selectedDistrict.isNotEmpty) {
       result = result.where((p) => p.district == _selectedDistrict).toList();
     }
@@ -88,10 +92,14 @@ class _PitchTabBodyState extends State<_PitchTabBody>
   List<ProductEntity> _filteredProducts(List<ProductEntity> products) {
     if (_query.isEmpty) return [];
     final q = _query.toLowerCase();
-    return products.where((p) =>
-        p.name.toLowerCase().contains(q) ||
-        p.brand.toLowerCase().contains(q) ||
-        p.categoryName.toLowerCase().contains(q)).toList();
+    return products
+        .where(
+          (p) =>
+              p.name.toLowerCase().contains(q) ||
+              p.brand.toLowerCase().contains(q) ||
+              p.categoryName.toLowerCase().contains(q),
+        )
+        .toList();
   }
 
   List<String> _availableDistricts(List<PitchEntity> pitches) {
@@ -104,12 +112,9 @@ class _PitchTabBodyState extends State<_PitchTabBody>
                 p.environment.toLowerCase().contains(q) ||
                 p.address.toLowerCase().contains(q);
           });
-    final districts = base
-        .map((p) => p.district)
-        .where((d) => d.isNotEmpty)
-        .toSet()
-        .toList()
-      ..sort();
+    final districts =
+        base.map((p) => p.district).where((d) => d.isNotEmpty).toSet().toList()
+          ..sort();
     return districts;
   }
 
@@ -140,12 +145,7 @@ class _PitchTabBodyState extends State<_PitchTabBody>
 
                 // ── Content ────────────────────────────────────────────────
                 Expanded(
-                  child: _buildContent(
-                    context,
-                    state,
-                    pitches,
-                    products,
-                  ),
+                  child: _buildContent(context, state, pitches, products),
                 ),
               ],
             ),
@@ -193,8 +193,11 @@ class _PitchTabBodyState extends State<_PitchTabBody>
           else
             IconButton(
               onPressed: () => context.read<HomeCubit>().refresh(),
-              icon: const Icon(Icons.refresh_rounded,
-                  color: AppColors.textGrey, size: 22),
+              icon: const Icon(
+                Icons.refresh_rounded,
+                color: AppColors.textGrey,
+                size: 22,
+              ),
             ),
         ],
       ),
@@ -226,8 +229,11 @@ class _PitchTabBodyState extends State<_PitchTabBody>
             ),
             suffixIcon: _query.isNotEmpty
                 ? IconButton(
-                    icon: const Icon(Icons.clear_rounded,
-                        size: 18, color: Color(0xFFAAAAAA)),
+                    icon: const Icon(
+                      Icons.clear_rounded,
+                      size: 18,
+                      color: Color(0xFFAAAAAA),
+                    ),
                     onPressed: () {
                       _controller.clear();
                       _onQueryChanged('');
@@ -253,7 +259,7 @@ class _PitchTabBodyState extends State<_PitchTabBody>
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: districts.length + 1,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemBuilder: (_, i) {
               if (i == 0) {
                 return _DistrictChip(
@@ -303,14 +309,15 @@ class _PitchTabBodyState extends State<_PitchTabBody>
             const SizedBox(height: 12),
             Text(
               'Không thể tải dữ liệu',
-              style: GoogleFonts.inter(
-                  fontSize: 15, color: AppColors.textGrey),
+              style: GoogleFonts.inter(fontSize: 15, color: AppColors.textGrey),
             ),
             const SizedBox(height: 12),
             TextButton(
               onPressed: () => context.read<HomeCubit>().refresh(),
-              child: const Text('Thử lại',
-                  style: TextStyle(color: AppColors.primaryRed)),
+              child: const Text(
+                'Thử lại',
+                style: TextStyle(color: AppColors.primaryRed),
+              ),
             ),
           ],
         ),
@@ -322,19 +329,16 @@ class _PitchTabBodyState extends State<_PitchTabBody>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.search_off_rounded,
-                size: 72, color: Colors.grey[200]),
+            Icon(Icons.search_off_rounded, size: 72, color: Colors.grey[200]),
             const SizedBox(height: 16),
             Text(
               'Không tìm thấy sân',
-              style: GoogleFonts.inter(
-                  fontSize: 15, color: Colors.grey[400]),
+              style: GoogleFonts.inter(fontSize: 15, color: Colors.grey[400]),
             ),
             const SizedBox(height: 6),
             Text(
               'Thử tìm với từ khoá khác',
-              style: GoogleFonts.inter(
-                  fontSize: 12, color: Colors.grey[350]),
+              style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[350]),
             ),
           ],
         ),
@@ -348,7 +352,7 @@ class _PitchTabBodyState extends State<_PitchTabBody>
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: pitches.length,
-        separatorBuilder: (_, __) =>
+        separatorBuilder: (_, _) =>
             const Divider(height: 1, indent: 80, color: Color(0xFFF0F0F0)),
         itemBuilder: (_, i) => _PitchListItem(pitch: pitches[i]),
       ),
@@ -407,102 +411,103 @@ class _PitchListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => PitchDetailScreen(pitch: pitch),
-        ),
+        MaterialPageRoute(builder: (_) => PitchDetailScreen(pitch: pitch)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          // Thumbnail
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: pitch.primaryImage.isNotEmpty
-                ? Image.network(
-                    pitch.primaryImage,
-                    width: 64,
-                    height: 64,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _placeholder(),
-                  )
-                : _placeholder(),
-          ),
-          const SizedBox(width: 12),
-          // Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  pitch.name,
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textDark,
+        child: Row(
+          children: [
+            // Thumbnail
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: pitch.primaryImage.isNotEmpty
+                  ? Image.network(
+                      pitch.primaryImage,
+                      width: 64,
+                      height: 64,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => _placeholder(),
+                    )
+                  : _placeholder(),
+            ),
+            const SizedBox(width: 12),
+            // Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    pitch.name,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textDark,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '${pitch.displayType} · ${pitch.environment}',
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    color: AppColors.textGrey,
+                  const SizedBox(height: 3),
+                  Text(
+                    '${pitch.displayType} · ${pitch.environment}',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: AppColors.textGrey,
+                    ),
                   ),
-                ),
-                if (pitch.district.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on_outlined,
-                          size: 11, color: AppColors.textGrey),
-                      const SizedBox(width: 2),
-                      Expanded(
-                        child: Text(
-                          pitch.district,
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            color: AppColors.textGrey,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                  if (pitch.district.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_outlined,
+                          size: 11,
+                          color: AppColors.textGrey,
                         ),
-                      ),
-                    ],
-                  ),
+                        const SizedBox(width: 2),
+                        Expanded(
+                          child: Text(
+                            pitch.district,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: AppColors.textGrey,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Price badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.primaryRed,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              '${pitch.price.toStringAsFixed(0)}k/h',
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            // Price badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primaryRed,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '${pitch.price.toStringAsFixed(0)}k/h',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 
   Widget _placeholder() => Container(
-        width: 64,
-        height: 64,
-        color: const Color(0xFFF0F0F0),
-        child: const Icon(Icons.sports_soccer, color: Colors.grey, size: 24),
-      );
+    width: 64,
+    height: 64,
+    color: const Color(0xFFF0F0F0),
+    child: const Icon(Icons.sports_soccer, color: Colors.grey, size: 24),
+  );
 }

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:provider/provider.dart';
 
 import 'core/network/dio_client.dart';
 import 'core/storage/token_storage.dart';
@@ -52,10 +51,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'FS Mobile App',
-      theme: ThemeData(
-        primarySwatch: Colors.red,
-        useMaterial3: true,
-      ),
+      theme: ThemeData(primarySwatch: Colors.red, useMaterial3: true),
       home: const WelcomeScreen(),
     );
   }

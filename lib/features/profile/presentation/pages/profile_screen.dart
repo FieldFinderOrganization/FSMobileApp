@@ -159,7 +159,7 @@ class _ProfileBody extends StatelessWidget {
             border: Border.all(color: AppColors.primaryRed, width: 2.5),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primaryRed.withOpacity(0.18),
+                color: AppColors.primaryRed.withValues(alpha: 0.18),
                 blurRadius: 18,
                 spreadRadius: 2,
               ),
@@ -189,7 +189,10 @@ class _ProfileBody extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 2.5),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 4,
+                ),
               ],
             ),
           ),
@@ -223,9 +226,9 @@ class _ProfileBody extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
       decoration: BoxDecoration(
-        color: AppColors.primaryRed.withOpacity(0.08),
+        color: AppColors.primaryRed.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primaryRed.withOpacity(0.2)),
+        border: Border.all(color: AppColors.primaryRed.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -288,7 +291,7 @@ class _ProfileBody extends StatelessWidget {
         border: Border.all(color: const Color(0xFFEEEEEE)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 12,
             offset: const Offset(0, 3),
           ),
@@ -340,7 +343,7 @@ class _ProfileBody extends StatelessWidget {
         border: Border.all(color: const Color(0xFFEEEEEE)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 12,
             offset: const Offset(0, 3),
           ),
@@ -403,13 +406,13 @@ class _ProfileBody extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 14),
           side: BorderSide(
-            color: AppColors.primaryRed.withOpacity(0.4),
+            color: AppColors.primaryRed.withValues(alpha: 0.4),
             width: 1.5,
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          backgroundColor: AppColors.primaryRed.withOpacity(0.04),
+          backgroundColor: AppColors.primaryRed.withValues(alpha: 0.04),
         ),
       ),
     );
@@ -453,7 +456,9 @@ class _InfoRow extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: (iconColor ?? AppColors.primaryRed).withOpacity(0.08),
+                  color: (iconColor ?? AppColors.primaryRed).withValues(
+                    alpha: 0.08,
+                  ),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(

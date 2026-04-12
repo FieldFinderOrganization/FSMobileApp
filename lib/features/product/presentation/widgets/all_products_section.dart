@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../home/presentation/cubit/home_cubit.dart';
-import '../../../home/presentation/cubit/home_state.dart';
 import '../../../home/presentation/widgets/fade_in_section.dart';
 import 'product_card.dart';
 import '../../../home/presentation/widgets/section_header.dart';
@@ -16,7 +15,8 @@ class AllProductsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = state.productsStatus == LoadStatus.loading ||
+    final isLoading =
+        state.productsStatus == LoadStatus.loading ||
         state.productsStatus == LoadStatus.initial;
 
     return FadeInSection(
@@ -60,8 +60,7 @@ class AllProductsSection extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 mainAxisExtent: 250,
                 mainAxisSpacing: 12,
@@ -92,7 +91,7 @@ class AllProductsSection extends StatelessWidget {
         crossAxisSpacing: 12,
       ),
       itemCount: 6,
-      itemBuilder: (_, __) => ShimmerCard(
+      itemBuilder: (_, _) => ShimmerCard(
         width: double.infinity,
         height: double.infinity,
         borderRadius: BorderRadius.circular(12),
@@ -130,17 +129,17 @@ class _FilterBar extends StatelessWidget {
               _SortChip(
                 label: '↑ Tăng dần',
                 isActive: state.sortOption == SortOption.priceAsc,
-                onTap: () => context
-                    .read<HomeCubit>()
-                    .setSortOption(SortOption.priceAsc),
+                onTap: () => context.read<HomeCubit>().setSortOption(
+                  SortOption.priceAsc,
+                ),
               ),
               const SizedBox(width: 6),
               _SortChip(
                 label: '↓ Giảm dần',
                 isActive: state.sortOption == SortOption.priceDesc,
-                onTap: () => context
-                    .read<HomeCubit>()
-                    .setSortOption(SortOption.priceDesc),
+                onTap: () => context.read<HomeCubit>().setSortOption(
+                  SortOption.priceDesc,
+                ),
               ),
             ],
           ),
@@ -283,8 +282,9 @@ class _PaginationButtons extends StatelessWidget {
               duration: const Duration(milliseconds: 250),
               opacity: canCollapse ? 1.0 : 0.35,
               child: OutlinedButton.icon(
-                onPressed:
-                    canCollapse ? () => context.read<HomeCubit>().collapseProducts() : null,
+                onPressed: canCollapse
+                    ? () => context.read<HomeCubit>().collapseProducts()
+                    : null,
                 icon: const Icon(Icons.keyboard_arrow_up_rounded, size: 16),
                 label: Text(
                   'Ẩn bớt',
@@ -349,7 +349,8 @@ class _ParentCategoryChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = state.categoriesStatus == LoadStatus.loading ||
+    final isLoading =
+        state.categoriesStatus == LoadStatus.loading ||
         state.categoriesStatus == LoadStatus.initial;
 
     if (isLoading) {
@@ -359,12 +360,13 @@ class _ParentCategoryChips extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           itemCount: 5,
-          itemBuilder: (_, __) => Padding(
+          itemBuilder: (_, _) => Padding(
             padding: const EdgeInsets.only(right: 8, top: 4, bottom: 4),
             child: ShimmerCard(
-                width: 80,
-                height: 36,
-                borderRadius: BorderRadius.circular(8)),
+              width: 80,
+              height: 36,
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
         ),
       );
@@ -384,8 +386,11 @@ class _ParentCategoryChips extends StatelessWidget {
           final label = isAll ? 'Tất cả' : roots[index - 1].name;
           final value = isAll ? '' : roots[index - 1].name;
           final isActive = selected == value;
-          final hasChildren = !isAll &&
-              state.categories.any((c) => c.parentName == roots[index - 1].name);
+          final hasChildren =
+              !isAll &&
+              state.categories.any(
+                (c) => c.parentName == roots[index - 1].name,
+              );
 
           return Padding(
             padding: const EdgeInsets.only(right: 8, top: 4, bottom: 4),
@@ -393,8 +398,10 @@ class _ParentCategoryChips extends StatelessWidget {
               onTap: () => context.read<HomeCubit>().selectCategory(value),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: isActive
                       ? AppColors.primaryRed
@@ -459,15 +466,13 @@ class _SubCategoryChips extends StatelessWidget {
         children: subs.map((cat) {
           final isSelected = selectedSubs.contains(cat.name);
           return GestureDetector(
-            onTap: () =>
-                context.read<HomeCubit>().toggleSubCategory(cat.name),
+            onTap: () => context.read<HomeCubit>().toggleSubCategory(cat.name),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppColors.primaryRed.withOpacity(0.08)
+                    ? AppColors.primaryRed.withValues(alpha: 0.08)
                     : Colors.white,
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
@@ -483,22 +488,27 @@ class _SubCategoryChips extends StatelessWidget {
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 150),
                     child: isSelected
-                        ? const Icon(Icons.check_box_rounded,
+                        ? const Icon(
+                            Icons.check_box_rounded,
                             size: 14,
                             color: AppColors.primaryRed,
-                            key: ValueKey('checked'))
-                        : const Icon(Icons.check_box_outline_blank_rounded,
+                            key: ValueKey('checked'),
+                          )
+                        : const Icon(
+                            Icons.check_box_outline_blank_rounded,
                             size: 14,
                             color: Color(0xFFBBBBBB),
-                            key: ValueKey('unchecked')),
+                            key: ValueKey('unchecked'),
+                          ),
                   ),
                   const SizedBox(width: 5),
                   Text(
                     cat.name,
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.w400,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w400,
                       color: isSelected
                           ? AppColors.primaryRed
                           : AppColors.textDark,

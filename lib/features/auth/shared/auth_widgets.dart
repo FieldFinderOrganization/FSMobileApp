@@ -211,7 +211,7 @@ class AuthSocialButton extends StatelessWidget {
 class AuthBackground extends StatelessWidget {
   final Animation<double> floatAnim;
   final Size size;
-  final List<_BlobConfig> blobs;
+  final List<BlobConfig> blobs;
 
   const AuthBackground({
     super.key,
@@ -228,7 +228,7 @@ class AuthBackground extends StatelessWidget {
       floatAnim: floatAnim,
       size: size,
       blobs: [
-        _BlobConfig(
+        BlobConfig(
           top: -80,
           right: -80,
           width: 280,
@@ -237,7 +237,7 @@ class AuthBackground extends StatelessWidget {
           dxFactor: 0,
           dyFactor: 0.5,
         ),
-        _BlobConfig(
+        BlobConfig(
           bottom: 150,
           left: -60,
           width: 200,
@@ -255,10 +255,10 @@ class AuthBackground extends StatelessWidget {
     return Stack(children: blobs.map((b) => _buildBlob(b)).toList());
   }
 
-  Widget _buildBlob(_BlobConfig b) {
+  Widget _buildBlob(BlobConfig b) {
     Widget blob = AnimatedBuilder(
       animation: floatAnim,
-      builder: (_, __) => Transform.translate(
+      builder: (_, _) => Transform.translate(
         offset: Offset(
           floatAnim.value * b.dxFactor,
           floatAnim.value * b.dyFactor,
@@ -289,7 +289,7 @@ class AuthBackground extends StatelessWidget {
   }
 }
 
-class _BlobConfig {
+class BlobConfig {
   final double? top;
   final double? bottom;
   final double? left;
@@ -300,7 +300,7 @@ class _BlobConfig {
   final double dxFactor;
   final double dyFactor;
 
-  const _BlobConfig({
+  const BlobConfig({
     this.top,
     this.bottom,
     this.left,
