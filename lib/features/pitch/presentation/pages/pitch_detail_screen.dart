@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/network/dio_client.dart';
+import '../../../../core/storage/token_storage.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../cubit/pitch_detail_cubit.dart';
+import '../cubit/pitch_detail_state.dart';
+import '../../data/datasources/pitch_remote_datasource.dart';
+import '../../data/datasources/review_remote_datasource.dart';
+import '../../data/repositories/pitch_repository_impl.dart';
 import '../../domain/entities/pitch_entity.dart';
+import '../../domain/entities/review_entity.dart';
+import './booking_screen.dart';
 
 class PitchDetailScreen extends StatefulWidget {
   final PitchEntity pitch;
@@ -17,76 +27,10 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
     with SingleTickerProviderStateMixin {
   late PageController _imagePageController;
   int _currentImagePage = 0;
-
-  // Selected date
   DateTime _selectedDate = DateTime.now();
-
-  // Selected pitch type index
-  int _selectedTypeIndex = 0;
 
   late AnimationController _fabAnimController;
   late Animation<double> _fabScaleAnimation;
-
-  // Mock pitch type variants
-  List<_PitchTypeVariant> get _pitchTypes => [
-    _PitchTypeVariant(
-      label: 'Sân 5',
-      type: 'FIVE_A_SIDE',
-      price: widget.pitch.price,
-      available: true,
-    ),
-    _PitchTypeVariant(
-      label: 'Sân 7',
-      type: 'SEVEN_A_SIDE',
-      price: widget.pitch.price * 1.4,
-      available: true,
-    ),
-    _PitchTypeVariant(
-      label: 'Sân 11',
-      type: 'ELEVEN_A_SIDE',
-      price: widget.pitch.price * 2.0,
-      available: false,
-    ),
-  ];
-
-  // Mock reviews
-  static final List<_ReviewItem> _mockReviews = [
-    _ReviewItem(
-      name: 'Nguyễn Văn A',
-      avatar: 'N',
-      rating: 5,
-      comment:
-          'Sân rất đẹp, mặt cỏ tốt, ánh sáng ban đêm cực kỳ tốt. Nhân viên thân thiện và nhiệt tình.',
-      date: '10/04/2026',
-    ),
-    _ReviewItem(
-      name: 'Trần Minh B',
-      avatar: 'T',
-      rating: 4,
-      comment:
-          'Giá hợp lý, vị trí thuận tiện. Sân sạch sẽ, chỉ tiếc là bãi đỗ xe hơi chật.',
-      date: '08/04/2026',
-    ),
-    _ReviewItem(
-      name: 'Lê Thị C',
-      avatar: 'L',
-      rating: 5,
-      comment: 'Đặt sân dễ dàng, phục vụ chuyên nghiệp. Sẽ quay lại lần sau!',
-      date: '05/04/2026',
-    ),
-    _ReviewItem(
-      name: 'Phạm Quang D',
-      avatar: 'P',
-      rating: 3,
-      comment:
-          'Sân ổn, nhưng giờ cao điểm khá đông và ồn ào. Cần cải thiện khu vực phòng thay đồ.',
-      date: '01/04/2026',
-    ),
-  ];
-
-  double get _averageRating =>
-      _mockReviews.map((r) => r.rating).reduce((a, b) => a + b) /
-      _mockReviews.length;
 
   @override
   void initState() {
@@ -112,76 +56,119 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    final pitch = widget.pitch;
-    final images = pitch.imageUrls.isNotEmpty ? pitch.imageUrls : [''];
+    return BlocProvider(
+      create: (context) {
+        final tokenStorage = context.read<TokenStorage>();
+        final dioClient = context.read<DioClient>();
+        final pitchDatasource = PitchRemoteDatasource(dioClient.dio);
+        final reviewDatasource = ReviewRemoteDatasource(dioClient.dio);
+        final repository = PitchRepositoryImpl(
+          pitchRemoteDatasource: pitchDatasource,
+          reviewRemoteDatasource: reviewDatasource,
+        );
+        return PitchDetailCubit(repository)
+          ..loadPitchDetails(widget.pitch.pitchId);
+      },
+      child: BlocBuilder<PitchDetailCubit, PitchDetailState>(
+        builder: (context, state) {
+          if (state is PitchDetailLoading) {
+            return const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(color: AppColors.primaryRed),
+              ),
+            );
+          }
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          // ── Main scrollable content ──────────────────────────────────────
-          CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              // ── Image Gallery SliverAppBar ───────────────────────────────
-              _buildImageAppBar(images),
+          if (state is PitchDetailFailure) {
+            return Scaffold(body: Center(child: Text('Lỗi: ${state.message}')));
+          }
 
-              // ── Body ────────────────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ── Pitch Info ─────────────────────────────────────────
-                    _buildPitchInfo(pitch),
+          final pitch = (state is PitchDetailSuccess)
+              ? state.pitch
+              : widget.pitch;
+          final reviews = (state is PitchDetailSuccess)
+              ? state.reviews
+              : <ReviewEntity>[];
+          final images = pitch.imageUrls.isNotEmpty ? pitch.imageUrls : [''];
 
-                    const _SectionDivider(),
+          return Scaffold(
+            backgroundColor: Colors.white,
+            body: Stack(
+              children: [
+                // ── Main scrollable content ──────────────────────────────────────
+                CustomScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    // ── Image Gallery SliverAppBar ───────────────────────────────
+                    _buildImageAppBar(images),
 
-                    // ── Day Picker ─────────────────────────────────────────
-                    _buildDayPicker(),
+                    // ── Body ────────────────────────────────────────────────────
+                    SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // ── Pitch Info ─────────────────────────────────────────
+                          _buildPitchInfo(pitch, reviews),
 
-                    const _SectionDivider(),
+                          const _SectionDivider(),
 
-                    // ── Pitch Type & Price ────────────────────────────────
-                    _buildPitchTypes(),
+                          // ── Day Picker ─────────────────────────────────────────
+                          _buildDayPicker(),
 
-                    const _SectionDivider(),
+                          const _SectionDivider(),
 
-                    // ── More Images ────────────────────────────────────────
-                    if (images.length > 1) _buildImageGrid(images),
+                          // ── Pitch Price Info ───────────────────────────────────
+                          _buildPitchPriceInfo(pitch),
 
-                    if (images.length > 1) const _SectionDivider(),
+                          const _SectionDivider(),
 
-                    // ── Reviews ───────────────────────────────────────────
-                    _buildReviews(),
+                          // ── More Images ────────────────────────────────────────
+                          if (images.length > 1) _buildImageGrid(images),
 
-                    // Bottom padding for FAB
-                    const SizedBox(height: 100),
+                          if (images.length > 1) const _SectionDivider(),
+
+                          // ── Reviews ───────────────────────────────────────────
+                          _buildReviews(reviews),
+
+                          // Bottom padding for FAB
+                          const SizedBox(height: 100),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-              ),
-            ],
-          ),
 
-          // ── Back button ──────────────────────────────────────────────────
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 8,
-            left: 16,
-            child: _CircleButton(
-              icon: Icons.arrow_back_ios_new_rounded,
-              onTap: () => Navigator.of(context).pop(),
+                // ── Back button ──────────────────────────────────────────────────
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 8,
+                  left: 16,
+                  child: _CircleButton(
+                    icon: Icons.arrow_back_ios_new_rounded,
+                    onTap: () => Navigator.of(context).pop(),
+                  ),
+                ),
+
+                // ── Share button ─────────────────────────────────────────────────
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 8,
+                  right: 16,
+                  child: _CircleButton(
+                    icon: Icons.share_outlined,
+                    onTap: () {},
+                  ),
+                ),
+
+                // ── Booking FAB ──────────────────────────────────────────────────
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: _buildBookingBar(),
+                ),
+              ],
             ),
-          ),
-
-          // ── Share button ─────────────────────────────────────────────────
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 8,
-            right: 16,
-            child: _CircleButton(icon: Icons.share_outlined, onTap: () {}),
-          ),
-
-          // ── Booking FAB ──────────────────────────────────────────────────
-          Positioned(bottom: 0, left: 0, right: 0, child: _buildBookingBar()),
-        ],
+          );
+        },
       ),
     );
   }
@@ -285,7 +272,11 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
   // Pitch Info
   // ─────────────────────────────────────────────────────────────────────────
 
-  Widget _buildPitchInfo(PitchEntity pitch) {
+  Widget _buildPitchInfo(PitchEntity pitch, List<ReviewEntity> reviews) {
+    double avg = reviews.isEmpty
+        ? 0.0
+        : reviews.map((r) => r.rating).reduce((a, b) => a + b) / reviews.length;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
       child: Column(
@@ -327,7 +318,7 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      _averageRating.toStringAsFixed(1),
+                      avg.toStringAsFixed(1),
                       style: GoogleFonts.inter(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -335,7 +326,7 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                       ),
                     ),
                     Text(
-                      ' (${_mockReviews.length})',
+                      ' (${reviews.length})',
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         color: const Color(0xFF9E9E9E),
@@ -551,8 +542,11 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
   // Pitch Types & Pricing
   // ─────────────────────────────────────────────────────────────────────────
 
-  Widget _buildPitchTypes() {
-    final types = _pitchTypes;
+  // ─────────────────────────────────────────────────────────────────────────
+  // Pitch Price Info
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Widget _buildPitchPriceInfo(PitchEntity pitch) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
       child: Column(
@@ -561,13 +555,13 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
           Row(
             children: [
               const Icon(
-                Icons.grid_view_rounded,
+                Icons.payments_outlined,
                 size: 18,
                 color: AppColors.primaryRed,
               ),
               const SizedBox(width: 8),
               Text(
-                'Loại sân & Giá',
+                'Thông tin giá',
                 style: GoogleFonts.inter(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
@@ -577,135 +571,61 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
             ],
           ),
           const SizedBox(height: 14),
-          ...List.generate(types.length, (i) {
-            final t = types[i];
-            final isSelected = i == _selectedTypeIndex;
-            return GestureDetector(
-              onTap: t.available
-                  ? () {
-                      HapticFeedback.selectionClick();
-                      setState(() => _selectedTypeIndex = i);
-                    }
-                  : null,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.primaryRed.withOpacity(0.04)
-                      : const Color(0xFFF9F9F9),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isSelected
-                        ? AppColors.primaryRed
-                        : const Color(0xFFEEEEEE),
-                    width: isSelected ? 1.5 : 1,
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9F9F9),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFEEEEEE)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryRed.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.sports_soccer_rounded,
+                    color: AppColors.primaryRed,
+                    size: 24,
                   ),
                 ),
-                child: Row(
-                  children: [
-                    // Radio circle
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isSelected
-                            ? AppColors.primaryRed
-                            : Colors.transparent,
-                        border: Border.all(
-                          color: isSelected
-                              ? AppColors.primaryRed
-                              : const Color(0xFFCCCCCC),
-                          width: 2,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        pitch.displayType,
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
                         ),
                       ),
-                      child: isSelected
-                          ? const Icon(
-                              Icons.check_rounded,
-                              size: 14,
-                              color: Colors.white,
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 12),
-                    // Soccer icon
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColors.primaryRed.withOpacity(0.1)
-                            : const Color(0xFFEEEEEE),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        Icons.sports_soccer_rounded,
-                        size: 20,
-                        color: isSelected
-                            ? AppColors.primaryRed
-                            : AppColors.textGrey,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Type label
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            t.label,
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: t.available
-                                  ? AppColors.textDark
-                                  : AppColors.textGrey,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            t.available ? 'Còn sân' : 'Hết sân hôm nay',
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              color: t.available
-                                  ? const Color(0xFF2E7D32)
-                                  : Colors.red[300],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Price
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '${t.price.toStringAsFixed(0)}k',
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: isSelected
-                                ? AppColors.primaryRed
-                                : AppColors.textDark,
-                          ),
+                      Text(
+                        'Giá thuê cố định',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AppColors.textGrey,
                         ),
-                        Text(
-                          '/ giờ',
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            color: AppColors.textGrey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          }),
+                Text(
+                  '${pitch.price.toStringAsFixed(0)}k/h',
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primaryRed,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -804,7 +724,11 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
   // Reviews
   // ─────────────────────────────────────────────────────────────────────────
 
-  Widget _buildReviews() {
+  Widget _buildReviews(List<ReviewEntity> reviews) {
+    double avg = reviews.isEmpty
+        ? 0.0
+        : reviews.map((r) => r.rating).reduce((a, b) => a + b) / reviews.length;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Column(
@@ -838,7 +762,7 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    _averageRating.toStringAsFixed(1),
+                    avg.toStringAsFixed(1),
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -859,28 +783,42 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
           const SizedBox(height: 6),
 
           // Rating summary bar
-          _buildRatingSummary(),
+          _buildRatingSummary(reviews),
 
           const SizedBox(height: 16),
 
           // Individual reviews
-          ..._mockReviews.map((r) => _buildReviewCard(r)),
+          if (reviews.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: Text(
+                  'Chưa có đánh giá nào',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: AppColors.textGrey,
+                  ),
+                ),
+              ),
+            )
+          else
+            ...reviews.map((r) => _buildReviewCard(r)),
         ],
       ),
     );
   }
 
-  Widget _buildRatingSummary() {
+  Widget _buildRatingSummary(List<ReviewEntity> reviews) {
     final counts = <int, int>{5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
-    for (final r in _mockReviews) {
-      counts[r.rating] = (counts[r.rating] ?? 0) + 1;
+    for (final r in reviews) {
+      if (counts.containsKey(r.rating)) {
+        counts[r.rating] = (counts[r.rating] ?? 0) + 1;
+      }
     }
     return Column(
       children: [5, 4, 3, 2, 1].map((star) {
         final count = counts[star] ?? 0;
-        final fraction = _mockReviews.isEmpty
-            ? 0.0
-            : count / _mockReviews.length;
+        final fraction = reviews.isEmpty ? 0.0 : count / reviews.length;
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 2),
           child: Row(
@@ -931,7 +869,7 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
     );
   }
 
-  Widget _buildReviewCard(_ReviewItem review) {
+  Widget _buildReviewCard(ReviewEntity review) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
@@ -946,38 +884,26 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
           Row(
             children: [
               // Avatar
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.primaryRed,
-                      AppColors.primaryRed.withOpacity(0.7),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    review.avatar,
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
+              review.userImageUrl != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(19),
+                      child: Image.network(
+                        review.userImageUrl!,
+                        width: 38,
+                        height: 38,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            _buildLetterAvatar(review.userName),
+                      ),
+                    )
+                  : _buildLetterAvatar(review.userName),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      review.name,
+                      review.userName,
                       style: GoogleFonts.inter(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -985,7 +911,7 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                       ),
                     ),
                     Text(
-                      review.date,
+                      '${review.createdAt.day}/${review.createdAt.month}/${review.createdAt.year}',
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         color: AppColors.textGrey,
@@ -998,11 +924,11 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
               Row(
                 children: List.generate(5, (i) {
                   return Icon(
-                    i < review.rating
-                        ? Icons.star_rounded
-                        : Icons.star_outline_rounded,
+                    Icons.star_rounded,
                     size: 14,
-                    color: const Color(0xFFFFB300),
+                    color: i < review.rating
+                        ? const Color(0xFFFFB300)
+                        : const Color(0xFFEEEEEE),
                   );
                 }),
               ),
@@ -1013,7 +939,7 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
             review.comment,
             style: GoogleFonts.inter(
               fontSize: 13,
-              color: const Color(0xFF555555),
+              color: const Color(0xFF444444),
               height: 1.5,
             ),
           ),
@@ -1022,12 +948,36 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
     );
   }
 
+  Widget _buildLetterAvatar(String name) {
+    final letter = name.isNotEmpty ? name[0].toUpperCase() : 'U';
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: [AppColors.primaryRed, AppColors.primaryRed.withOpacity(0.7)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Text(
+          letter,
+          style: GoogleFonts.inter(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
   // ─────────────────────────────────────────────────────────────────────────
   // Booking Bottom Bar
   // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildBookingBar() {
-    final selectedType = _pitchTypes[_selectedTypeIndex];
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1051,7 +1001,7 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Giá từ',
+                    'Tổng thanh toán',
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       color: AppColors.textGrey,
@@ -1061,7 +1011,7 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                     text: TextSpan(
                       children: [
                         TextSpan(
-                          text: '${selectedType.price.toStringAsFixed(0)}k',
+                          text: '${widget.pitch.price.toStringAsFixed(0)}k',
                           style: GoogleFonts.inter(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
@@ -1088,16 +1038,12 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                   child: GestureDetector(
                     onTap: () {
                       HapticFeedback.mediumImpact();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Đặt sân ${widget.pitch.name} - ${_formatDate(_selectedDate)}',
-                            style: GoogleFonts.inter(color: Colors.white),
-                          ),
-                          backgroundColor: AppColors.primaryRed,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => BookingScreen(
+                            pitch: widget.pitch,
+                            selectedDate: _selectedDate,
                           ),
                         ),
                       );
@@ -1130,7 +1076,7 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Đặt sân ngay',
+                              'Đặt lịch ngay',
                               style: GoogleFonts.inter(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
@@ -1282,7 +1228,6 @@ class _ExpandableTextState extends State<_ExpandableText> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Data Models
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1297,21 +1242,5 @@ class _PitchTypeVariant {
     required this.type,
     required this.price,
     required this.available,
-  });
-}
-
-class _ReviewItem {
-  final String name;
-  final String avatar;
-  final int rating;
-  final String comment;
-  final String date;
-
-  const _ReviewItem({
-    required this.name,
-    required this.avatar,
-    required this.rating,
-    required this.comment,
-    required this.date,
   });
 }

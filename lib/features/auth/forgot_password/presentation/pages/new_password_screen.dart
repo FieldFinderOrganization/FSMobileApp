@@ -84,7 +84,8 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
       child: BlocConsumer<ForgotPasswordCubit, ForgotPasswordState>(
         // Chỉ gọi listener khi state thực sự thay đổi kiểu,
         // tránh setState rebuild khiến listener kích hoạt nhiều lần.
-        listenWhen: (previous, current) => previous.runtimeType != current.runtimeType,
+        listenWhen: (previous, current) =>
+            previous.runtimeType != current.runtimeType,
         listener: (context, state) {
           if (state is PasswordResetSuccess) {
             ScaffoldMessenger.of(context)
@@ -92,7 +93,8 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
               ..showSnackBar(
                 const SnackBar(
                   content: Text(
-                      'Đặt lại mật khẩu thành công! Vui lòng đăng nhập.'),
+                    'Đặt lại mật khẩu thành công! Vui lòng đăng nhập.',
+                  ),
                   backgroundColor: Colors.green,
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -140,7 +142,8 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
                         child: SingleChildScrollView(
                           physics: const BouncingScrollPhysics(),
                           padding: EdgeInsets.symmetric(
-                              horizontal: size.width * 0.07),
+                            horizontal: size.width * 0.07,
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -155,8 +158,10 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
                                 isVisible: _isPasswordVisible,
                                 errorText: _passwordError,
                                 onChanged: _validatePassword,
-                                onToggleVisibility: () => setState(() =>
-                                    _isPasswordVisible = !_isPasswordVisible),
+                                onToggleVisibility: () => setState(
+                                  () =>
+                                      _isPasswordVisible = !_isPasswordVisible,
+                                ),
                               ),
                               const SizedBox(height: 12),
                               AuthTextField(
@@ -167,8 +172,9 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
                                 isVisible: _isConfirmVisible,
                                 errorText: _confirmError,
                                 onChanged: _validateConfirm,
-                                onToggleVisibility: () => setState(() =>
-                                    _isConfirmVisible = !_isConfirmVisible),
+                                onToggleVisibility: () => setState(
+                                  () => _isConfirmVisible = !_isConfirmVisible,
+                                ),
                               ),
                               const SizedBox(height: 32),
                               AuthPrimaryButton(
@@ -179,7 +185,9 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
                                   _validatePassword(_passwordController.text);
                                   _validateConfirm(_confirmController.text);
                                   if (_passwordError != null ||
-                                      _confirmError != null) return;
+                                      _confirmError != null) {
+                                    return;
+                                  }
                                   context
                                       .read<ForgotPasswordCubit>()
                                       .resetPassword(
@@ -201,7 +209,9 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
                       color: Colors.white.withValues(alpha: 0.6),
                       child: const Center(
                         child: CircularProgressIndicator(
-                            color: _primaryRed, strokeWidth: 2.5),
+                          color: _primaryRed,
+                          strokeWidth: 2.5,
+                        ),
                       ),
                     ),
                   ),
@@ -232,14 +242,18 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
         RichText(
           text: TextSpan(
             style: GoogleFonts.inter(
-                fontSize: 13, color: const Color(0xFF888888), height: 1.5),
+              fontSize: 13,
+              color: const Color(0xFF888888),
+              height: 1.5,
+            ),
             children: [
               const TextSpan(text: 'Đặt lại mật khẩu cho\n'),
               TextSpan(
                 text: widget.email,
                 style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF444444)),
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF444444),
+                ),
               ),
             ],
           ),

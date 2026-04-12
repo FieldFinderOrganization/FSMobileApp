@@ -39,8 +39,7 @@ class AuthTextField extends StatelessWidget {
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            color:
-                hasError ? const Color(0xFFFFEEEE) : const Color(0xFFF7F7F7),
+            color: hasError ? const Color(0xFFFFEEEE) : const Color(0xFFF7F7F7),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: hasError
@@ -253,9 +252,7 @@ class AuthBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: blobs.map((b) => _buildBlob(b)).toList(),
-    );
+    return Stack(children: blobs.map((b) => _buildBlob(b)).toList());
   }
 
   Widget _buildBlob(_BlobConfig b) {
@@ -271,10 +268,12 @@ class AuthBackground extends StatelessWidget {
           height: b.height,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: RadialGradient(colors: [
-              _primaryRed.withValues(alpha: b.alpha),
-              _primaryRed.withValues(alpha: 0.0),
-            ]),
+            gradient: RadialGradient(
+              colors: [
+                _primaryRed.withValues(alpha: b.alpha),
+                _primaryRed.withValues(alpha: 0.0),
+              ],
+            ),
           ),
         ),
       ),
