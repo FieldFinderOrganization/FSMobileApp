@@ -26,37 +26,10 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
     with SingleTickerProviderStateMixin {
   late PageController _imagePageController;
   int _currentImagePage = 0;
-
-  // Selected date
   DateTime _selectedDate = DateTime.now();
-
-  // Selected pitch type index
-  int _selectedTypeIndex = 0;
 
   late AnimationController _fabAnimController;
   late Animation<double> _fabScaleAnimation;
-
-  // Simulated pitch type variants (to be replaced by real API data later)
-  List<_PitchTypeVariant> get _pitchTypes => [
-    _PitchTypeVariant(
-      label: 'Sân 5',
-      type: 'FIVE_A_SIDE',
-      price: widget.pitch.price,
-      available: true,
-    ),
-    _PitchTypeVariant(
-      label: 'Sân 7',
-      type: 'SEVEN_A_SIDE',
-      price: widget.pitch.price * 1.4,
-      available: true,
-    ),
-    _PitchTypeVariant(
-      label: 'Sân 11',
-      type: 'ELEVEN_A_SIDE',
-      price: widget.pitch.price * 2.0,
-      available: false,
-    ),
-  ];
 
   @override
   void initState() {
@@ -143,8 +116,8 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
 
                           const _SectionDivider(),
 
-                          // ── Pitch Type & Price ────────────────────────────────
-                          _buildPitchTypes(),
+                          // ── Pitch Price Info ───────────────────────────────────
+                          _buildPitchPriceInfo(pitch),
 
                           const _SectionDivider(),
 
@@ -568,8 +541,11 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
   // Pitch Types & Pricing
   // ─────────────────────────────────────────────────────────────────────────
 
-  Widget _buildPitchTypes() {
-    final types = _pitchTypes;
+  // ─────────────────────────────────────────────────────────────────────────
+  // Pitch Price Info
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Widget _buildPitchPriceInfo(PitchEntity pitch) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
       child: Column(
@@ -578,13 +554,13 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
           Row(
             children: [
               const Icon(
-                Icons.grid_view_rounded,
+                Icons.payments_outlined,
                 size: 18,
                 color: AppColors.primaryRed,
               ),
               const SizedBox(width: 8),
               Text(
-                'Loại sân & Giá',
+                'Thông tin giá',
                 style: GoogleFonts.inter(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
@@ -594,135 +570,61 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
             ],
           ),
           const SizedBox(height: 14),
-          ...List.generate(types.length, (i) {
-            final t = types[i];
-            final isSelected = i == _selectedTypeIndex;
-            return GestureDetector(
-              onTap: t.available
-                  ? () {
-                      HapticFeedback.selectionClick();
-                      setState(() => _selectedTypeIndex = i);
-                    }
-                  : null,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.primaryRed.withOpacity(0.04)
-                      : const Color(0xFFF9F9F9),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isSelected
-                        ? AppColors.primaryRed
-                        : const Color(0xFFEEEEEE),
-                    width: isSelected ? 1.5 : 1,
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9F9F9),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFEEEEEE)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryRed.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.sports_soccer_rounded,
+                    color: AppColors.primaryRed,
+                    size: 24,
                   ),
                 ),
-                child: Row(
-                  children: [
-                    // Radio circle
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isSelected
-                            ? AppColors.primaryRed
-                            : Colors.transparent,
-                        border: Border.all(
-                          color: isSelected
-                              ? AppColors.primaryRed
-                              : const Color(0xFFCCCCCC),
-                          width: 2,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        pitch.displayType,
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
                         ),
                       ),
-                      child: isSelected
-                          ? const Icon(
-                              Icons.check_rounded,
-                              size: 14,
-                              color: Colors.white,
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 12),
-                    // Soccer icon
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColors.primaryRed.withOpacity(0.1)
-                            : const Color(0xFFEEEEEE),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        Icons.sports_soccer_rounded,
-                        size: 20,
-                        color: isSelected
-                            ? AppColors.primaryRed
-                            : AppColors.textGrey,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Type label
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            t.label,
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: t.available
-                                  ? AppColors.textDark
-                                  : AppColors.textGrey,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            t.available ? 'Còn sân' : 'Hết sân hôm nay',
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              color: t.available
-                                  ? const Color(0xFF2E7D32)
-                                  : Colors.red[300],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Price
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '${t.price.toStringAsFixed(0)}k',
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: isSelected
-                                ? AppColors.primaryRed
-                                : AppColors.textDark,
-                          ),
+                      Text(
+                        'Giá thuê cố định',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AppColors.textGrey,
                         ),
-                        Text(
-                          '/ giờ',
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            color: AppColors.textGrey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          }),
+                Text(
+                  '${pitch.price.toStringAsFixed(0)}k/h',
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primaryRed,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -1075,7 +977,6 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
   // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildBookingBar() {
-    final selectedType = _pitchTypes[_selectedTypeIndex];
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1099,7 +1000,7 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Giá từ',
+                    'Tổng thanh toán',
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       color: AppColors.textGrey,
@@ -1109,7 +1010,7 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                     text: TextSpan(
                       children: [
                         TextSpan(
-                          text: '${selectedType.price.toStringAsFixed(0)}k',
+                          text: '${widget.pitch.price.toStringAsFixed(0)}k',
                           style: GoogleFonts.inter(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
@@ -1178,7 +1079,7 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Đặt sân ngay',
+                              'Đặt lịch ngay',
                               style: GoogleFonts.inter(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
@@ -1330,7 +1231,6 @@ class _ExpandableTextState extends State<_ExpandableText> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Data Models
 // ─────────────────────────────────────────────────────────────────────────────
 
