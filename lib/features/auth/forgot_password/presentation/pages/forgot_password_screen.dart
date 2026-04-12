@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../../core/network/dio_client.dart';
 import '../../../../../core/storage/token_storage.dart';
 import '../../../data/datasources/auth_remote_datasource.dart';
 import '../../../data/repositories/auth_repository_impl.dart';
+import '../../../shared/auth_widgets.dart';
 import '../bloc/forgot_password_cubit.dart';
 import '../bloc/forgot_password_state.dart';
 import 'forgot_otp_screen.dart';
@@ -33,171 +35,181 @@ class _ForgotPasswordBody extends StatefulWidget {
   State<_ForgotPasswordBody> createState() => _ForgotPasswordBodyState();
 }
 
-class _ForgotPasswordBodyState extends State<_ForgotPasswordBody> {
+class _ForgotPasswordBodyState extends State<_ForgotPasswordBody>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _emailController = TextEditingController();
-  final Color primaryRed = const Color(0xFF7B0323);
+  late AnimationController _floatController;
+  late Animation<double> _floatAnim;
+
+  static const _primaryRed = Color(0xFF7B0323);
+
+  @override
+  void initState() {
+    super.initState();
+    _floatController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat(reverse: true);
+    _floatAnim = Tween<double>(begin: 0, end: 10).animate(
+      CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
+    );
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
+    _floatController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final double horizontalPadding = size.width * 0.08;
 
-    return BlocConsumer<ForgotPasswordCubit, ForgotPasswordState>(
-      listener: (context, state) {
-        if (state is ForgotOtpSent) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => BlocProvider.value(
-                value: context.read<ForgotPasswordCubit>(),
-                child: ForgotOtpScreen(email: state.email),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: BlocConsumer<ForgotPasswordCubit, ForgotPasswordState>(
+        listener: (context, state) {
+          if (state is ForgotOtpSent) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => BlocProvider.value(
+                  value: context.read<ForgotPasswordCubit>(),
+                  child: ForgotOtpScreen(email: state.email),
+                ),
               ),
-            ),
-          );
-        } else if (state is ForgotPasswordFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message), backgroundColor: Colors.red[700]),
-          );
-        }
-      },
-      builder: (context, state) {
-        final isLoading = state is ForgotPasswordLoading;
+            );
+          } else if (state is ForgotPasswordFailure) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red[700],
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        },
+        builder: (context, state) {
+          final isLoading = state is ForgotPasswordLoading;
 
-        return Scaffold(
-          body: Stack(
-            children: [
-              Positioned.fill(
-                child: Image.asset('assets/images/mainbg.jpg', fit: BoxFit.cover),
-              ),
-              Positioned.fill(
-                child: Container(color: Colors.black.withOpacity(0.3)),
-              ),
-              SafeArea(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Back button
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8, top: 8),
-                      child: TextButton.icon(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.chevron_left, color: Colors.white, size: 28),
-                        label: Text(
-                          'Back to login',
-                          style: GoogleFonts.inter(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
+          return Scaffold(
+            backgroundColor: Colors.white,
+            body: Stack(
+              children: [
+                AuthBackground.standard(floatAnim: _floatAnim, size: size),
+                SafeArea(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8, top: 8),
+                        child: IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            size: 20,
+                            color: Color(0xFF1A1A1A),
                           ),
                         ),
                       ),
-                    ),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            SizedBox(height: size.height * 0.06),
-                            Text(
-                              'FORGOT PASSWORD',
-                              style: GoogleFonts.playfairDisplay(
-                                fontSize: 30,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                letterSpacing: 2.0,
-                              ),
-                            ),
-                            const SizedBox(height: 40),
-                            // Email field
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.85),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: TextField(
+                      Expanded(
+                        child: SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: size.width * 0.07),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              const SizedBox(height: 16),
+                              _buildHeader(),
+                              const SizedBox(height: 36),
+                              AuthTextField(
                                 controller: _emailController,
+                                hintText: 'Email của bạn',
+                                icon: Icons.email_outlined,
                                 keyboardType: TextInputType.emailAddress,
-                                style: const TextStyle(color: Colors.black87),
-                                decoration: InputDecoration(
-                                  hintText: 'Enter your email address',
-                                  hintStyle: GoogleFonts.inter(color: Colors.grey[600], fontSize: 15),
-                                  prefixIcon: Icon(Icons.email_rounded, color: Colors.grey[700], size: 20),
-                                  border: InputBorder.none,
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 18),
+                              ),
+                              const SizedBox(height: 14),
+                              Text(
+                                'Chúng tôi sẽ gửi mã OTP về email để đặt lại mật khẩu.',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  color: const Color(0xFF888888),
+                                  height: 1.5,
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'We will send you a message to set or reset your new password',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                color: Colors.white70,
-                              ),
-                            ),
-                            const SizedBox(height: 40),
-                            ElevatedButton(
-                              onPressed: isLoading
-                                  ? null
-                                  : () {
-                                      final email = _emailController.text.trim();
-                                      if (email.isEmpty) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Vui lòng nhập email.'),
-                                            backgroundColor: Colors.red,
-                                          ),
-                                        );
-                                        return;
-                                      }
-                                      context.read<ForgotPasswordCubit>().sendOtp(email);
-                                    },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: primaryRed,
-                                disabledBackgroundColor: primaryRed.withOpacity(0.6),
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                elevation: 0,
-                              ),
-                              child: isLoading
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                                    )
-                                  : Text(
-                                      'SUBMIT',
-                                      style: GoogleFonts.playfairDisplay(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w900,
-                                        color: Colors.white,
-                                        letterSpacing: 3.0,
+                              const SizedBox(height: 32),
+                              AuthPrimaryButton(
+                                label: 'GỬI MÃ OTP',
+                                isLoading: isLoading,
+                                enabled: !isLoading,
+                                onTap: () {
+                                  final email = _emailController.text.trim();
+                                  if (email.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Vui lòng nhập email.'),
+                                        backgroundColor: Colors.red,
+                                        behavior: SnackBarBehavior.floating,
                                       ),
-                                    ),
-                            ),
-                          ],
+                                    );
+                                    return;
+                                  }
+                                  context
+                                      .read<ForgotPasswordCubit>()
+                                      .sendOtp(email);
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                       ),
+                    ],
+                  ),
+                ),
+                if (isLoading)
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      child: const Center(
+                        child: CircularProgressIndicator(
+                            color: _primaryRed, strokeWidth: 2.5),
+                      ),
                     ),
-                  ],
-                ),
-              ),
-              if (isLoading)
-                Positioned.fill(
-                  child: Container(color: Colors.black.withOpacity(0.1)),
-                ),
-            ],
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const AuthLogoBadge(icon: Icons.lock_reset_rounded),
+        const SizedBox(height: 24),
+        Text(
+          'Quên mật\nkhẩu?',
+          style: GoogleFonts.playfairDisplay(
+            fontSize: 34,
+            fontWeight: FontWeight.w900,
+            color: const Color(0xFF1A1A1A),
+            height: 1.2,
           ),
-        );
-      },
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Đừng lo, chúng tôi sẽ giúp bạn lấy lại quyền truy cập',
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            color: const Color(0xFF888888),
+            height: 1.5,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../chat/presentation/pages/chat_screen.dart';
 import '../../../home/presentation/pages/home_screen.dart';
+import '../../../home/presentation/pages/pitch_tab_screen.dart';
 import '../../../profile/presentation/pages/profile_screen.dart';
 import '../../../../core/constants/app_colors.dart';
 
@@ -64,14 +65,19 @@ class _MainShellState extends State<MainShell>
       body: IndexedStack(
         index: _currentIndex,
         children: [
+          // 0 — Trang chủ
           HomeScreen(),
-          // Tab Shop — dùng lại HomeScreen tạm thời, sau này tách riêng
-          _PlaceholderTab(
+          // 1 — Sân (danh sách và tìm kiếm sân)
+          const PitchTabScreen(),
+          // 2 — Shop
+          const _PlaceholderTab(
             icon: Icons.shopping_bag_outlined,
             label: 'Shop',
             subtitle: 'Trang sản phẩm đang phát triển',
           ),
+          // 3 — Chat
           const ChatScreen(),
+          // 4 — Tôi
           ProfileScreen(user: widget.user),
         ],
       ),

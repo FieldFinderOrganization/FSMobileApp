@@ -58,7 +58,7 @@ class HomeFooter extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            '© 2024 FieldFinder. All rights reserved.',
+            '© 2026 FieldFinder. All rights reserved.',
             style: GoogleFonts.inter(
               fontSize: 11,
               color: AppColors.textGrey,
