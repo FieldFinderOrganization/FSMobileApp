@@ -15,19 +15,11 @@ import '../../data/repositories/booking_repository_impl.dart';
 import '../../../../core/network/dio_client.dart';
 
 class BookingHistoryScreen extends StatelessWidget {
-  const BookingHistoryScreen({super.key});
+  final String userId;
+  const BookingHistoryScreen({super.key, required this.userId});
 
   @override
   Widget build(BuildContext context) {
-    final authState = context.read<AuthCubit>().state;
-    String userId = '';
-    
-    if (authState is AuthSuccess) {
-      userId = authState.authToken.user.userId;
-    } else if (authState is AuthOtpVerified) {
-      userId = authState.authToken.user.userId;
-    }
-
     return BlocProvider(
       create: (context) => BookingHistoryCubit(
         repository: BookingRepositoryImpl(

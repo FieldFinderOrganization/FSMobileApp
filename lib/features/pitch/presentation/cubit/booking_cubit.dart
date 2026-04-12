@@ -1,17 +1,21 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/models/booking_request_model.dart';
+import '../../data/models/payment_request_model.dart';
 import '../../data/repositories/booking_repository_impl.dart';
+import '../../data/repositories/payment_repository_impl.dart';
 import '../../domain/entities/booking_slot_entity.dart';
 import '../../domain/entities/pitch_entity.dart';
 import 'booking_state.dart';
 
 class BookingCubit extends Cubit<BookingState> {
   final BookingRepository repository;
+  final PaymentRepository paymentRepository;
   final PitchEntity pitch;
   final DateTime date;
 
   BookingCubit({
     required this.repository,
+    required this.paymentRepository,
     required this.pitch,
     required this.date,
   }) : super(BookingInitial()) {
@@ -50,13 +54,26 @@ class BookingCubit extends Cubit<BookingState> {
 
       final allSlots = _defaultSlots.map((s) {
         final id = int.parse(s['id']!);
-        final startHour = int.parse(s['start']!.split(':')[0]);
+        final startParts = s['start']!.split(':');
+        final startHour = int.parse(startParts[0]);
+        final startMinute = int.parse(startParts[1]);
         
+        // Construct full DateTime for the slot
+        final slotStartTime = DateTime(
+          date.year,
+          date.month,
+          date.day,
+          startHour,
+          startMinute,
+        );
+
         SlotStatus status = SlotStatus.available;
         if (bookedIds.contains(id)) {
           status = SlotStatus.booked;
-        } else if (isToday && startHour <= now.hour) {
+        } else if (slotStartTime.isBefore(now)) {
           status = SlotStatus.past;
+        } else if (isToday && slotStartTime.isBefore(now.add(const Duration(minutes: 30)))) {
+          status = SlotStatus.tooLate;
         }
 
         return BookingSlotEntity(
@@ -135,12 +152,37 @@ class BookingCubit extends Cubit<BookingState> {
         }).toList(),
       );
 
-      await repository.createBooking(bookingRequest);
-      emit(BookingConfirmed());
+      final bookingId = await repository.createBooking(bookingRequest);
+      
+      if (currentState.paymentMethod == 'BANK_TRANSFER') {
+        final paymentRequest = PaymentRequestModel(
+          bookingId: bookingId,
+          userId: userId,
+          amount: currentState.totalAmount,
+          paymentMethod: 'BANK', // Matches Backend PaymentMethod enum
+        );
+        final paymentRes = await paymentRepository.createPayment(paymentRequest);
+        emit(BookingPaymentRequired(
+          paymentResponse: paymentRes,
+          bookingId: bookingId,
+        ));
+      } else {
+        emit(BookingConfirmed());
+      }
     } catch (e) {
       emit(BookingError(e.toString()));
-      // Stay on current selection state if error occurs
-      loadSlots(); // Refresh slots in case they were taken
+      loadSlots(); 
+    }
+  }
+
+  Future<void> checkPaymentStatus(String bookingId) async {
+    try {
+      final status = await paymentRepository.getPaymentStatusByBookingId(bookingId);
+      if (status.isPaid) {
+        emit(BookingConfirmed());
+      }
+    } catch (e) {
+      // Ignore polling errors to not disrupt UI
     }
   }
 }

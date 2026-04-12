@@ -9,11 +9,15 @@ import '../../../../core/network/dio_client.dart';
 import '../../../auth/login/presentation/bloc/auth_cubit.dart';
 import '../../../auth/login/presentation/bloc/auth_state.dart';
 import '../../data/datasources/booking_remote_datasource.dart';
+import '../../data/datasources/payment_remote_datasource.dart';
 import '../../data/repositories/booking_repository_impl.dart';
+import '../../data/repositories/payment_repository_impl.dart';
 import '../../domain/entities/booking_slot_entity.dart';
 import '../../domain/entities/pitch_entity.dart';
 import '../cubit/booking_cubit.dart';
 import '../cubit/booking_state.dart';
+import 'booking_history_screen.dart';
+import 'payment_screen.dart';
 
 class BookingScreen extends StatelessWidget {
   final PitchEntity pitch;
@@ -28,15 +32,23 @@ class BookingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => BookingCubit(
-        repository: BookingRepositoryImpl(
-          remoteDataSource: BookingRemoteDataSource(
-            dioClient: context.read<DioClient>(),
+      create: (context) {
+        final dioClient = context.read<DioClient>();
+        return BookingCubit(
+          repository: BookingRepositoryImpl(
+            remoteDataSource: BookingRemoteDataSource(
+              dioClient: dioClient,
+            ),
           ),
-        ),
-        pitch: pitch,
-        date: selectedDate,
-      ),
+          paymentRepository: PaymentRepositoryImpl(
+            remoteDataSource: PaymentRemoteDataSource(
+              dioClient: dioClient,
+            ),
+          ),
+          pitch: pitch,
+          date: selectedDate,
+        );
+      },
       child: const _BookingView(),
     );
   }
@@ -55,6 +67,29 @@ class _BookingView extends StatelessWidget {
           );
         } else if (state is BookingConfirmed) {
           _showSuccessDialog(context);
+        } else if (state is BookingPaymentRequired) {
+          final authState = context.read<AuthCubit>().state;
+          final userId = (authState is AuthSuccess)
+              ? authState.authToken.user.userId
+              : (authState is AuthOtpVerified)
+              ? authState.authToken.user.userId
+              : '';
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (innerContext) => BlocProvider.value(
+                value: context.read<BookingCubit>(),
+                child: PaymentScreen(
+                  pitch: context.read<BookingCubit>().pitch,
+                  bookingId: state.bookingId,
+                  userId: userId,
+                  paymentResponse: state.paymentResponse,
+                  bookingCubit: context.read<BookingCubit>(),
+                ),
+              ),
+            ),
+          );
         }
       },
       child: Scaffold(
@@ -222,6 +257,31 @@ class _BookingView extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.orange.shade50.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.orange.shade100),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline_rounded, size: 14, color: Colors.orange.shade800),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Lưu ý: Bạn cần đặt trước ít nhất 30 phút so với giờ bắt đầu.',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.orange.shade900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 16),
         GridView.builder(
           shrinkWrap: true,
@@ -240,13 +300,14 @@ class _BookingView extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         // Legend
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          alignment: WrapAlignment.center,
           children: [
-            _buildLegendItem(const Color(0xFFEEEEEE), 'Đã đặt / Quá hạn'),
-            const SizedBox(width: 16),
+            _buildLegendItem(const Color(0xFFEEEEEE), 'Đã đặt'),
+            _buildLegendItem(Colors.orange.shade50, 'Quá hạn', hasBorder: true),
             _buildLegendItem(const Color(0xFF2E7D32), 'Đang chọn'),
-            const SizedBox(width: 16),
             _buildLegendItem(Colors.white, 'Trống', hasBorder: true),
           ],
         ),
@@ -264,6 +325,11 @@ class _BookingView extends StatelessWidget {
       case SlotStatus.past:
         bgColor = const Color(0xFFEEEEEE);
         textColor = const Color(0xFFBDBDBD);
+        break;
+      case SlotStatus.tooLate:
+        bgColor = Colors.orange.shade50;
+        textColor = Colors.orange.shade800;
+        border = Border.all(color: Colors.orange.shade200);
         break;
       case SlotStatus.selected:
         bgColor = const Color(0xFFE8F5E9);
@@ -390,7 +456,7 @@ class _BookingView extends StatelessWidget {
                 'Chuyển khoản',
                 Icons.account_balance_outlined,
                 state.paymentMethod == 'BANK_TRANSFER',
-                () => _showComingSoon(context, 'Thanh toán chuyển khoản'),
+                () => context.read<BookingCubit>().setPaymentMethod('BANK_TRANSFER'),
               ),
             ),
           ],
@@ -767,10 +833,22 @@ class _BookingView extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Back to detail
-            },
+              onPressed: () {
+                final authState = context.read<AuthCubit>().state;
+                final userId = (authState is AuthSuccess)
+                    ? authState.authToken.user.userId
+                    : (authState is AuthOtpVerified)
+                    ? authState.authToken.user.userId
+                    : '';
+                
+                Navigator.pop(context); // close dialog
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BookingHistoryScreen(userId: userId),
+                  ),
+                );
+              },
             child: Text(
               'Xong',
               style: GoogleFonts.inter(

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../data/models/payment_response_model.dart';
 import '../../domain/entities/booking_slot_entity.dart';
 
 abstract class BookingState extends Equatable {
@@ -52,3 +53,16 @@ class BookingError extends BookingState {
 }
 
 class BookingConfirmed extends BookingState {}
+
+class BookingPaymentRequired extends BookingState {
+  final PaymentResponseModel paymentResponse;
+  final String bookingId;
+
+  const BookingPaymentRequired({
+    required this.paymentResponse,
+    required this.bookingId,
+  });
+
+  @override
+  List<Object?> get props => [paymentResponse, bookingId];
+}

@@ -20,12 +20,13 @@ class BookingRemoteDataSource {
     }
   }
 
-  Future<void> createBooking(BookingRequestModel bookingRequest) async {
+  Future<String> createBooking(BookingRequestModel bookingRequest) async {
     try {
-      await dioClient.dio.post(
+      final response = await dioClient.dio.post(
         ApiConstants.bookings,
         data: bookingRequest.toJson(),
       );
+      return response.data['bookingId'];
     } catch (e) {
       rethrow;
     }
@@ -37,8 +38,7 @@ class BookingRemoteDataSource {
         '${ApiConstants.userBookings}/$userId',
       );
       return (response.data as List)
-          .map((e) => BookingResponseModel.fromJson(e))
-          .toList();
+          .map((e) => BookingResponseModel.fromJson(          .toList();
     } catch (e) {
       rethrow;
     }

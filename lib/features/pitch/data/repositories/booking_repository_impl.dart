@@ -4,7 +4,7 @@ import '../models/booking_response_model.dart';
 
 abstract class BookingRepository {
   Future<List<int>> getBookedSlots(String pitchId, String date);
-  Future<void> createBooking(BookingRequestModel bookingRequest);
+  Future<String> createBooking(BookingRequestModel bookingRequest);
   Future<List<BookingResponseModel>> getBookingsByUser(String userId);
 }
 
@@ -19,7 +19,7 @@ class BookingRepositoryImpl implements BookingRepository {
   }
 
   @override
-  Future<void> createBooking(BookingRequestModel bookingRequest) {
+  Future<String> createBooking(BookingRequestModel bookingRequest) {
     return remoteDataSource.createBooking(bookingRequest);
   }
 

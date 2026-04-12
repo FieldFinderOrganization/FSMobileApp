@@ -358,7 +358,9 @@ class _ProfileBody extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const BookingHistoryScreen()),
+                MaterialPageRoute(
+                  builder: (_) => BookingHistoryScreen(userId: user.userId),
+                ),
               );
             },
             isFirst: true,

@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-enum SlotStatus { available, booked, selected, past }
+enum SlotStatus { available, booked, selected, past, tooLate }
 
 class BookingSlotEntity extends Equatable {
   final int slotId;

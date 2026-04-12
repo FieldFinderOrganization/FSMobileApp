@@ -28,4 +28,7 @@ class ApiConstants {
   static const String bookingSlots = '/bookings/slots';
   static const String userBookings = '/bookings/user';
   static const String providerBookings = '/bookings/provider';
+
+  // Payment endpoints
+  static const String payments = '/payments';
 }
