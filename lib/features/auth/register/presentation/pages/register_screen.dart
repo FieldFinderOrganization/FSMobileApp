@@ -81,7 +81,8 @@ class _RegisterScreenBodyState extends State<_RegisterScreenBody>
   }
 
   void _validateName(String v) => setState(
-      () => _nameError = v.trim().isEmpty ? 'Vui lòng nhập họ tên' : null);
+    () => _nameError = v.trim().isEmpty ? 'Vui lòng nhập họ tên' : null,
+  );
 
   void _validateEmail(String v) {
     final regex = RegExp(r'^[\w\-\.+]+@([\w\-]+\.)+[\w\-]{2,}$');
@@ -143,14 +144,16 @@ class _RegisterScreenBodyState extends State<_RegisterScreenBody>
         _emailError != null ||
         _phoneError != null ||
         _passwordError != null ||
-        _confirmPasswordError != null) return;
+        _confirmPasswordError != null) {
+      return;
+    }
 
     context.read<AuthCubit>().registerUser(
-          name: _nameController.text.trim(),
-          email: _emailController.text.trim(),
-          phone: _phoneController.text.trim(),
-          password: _passwordController.text,
-        );
+      name: _nameController.text.trim(),
+      email: _emailController.text.trim(),
+      phone: _phoneController.text.trim(),
+      password: _passwordController.text,
+    );
   }
 
   @override
@@ -193,7 +196,10 @@ class _RegisterScreenBodyState extends State<_RegisterScreenBody>
                     children: [
                       Padding(
                         padding: const EdgeInsets.only(
-                            left: 8, right: 16, top: 8),
+                          left: 8,
+                          right: 16,
+                          top: 8,
+                        ),
                         child: Row(
                           children: [
                             IconButton(
@@ -211,7 +217,8 @@ class _RegisterScreenBodyState extends State<_RegisterScreenBody>
                         child: SingleChildScrollView(
                           physics: const BouncingScrollPhysics(),
                           padding: EdgeInsets.symmetric(
-                              horizontal: size.width * 0.07),
+                            horizontal: size.width * 0.07,
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -252,8 +259,10 @@ class _RegisterScreenBodyState extends State<_RegisterScreenBody>
                                 isVisible: _isPasswordVisible,
                                 errorText: _passwordError,
                                 onChanged: _validatePassword,
-                                onToggleVisibility: () => setState(() =>
-                                    _isPasswordVisible = !_isPasswordVisible),
+                                onToggleVisibility: () => setState(
+                                  () =>
+                                      _isPasswordVisible = !_isPasswordVisible,
+                                ),
                               ),
                               const SizedBox(height: 12),
                               AuthTextField(
@@ -264,9 +273,10 @@ class _RegisterScreenBodyState extends State<_RegisterScreenBody>
                                 isVisible: _isConfirmPasswordVisible,
                                 errorText: _confirmPasswordError,
                                 onChanged: _validateConfirmPassword,
-                                onToggleVisibility: () => setState(() =>
-                                    _isConfirmPasswordVisible =
-                                        !_isConfirmPasswordVisible),
+                                onToggleVisibility: () => setState(
+                                  () => _isConfirmPasswordVisible =
+                                      !_isConfirmPasswordVisible,
+                                ),
                               ),
                               const SizedBox(height: 20),
                               _buildTerms(),
@@ -293,7 +303,9 @@ class _RegisterScreenBodyState extends State<_RegisterScreenBody>
                       color: Colors.white.withValues(alpha: 0.6),
                       child: const Center(
                         child: CircularProgressIndicator(
-                            color: _primaryRed, strokeWidth: 2.5),
+                          color: _primaryRed,
+                          strokeWidth: 2.5,
+                        ),
                       ),
                     ),
                   ),
@@ -324,7 +336,9 @@ class _RegisterScreenBodyState extends State<_RegisterScreenBody>
         Text(
           'Tham gia cộng đồng để nhận ưu đãi độc quyền',
           style: GoogleFonts.inter(
-              fontSize: 13, color: const Color(0xFF888888)),
+            fontSize: 13,
+            color: const Color(0xFF888888),
+          ),
         ),
       ],
     );
@@ -339,13 +353,14 @@ class _RegisterScreenBodyState extends State<_RegisterScreenBody>
           TextSpan(
             text: 'Đăng ký',
             style: GoogleFonts.inter(
-                fontStyle: FontStyle.italic,
-                fontWeight: FontWeight.w600,
-                color: _primaryRed),
+              fontStyle: FontStyle.italic,
+              fontWeight: FontWeight.w600,
+              color: _primaryRed,
+            ),
           ),
           const TextSpan(
-              text:
-                  ' đồng nghĩa bạn đồng ý với chính sách bảo mật của chúng tôi'),
+            text: ' đồng nghĩa bạn đồng ý với chính sách bảo mật của chúng tôi',
+          ),
         ],
       ),
     );
@@ -363,7 +378,9 @@ class _RegisterScreenBodyState extends State<_RegisterScreenBody>
             TextSpan(
               text: 'Đăng nhập',
               style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w700, color: _primaryRed),
+                fontWeight: FontWeight.w700,
+                color: _primaryRed,
+              ),
             ),
           ],
         ),

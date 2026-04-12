@@ -21,4 +21,5 @@ class ApiConstants {
   static const String pitches = '/pitches';
   static const String categories = '/categories';
   static const String discounts = '/discounts';
+  static const String reviews = '/reviews';
 }

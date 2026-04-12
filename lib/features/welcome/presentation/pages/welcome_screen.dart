@@ -110,7 +110,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           ),
           GestureDetector(
             onTap: () {
-              // TODO: Logic chuyển qua Login/Home
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+              );
             },
             child: Text(
               'Skip',
