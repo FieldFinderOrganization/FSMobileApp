@@ -1,6 +1,7 @@
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/dio_client.dart';
 import '../models/booking_request_model.dart';
+import '../models/booking_response_model.dart';
 
 class BookingRemoteDataSource {
   final DioClient dioClient;
@@ -25,6 +26,19 @@ class BookingRemoteDataSource {
         ApiConstants.bookings,
         data: bookingRequest.toJson(),
       );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<BookingResponseModel>> getBookingsByUser(String userId) async {
+    try {
+      final response = await dioClient.dio.get(
+        '${ApiConstants.userBookings}/$userId',
+      );
+      return (response.data as List)
+          .map((e) => BookingResponseModel.fromJson(e))
+          .toList();
     } catch (e) {
       rethrow;
     }

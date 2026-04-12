@@ -7,6 +7,7 @@ import '../../../../features/auth/login/presentation/bloc/auth_cubit.dart';
 import '../../../../features/auth/login/presentation/bloc/auth_state.dart';
 import '../../../../features/auth/login/presentation/pages/login_screen.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../pitch/presentation/pages/booking_history_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final UserEntity user;
@@ -354,7 +355,12 @@ class _ProfileBody extends StatelessWidget {
           _ActionRow(
             icon: Icons.history_rounded,
             label: 'Lịch sử đặt sân',
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const BookingHistoryScreen()),
+              );
+            },
             isFirst: true,
           ),
           _ActionRow(
