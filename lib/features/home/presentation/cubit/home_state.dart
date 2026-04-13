@@ -3,6 +3,7 @@ import '../../../pitch/domain/entities/pitch_entity.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/entities/discount_entity.dart';
 import '../../../../core/utils/string_utils.dart';
+import '../../../../core/utils/category_utils.dart';
 
 enum LoadStatus { initial, loading, success, failure }
 
@@ -10,20 +11,6 @@ enum SortOption { none, priceAsc, priceDesc }
 
 const int kProductPageSize = 6;
 
-const Map<String, List<String>> kCategoryKeywords = {
-  'Gloves': ['glove'],
-  'Socks': ['sock'],
-  'Bags And Backpacks': ['bag', 'backpack', 'duffel', 'tote', 'pouch', 'waist'],
-  'Hats And Headwears': ['hat', 'cap', 'beanie', 'headband', 'visor', 'bandana'],
-  'Tops And T-Shirts': ['shirt', 't-shirt', 'tee', 'jersey', 'polo', 'tank', 'top'],
-  'Shorts': ['short'],
-  'Pants And Leggings': ['pant', 'legging', 'trouser', 'tight', 'jogger'],
-  'Hoodies And Sweatshirts': ['hoodie', 'sweatshirt', 'pullover', 'fleece'],
-  'Jackets And Gilets': ['jacket', 'gilet', 'windbreaker', 'anorak', 'vest'],
-  'Sandals And Slides': ['sandal', 'slide', 'flip'],
-  'Gym And Training': ['gym', 'training'],
-  'Lifestyle': ['lifestyle', 'casual'],
-};
 
 Set<String> getDescendantNames(
   List<CategoryEntity> categories,
@@ -112,30 +99,28 @@ class HomeState {
     if (selectedCategoryName.isEmpty) return products;
     if (selectedCategoryName == 'Bestseller') return topProducts;
 
-    final Set<String> targetNames;
-    if (selectedSubCategoryNames.isNotEmpty) {
-      targetNames = {};
-      for (final sub in selectedSubCategoryNames) {
-        targetNames.addAll(getDescendantNames(categories, sub));
-      }
-    } else {
-      targetNames = getDescendantNames(categories, selectedCategoryName);
-    }
-
-    final keywords = <String>{};
-    for (final name in targetNames) {
-      final kws = kCategoryKeywords[name];
-      if (kws != null) keywords.addAll(kws);
-    }
+    final Set<String> targetNames = getDescendantNames(categories, selectedCategoryName);
 
     return products.where((p) {
-      if (targetNames.contains(p.categoryName)) return true;
+      // If brand matches, it's always a match (kept from previous logic)
       if (targetNames.contains(p.brand)) return true;
-      if (keywords.isNotEmpty) {
-        final nameLower = p.name.toLowerCase();
-        if (keywords.any((kw) => nameLower.contains(kw))) return true;
+
+      if (selectedSubCategoryNames.isNotEmpty) {
+        return selectedSubCategoryNames.any((sub) {
+          final descendants = getDescendantNames(categories, sub);
+          return CategoryUtils.doesProductMatchCategory(
+            product: p,
+            targetCategoryName: sub,
+            descendantTargetNames: descendants,
+          );
+        });
       }
-      return false;
+
+      return CategoryUtils.doesProductMatchCategory(
+        product: p,
+        targetCategoryName: selectedCategoryName,
+        descendantTargetNames: targetNames,
+      );
     }).toList();
   }
 

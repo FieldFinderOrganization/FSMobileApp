@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../home/presentation/cubit/home_state.dart';
 import '../cubit/product_cubit.dart';
 import '../cubit/product_state.dart';
 
@@ -126,15 +125,28 @@ class FilterSheet extends StatelessWidget {
             '${state.priceRange.start.toStringAsFixed(0)}k',
             '${state.priceRange.end.toStringAsFixed(0)}k',
           ),
-          onChanged: (values) => context.read<ProductCubit>().updatePriceRange(values),
+          onChanged: (values) =>
+              context.read<ProductCubit>().updatePriceRange(values),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('0k', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textGrey)),
-              Text('${maxPrice.toStringAsFixed(0)}k', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textGrey)),
+              Text(
+                '0k',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: AppColors.textGrey,
+                ),
+              ),
+              Text(
+                '${maxPrice.toStringAsFixed(0)}k',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: AppColors.textGrey,
+                ),
+              ),
             ],
           ),
         ),
@@ -151,7 +163,9 @@ class FilterSheet extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.textDark,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           elevation: 0,
         ),
         child: Text(

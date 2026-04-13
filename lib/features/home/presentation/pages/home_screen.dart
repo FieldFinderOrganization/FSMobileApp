@@ -86,9 +86,7 @@ class _HomeBodyState extends State<_HomeBody> {
                       ),
                     ),
                     SliverToBoxAdapter(child: HeroBanner(state: state)),
-                    SliverToBoxAdapter(
-                      child: QuickActionsBar(state: state),
-                    ),
+                    SliverToBoxAdapter(child: QuickActionsBar(state: state)),
                     SliverToBoxAdapter(
                       child: FeaturedPitchesSection(state: state),
                     ),
@@ -107,9 +105,7 @@ class _HomeBodyState extends State<_HomeBody> {
             onSearchTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const SearchScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const SearchScreen()),
               );
             },
           ),
@@ -133,7 +129,7 @@ class _ParallaxBackground extends StatelessWidget {
       child: Positioned.fill(
         child: ValueListenableBuilder<double>(
           valueListenable: offsetNotifier,
-          builder: (_, offset, __) {
+          builder: (_, offset, _) {
             return Stack(
               children: [
                 Positioned(
@@ -196,7 +192,7 @@ class _StickyHeader extends StatelessWidget {
       right: 0,
       child: ValueListenableBuilder<double>(
         valueListenable: opacityNotifier,
-        builder: (_, opacity, __) {
+        builder: (_, opacity, _) {
           return HomeHeader(opacity: opacity, onSearchTap: onSearchTap);
         },
       ),

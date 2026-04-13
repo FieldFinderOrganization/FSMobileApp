@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/product_entity.dart';
 import '../../../home/domain/entities/category_entity.dart';
 import '../../../home/presentation/cubit/home_state.dart'; // Reuse LoadStatus and SortOption
+import '../../../../core/utils/category_utils.dart';
 
 Set<String> _getDescendantNames(
   List<CategoryEntity> categories,
@@ -49,33 +50,59 @@ class ProductState {
 
   // ── Derived ─────────────────────────────────────────────────────────────
 
-  List<CategoryEntity> get rootCategories => categories
-      .where((c) => (c.parentName == null || c.parentName!.isEmpty))
-      .toList();
-
-  List<CategoryEntity> get subCategories => selectedCategory.isEmpty
-      ? []
-      : categories
-          .where((c) => c.parentName == selectedCategory)
-          .toList();
 
   List<ProductEntity> get filteredProducts {
     var result = products;
 
-    // Filter by Category (Hierarchical)
+    // Filter by Category (Hierarchical + Semantic)
     if (selectedCategory.isNotEmpty) {
-      final Set<String> targetNames;
-      if (selectedSubCategoryNames.isNotEmpty) {
-        targetNames = {};
-        for (final sub in selectedSubCategoryNames) {
-          targetNames.addAll(_getDescendantNames(categories, sub));
+      result = result.where((p) {
+        if (selectedSubCategoryNames.isNotEmpty) {
+          return selectedSubCategoryNames.any((sub) {
+            final descendants = _getDescendantNames(categories, sub);
+            return CategoryUtils.doesProductMatchCategory(
+              product: p,
+              targetCategoryName: sub,
+              descendantTargetNames: descendants,
+            );
+          });
         }
-      } else {
-        targetNames = _getDescendantNames(categories, selectedCategory);
-      }
-      result = result.where((p) => targetNames.contains(p.categoryName)).toList();
+
+        final descendants = _getDescendantNames(categories, selectedCategory);
+        return CategoryUtils.doesProductMatchCategory(
+          product: p,
+          targetCategoryName: selectedCategory,
+          descendantTargetNames: descendants,
+        );
+      }).toList();
     }
 
+    // Apply Other Filters (Search, Brand, Price)
+    result = _applyOtherFilters(result);
+
+    // Sort
+    switch (sortOption) {
+      case SortOption.priceAsc:
+        result = [...result]..sort((a, b) => (a.salePrice ?? a.price).compareTo(b.salePrice ?? b.price));
+      case SortOption.priceDesc:
+        result = [...result]..sort((a, b) => (b.salePrice ?? b.price).compareTo(a.salePrice ?? a.price));
+      case SortOption.none:
+        break;
+    }
+
+    return result;
+  }
+
+  // ── Category Filtering Logic ─────────────────────────────────────────────
+
+  bool get isFilteringOrSearching =>
+      searchQuery.isNotEmpty ||
+      selectedBrands.isNotEmpty ||
+      priceRange.start > 0 ||
+      priceRange.end < maxPriceInList;
+
+  List<ProductEntity> _applyOtherFilters(List<ProductEntity> input) {
+    var result = input;
     // Filter by Search Query
     if (searchQuery.isNotEmpty) {
       final query = searchQuery.toLowerCase();
@@ -92,18 +119,52 @@ class ProductState {
       final effectivePrice = p.salePrice ?? p.price;
       return effectivePrice >= priceRange.start && effectivePrice <= priceRange.end;
     }).toList();
-
-    // Sort
-    switch (sortOption) {
-      case SortOption.priceAsc:
-        result = [...result]..sort((a, b) => (a.salePrice ?? a.price).compareTo(b.salePrice ?? b.price));
-      case SortOption.priceDesc:
-        result = [...result]..sort((a, b) => (b.salePrice ?? b.price).compareTo(a.salePrice ?? a.price));
-      case SortOption.none:
-        break;
-    }
-
     return result;
+  }
+
+  /// Products that match everything EXCEPT hierarchical category selection
+  List<ProductEntity> get productsMatchingOtherFilters => _applyOtherFilters(products);
+
+  /// Set of category names that have matching products (including ancestors)
+  Set<String> get availableCategoryNames {
+    final matches = productsMatchingOtherFilters;
+    final result = <String>{};
+
+    for (final cat in categories) {
+      final descendants = _getDescendantNames(categories, cat.name);
+      if (matches.any((p) => CategoryUtils.doesProductMatchCategory(
+            product: p,
+            targetCategoryName: cat.name,
+            descendantTargetNames: descendants,
+          ))) {
+        result.add(cat.name);
+      }
+    }
+    return result;
+  }
+
+  List<CategoryEntity> get rootCategories {
+    final roots = categories
+        .where((c) => (c.parentName == null || c.parentName!.isEmpty))
+        .toList();
+
+    if (!isFilteringOrSearching) return roots;
+
+    final available = availableCategoryNames;
+    return roots.where((c) => available.contains(c.name)).toList();
+  }
+
+  List<CategoryEntity> get subCategories {
+    if (selectedCategory.isEmpty) return [];
+    
+    final subs = categories
+        .where((c) => c.parentName == selectedCategory)
+        .toList();
+
+    if (!isFilteringOrSearching) return subs;
+
+    final available = availableCategoryNames;
+    return subs.where((c) => available.contains(c.name)).toList();
   }
 
   List<String> get allBrands {
