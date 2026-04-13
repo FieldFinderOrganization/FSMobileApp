@@ -6,6 +6,7 @@ import '../../../auth/domain/entities/user_entity.dart';
 import '../../../chat/presentation/pages/chat_screen.dart';
 import '../../../home/presentation/pages/home_screen.dart';
 import '../../../pitch/presentation/pages/pitch_tab_screen.dart';
+import '../../../product/presentation/pages/product_list_screen.dart';
 import '../../../profile/presentation/pages/profile_screen.dart';
 import '../../../../core/constants/app_colors.dart';
 
@@ -70,11 +71,7 @@ class _MainShellState extends State<MainShell>
           // 1 — Sân (danh sách và tìm kiếm sân)
           const PitchTabScreen(),
           // 2 — Shop
-          const _PlaceholderTab(
-            icon: Icons.shopping_bag_outlined,
-            label: 'Shop',
-            subtitle: 'Trang sản phẩm đang phát triển',
-          ),
+          const ProductListScreen(),
           // 3 — Chat
           const ChatScreen(),
           // 4 — Tôi

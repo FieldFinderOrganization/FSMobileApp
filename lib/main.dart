@@ -12,6 +12,10 @@ import 'features/auth/login/presentation/bloc/auth_cubit.dart';
 import 'features/home/data/datasources/home_remote_datasource.dart';
 import 'features/home/data/repositories/home_repository_impl.dart';
 import 'features/home/presentation/cubit/home_cubit.dart';
+import 'features/product/data/datasources/product_remote_data_source.dart';
+import 'features/product/data/repositories/product_repository_impl.dart';
+import 'features/product/domain/repositories/product_repository.dart';
+import 'features/product/presentation/cubit/product_cubit.dart';
 import 'features/welcome/presentation/pages/welcome_screen.dart';
 
 
@@ -28,6 +32,8 @@ void main() async {
   final homeDatasource = HomeRemoteDatasource(dioClient.dio);
   final homeRepository = HomeRepositoryImpl(homeDatasource);
 
+  final productDatasource = ProductRemoteDataSource(dioClient.dio);
+  final productRepository = ProductRepositoryImpl(productDatasource);
 
   runApp(
     MultiRepositoryProvider(
@@ -35,6 +41,7 @@ void main() async {
         RepositoryProvider<TokenStorage>.value(value: tokenStorage),
         RepositoryProvider<DioClient>.value(value: dioClient),
         RepositoryProvider<AuthRepository>.value(value: authRepository),
+        RepositoryProvider<ProductRepository>.value(value: productRepository),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -47,8 +54,10 @@ void main() async {
           BlocProvider<HomeCubit>(
             create: (context) => HomeCubit(repository: homeRepository)..loadAll(),
           ),
+          BlocProvider<ProductCubit>(
+            create: (context) => ProductCubit(repository: productRepository)..loadProducts(),
+          ),
         ],
-
         child: const MyApp(),
       ),
     ),

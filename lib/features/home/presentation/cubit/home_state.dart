@@ -10,8 +10,6 @@ enum SortOption { none, priceAsc, priceDesc }
 
 const int kProductPageSize = 6;
 
-const Set<String> kHiddenCategories = {'All Shoes', 'All Clothing'};
-
 const Map<String, List<String>> kCategoryKeywords = {
   'Gloves': ['glove'],
   'Socks': ['sock'],
@@ -99,16 +97,13 @@ class HomeState {
 
   List<CategoryEntity> get rootCategories => categories
       .where((c) =>
-          (c.parentName == null || c.parentName!.isEmpty) &&
-          !kHiddenCategories.contains(c.name))
+          c.parentName == null || c.parentName!.isEmpty)
       .toList();
 
   List<CategoryEntity> get subCategories => selectedCategoryName.isEmpty
       ? []
       : categories
-          .where((c) =>
-              c.parentName == selectedCategoryName &&
-              !kHiddenCategories.contains(c.name))
+          .where((c) => c.parentName == selectedCategoryName)
           .toList();
 
   // ── Filter → Gender → Sort ───────────────────────────────────────────────
