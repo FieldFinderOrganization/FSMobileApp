@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../home/presentation/cubit/home_cubit.dart';
 import '../../../home/presentation/widgets/fade_in_section.dart';
@@ -24,7 +25,7 @@ class AllProductsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(title: 'Tất cả sản phẩm', onSeeAll: null),
+          const SectionHeader(title: 'Tất cả sản phẩm', onSeeAll: null, index: '03'),
 
           // ── Danh mục cha ────────────────────────────────────────────────
           _ParentCategoryChips(state: state),
@@ -40,37 +41,44 @@ class AllProductsSection extends StatelessWidget {
           // ── Bộ lọc giá & giới tính ──────────────────────────────────────
           _FilterBar(state: state),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
-          // ── Lưới sản phẩm ───────────────────────────────────────────────
+          // ── Bento Grid ──────────────────────────────────────────────────
           if (isLoading)
-            _buildShimmerGrid()
+            _buildShimmerBento()
           else if (state.visibleProducts.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 32),
-              child: Center(
+              child: const Center(
                 child: Text(
                   'Không có sản phẩm nào.',
-                  style: TextStyle(color: Colors.grey[500]),
+                  style: TextStyle(color: AppColors.textGrey),
                 ),
               ),
             )
           else ...[
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              child: StaggeredGrid.count(
                 crossAxisCount: 2,
-                mainAxisExtent: 250,
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
+                children: List.generate(state.visibleProducts.length, (i) {
+                  final product = state.visibleProducts[i];
+                  // Pattern: Index 0 is Large, then 1-2 small, 3 Large, 4-5 small...
+                  final isLarge = i % 3 == 0;
+                  
+                  return StaggeredGridTile.fit(
+                    crossAxisCellCount: isLarge ? 2 : 1,
+                    child: ProductCard(
+                      product: product,
+                      mode: isLarge ? ProductCardMode.featured : ProductCardMode.grid,
+                    ),
+                  );
+                }),
               ),
-              itemCount: state.visibleProducts.length,
-              itemBuilder: (_, i) =>
-                  ProductCard(product: state.visibleProducts[i]),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             _PaginationButtons(state: state),
           ],
           const SizedBox(height: 16),
@@ -79,22 +87,24 @@ class AllProductsSection extends StatelessWidget {
     );
   }
 
-  Widget _buildShimmerGrid() {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+  Widget _buildShimmerBento() {
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      child: StaggeredGrid.count(
         crossAxisCount: 2,
-        mainAxisExtent: 250,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
-      ),
-      itemCount: 6,
-      itemBuilder: (_, _) => ShimmerCard(
-        width: double.infinity,
-        height: double.infinity,
-        borderRadius: BorderRadius.circular(12),
+        children: List.generate(5, (i) {
+          final isLarge = i % 3 == 0;
+          return StaggeredGridTile.fit(
+            crossAxisCellCount: isLarge ? 2 : 1,
+            child: ShimmerCard(
+              width: double.infinity,
+              height: isLarge ? 180 : 240,
+              borderRadius: BorderRadius.circular(12),
+            ),
+          );
+        }),
       ),
     );
   }
