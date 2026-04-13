@@ -137,7 +137,7 @@ class ProductCard extends StatelessWidget {
       builder: (context, constraints) {
         final imageWidth = constraints.maxWidth * 0.40;
         return Container(
-          height: 180,
+          constraints: const BoxConstraints(minHeight: 160),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(14),
@@ -149,98 +149,100 @@ class ProductCard extends StatelessWidget {
               ),
             ],
           ),
-          child: Row(
-            children: [
-              // Left: image — 40% width
-              ClipRRect(
-                borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(14),
-                ),
-                child: SizedBox(
-                  width: imageWidth,
-                  height: 180,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      _buildImage(height: 180),
-                      if (product.isOnSale)
-                        SaleBadge(percent: product.salePercent!),
-                    ],
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Left: image — 40% width
+                ClipRRect(
+                  borderRadius: const BorderRadius.horizontal(
+                    left: Radius.circular(14),
+                  ),
+                  child: SizedBox(
+                    width: imageWidth,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        _buildImage(height: 180), // height is hint here, StackFit.expand takes over
+                        if (product.isOnSale)
+                          SaleBadge(percent: product.salePercent!),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              // Right: text content
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryRed.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'Nổi bật',
-                          style: GoogleFonts.inter(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primaryRed,
-                            letterSpacing: 0.5,
+                // Right: text content
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
                           ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        product.name,
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textDark,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      _buildMeta(),
-                      const SizedBox(height: 8),
-                      _buildPriceRow(),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        height: 32,
-                        child: OutlinedButton(
-                          onPressed: () {},
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primaryRed,
-                            side: const BorderSide(
-                              color: AppColors.primaryRed,
-                              width: 1.5,
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryRed.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            'Xem ngay',
+                            'Nổi bật',
                             style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primaryRed,
+                              letterSpacing: 0.5,
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 8),
+                        Text(
+                          product.name,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textDark,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        _buildMeta(),
+                        const SizedBox(height: 8),
+                        _buildPriceRow(),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          height: 32,
+                          child: OutlinedButton(
+                            onPressed: () {},
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.primaryRed,
+                              side: const BorderSide(
+                                color: AppColors.primaryRed,
+                                width: 1.5,
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: Text(
+                              'Xem ngay',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
