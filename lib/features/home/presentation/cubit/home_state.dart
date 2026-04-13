@@ -2,6 +2,7 @@ import '../../../product/domain/entities/product_entity.dart';
 import '../../../pitch/domain/entities/pitch_entity.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/entities/discount_entity.dart';
+import '../../../../core/utils/string_utils.dart';
 
 enum LoadStatus { initial, loading, success, failure }
 
@@ -66,6 +67,8 @@ class HomeState {
   final bool hasLoadedMore; // true sau khi nhấn "Xem thêm" ít nhất 1 lần
 
   final String selectedDistrict; // '' = Tất cả
+  final String selectedPitchType; // 'Sân 5', 'Sân 7', 'Sân 11'
+  final String pitchSortOrder; // 'asc', 'desc', 'none'
 
   final String? errorMessage;
 
@@ -87,6 +90,8 @@ class HomeState {
     this.visibleProductCount = kProductPageSize,
     this.hasLoadedMore = false,
     this.selectedDistrict = '',
+    this.selectedPitchType = '',
+    this.pitchSortOrder = 'none',
     this.errorMessage,
   });
 
@@ -177,21 +182,73 @@ class HomeState {
   List<DiscountEntity> get activeDiscounts =>
       discounts.where((d) => d.isActive).toList();
 
-  /// Sân đã lọc theo khu vực đang chọn
+  /// Sân đã lọc theo khu vực, loại sân và sắp xếp đang chọn (Dùng cho tab Sân)
   List<PitchEntity> get filteredPitches {
-    if (selectedDistrict.isEmpty) return pitches;
-    return pitches
-        .where((p) => p.district == selectedDistrict)
-        .toList();
+    var result = pitches;
+    
+    if (selectedDistrict.isNotEmpty) {
+      result = result.where((p) => p.district == selectedDistrict).toList();
+    }
+    
+    if (selectedPitchType.isNotEmpty) {
+      result = result.where((p) => p.displayType == selectedPitchType).toList();
+    }
+    
+    if (pitchSortOrder == 'asc') {
+      result = [...result]..sort((a, b) => a.price.compareTo(b.price));
+    } else if (pitchSortOrder == 'desc') {
+      result = [...result]..sort((a, b) => b.price.compareTo(a.price));
+    }
+    
+    return result;
   }
 
-  /// Danh sách quận duy nhất có trong danh sách sân
+  /// Sân đã lọc theo Loại và Sắp xếp giá, nhưng bỏ qua Quận (Dùng cho Tìm kiếm toàn cục)
+  List<PitchEntity> get searchFilteredPitches {
+    var result = pitches;
+
+    if (selectedPitchType.isNotEmpty) {
+      result = result.where((p) => p.displayType == selectedPitchType).toList();
+    }
+
+    if (pitchSortOrder == 'asc') {
+      result = [...result]..sort((a, b) => a.price.compareTo(b.price));
+    } else if (pitchSortOrder == 'desc') {
+      result = [...result]..sort((a, b) => b.price.compareTo(a.price));
+    }
+
+    return result;
+  }
+
+  /// Danh sách quận duy nhất có trong toàn bộ danh sách sân
   List<String> get availableDistricts {
     final districts = pitches
         .map((p) => p.district)
         .where((d) => d.isNotEmpty)
         .toSet()
         .toList();
+    districts.sort();
+    return districts;
+  }
+
+  /// Danh sách quận có ít nhất một sân khớp với Loại sân và Câu truy vấn tìm kiếm hiện tại
+  List<String> getActiveDistricts(String query) {
+    if (query.isEmpty && selectedPitchType.isEmpty) return availableDistricts;
+
+    final normalizedQuery = StringUtils.removeDiacritics(query.toLowerCase());
+    final matches = pitches.where((p) {
+      // 1. Phải khớp với Loại sân đang lọc
+      final matchesType = selectedPitchType.isEmpty || p.displayType == selectedPitchType;
+      if (!matchesType) return false;
+
+      // 2. Nếu có search query, phải khớp tên hoặc loại
+      if (query.isEmpty) return true;
+      final nameStr = StringUtils.removeDiacritics(p.name.toLowerCase());
+      final typeStr = StringUtils.removeDiacritics(p.displayType.toLowerCase());
+      return nameStr.contains(normalizedQuery) || typeStr.contains(normalizedQuery);
+    });
+
+    final districts = matches.map((p) => p.district).where((d) => d.isNotEmpty).toSet().toList();
     districts.sort();
     return districts;
   }
@@ -216,6 +273,8 @@ class HomeState {
     int? visibleProductCount,
     bool? hasLoadedMore,
     String? selectedDistrict,
+    String? selectedPitchType,
+    String? pitchSortOrder,
     String? errorMessage,
   }) {
     return HomeState(
@@ -237,6 +296,8 @@ class HomeState {
       visibleProductCount: visibleProductCount ?? this.visibleProductCount,
       hasLoadedMore: hasLoadedMore ?? this.hasLoadedMore,
       selectedDistrict: selectedDistrict ?? this.selectedDistrict,
+      selectedPitchType: selectedPitchType ?? this.selectedPitchType,
+      pitchSortOrder: pitchSortOrder ?? this.pitchSortOrder,
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }

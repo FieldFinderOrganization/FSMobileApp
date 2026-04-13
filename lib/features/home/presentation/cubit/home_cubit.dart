@@ -155,5 +155,13 @@ class HomeCubit extends Cubit<HomeState> {
     emit(state.copyWith(selectedDistrict: next));
   }
 
+  void updatePitchFilters({String? type, String? sort}) {
+    emit(state.copyWith(
+      selectedPitchType: type ?? state.selectedPitchType,
+      pitchSortOrder: sort ?? state.pitchSortOrder,
+    ));
+  }
+
   Future<void> refresh() => loadAll();
 }
+

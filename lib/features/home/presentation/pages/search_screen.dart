@@ -1,455 +1,370 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../product/domain/entities/product_entity.dart';
+import '../../../../core/utils/string_utils.dart';
 import '../../../pitch/domain/entities/pitch_entity.dart';
+import '../../../pitch/presentation/pages/pitch_detail_screen.dart';
+import '../../../pitch/presentation/widgets/filter_sheet.dart';
+import '../../../product/domain/entities/product_entity.dart';
+import '../cubit/home_cubit.dart';
 
 enum SearchMode { product, pitch }
 
 class SearchScreen extends StatefulWidget {
-  final List<ProductEntity> products;
-  final List<PitchEntity> pitches;
-
-  const SearchScreen({
-    super.key,
-    required this.products,
-    required this.pitches,
-  });
+  const SearchScreen({super.key});
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen>
-    with SingleTickerProviderStateMixin {
+class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _controller = TextEditingController();
-  late AnimationController _animController;
-  late Animation<double> _fadeAnim;
-
-  SearchMode _mode = SearchMode.product;
   String _query = '';
-  String _selectedDistrict = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 250),
-    );
-    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
-  }
+  SearchMode _mode = SearchMode.pitch;
 
   @override
   void dispose() {
     _controller.dispose();
-    _animController.dispose();
     super.dispose();
   }
 
   void _onQueryChanged(String value) {
     setState(() {
       _query = value.trim();
-      // Reset district khi xoá query
-      if (value.isEmpty) _selectedDistrict = '';
     });
-    if (value.isNotEmpty) {
-      _animController.forward();
-    } else {
-      _animController.reverse();
-    }
   }
 
-  List<ProductEntity> get _filteredProducts {
-    if (_query.isEmpty) return [];
-    final q = _query.toLowerCase();
-    return widget.products
-        .where(
-          (p) =>
-              p.name.toLowerCase().contains(q) ||
-              p.brand.toLowerCase().contains(q) ||
-              p.categoryName.toLowerCase().contains(q),
-        )
-        .toList();
-  }
-
-  List<PitchEntity> get _filteredPitches {
-    if (_query.isEmpty) return [];
-    final q = _query.toLowerCase();
-    var result = widget.pitches
-        .where(
-          (p) =>
-              p.name.toLowerCase().contains(q) ||
-              p.displayType.toLowerCase().contains(q) ||
-              p.environment.toLowerCase().contains(q) ||
-              p.address.toLowerCase().contains(q),
-        )
-        .toList();
-    if (_selectedDistrict.isNotEmpty) {
-      result = result.where((p) => p.district == _selectedDistrict).toList();
-    }
-    return result;
-  }
-
-  /// Quận có trong kết quả tìm kiếm hiện tại (không lọc district)
-  List<String> get _availableDistricts {
-    if (_query.isEmpty) return [];
-    final q = _query.toLowerCase();
-    final hits = widget.pitches.where(
-      (p) =>
-          p.name.toLowerCase().contains(q) ||
-          p.displayType.toLowerCase().contains(q) ||
-          p.environment.toLowerCase().contains(q) ||
-          p.address.toLowerCase().contains(q),
+  void _showFilterSheet() {
+    final cubit = context.read<HomeCubit>();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => FilterSheet(
+        selectedType: cubit.state.selectedPitchType,
+        priceSortOrder: cubit.state.pitchSortOrder,
+        onApply: (type, sort) {
+          cubit.updatePitchFilters(type: type, sort: sort);
+        },
+      ),
     );
-    final districts = hits
-        .map((p) => p.district)
-        .where((d) => d.isNotEmpty)
-        .toSet()
-        .toList();
-    districts.sort();
-    return districts;
   }
 
   @override
   Widget build(BuildContext context) {
+    final content = BlocBuilder<HomeCubit, HomeState>(
+      builder: (context, state) {
+        final resultsPitches = _getFilteredPitches(state);
+        final productsResults = _getFilteredProducts(state.products);
+
+        return Column(
+          children: [
+            _buildSearchBar(state),
+            const SizedBox(height: 12),
+            _buildModeToggle(),
+            Expanded(
+              child: _mode == SearchMode.pitch
+                  ? _buildPitchList(resultsPitches)
+                  : _buildProductList(productsResults),
+            ),
+          ],
+        );
+      },
+    );
+
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── Search bar ────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(4, 12, 16, 0),
+      body: SafeArea(child: content),
+    );
+  }
+
+  List<PitchEntity> _getFilteredPitches(HomeState state) {
+    final normalizedQuery = StringUtils.removeDiacritics(_query.toLowerCase());
+    return state.searchFilteredPitches.where((p) {
+      if (_query.isEmpty) return true;
+      final name = StringUtils.removeDiacritics(p.name.toLowerCase());
+      final type = StringUtils.removeDiacritics(p.displayType.toLowerCase());
+      return name.contains(normalizedQuery) || type.contains(normalizedQuery);
+    }).toList();
+  }
+
+  List<ProductEntity> _getFilteredProducts(List<ProductEntity> products) {
+    if (_query.isEmpty) return products;
+    final normalizedQuery = StringUtils.removeDiacritics(_query.toLowerCase());
+    return products.where((p) {
+      final name = StringUtils.removeDiacritics(p.name.toLowerCase());
+      return name.contains(normalizedQuery);
+    }).toList();
+  }
+
+  Widget _buildSearchBar(HomeState state) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          ),
+
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF6F6F6),
+                borderRadius: BorderRadius.circular(14),
+              ),
               child: Row(
                 children: [
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 20,
-                      color: AppColors.textDark,
-                    ),
+                  const Icon(
+                    Icons.search_rounded,
+                    color: AppColors.textGrey,
+                    size: 20,
                   ),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF5F5F5),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: TextField(
-                        controller: _controller,
-                        autofocus: true,
-                        onChanged: _onQueryChanged,
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: AppColors.textDark,
+                    child: TextField(
+                      controller: _controller,
+                      autofocus: true,
+                      onChanged: _onQueryChanged,
+                      style: GoogleFonts.inter(fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: _mode == SearchMode.pitch
+                            ? 'Tìm sân bóng, loại sân...'
+                            : 'Tìm sản phẩm...',
+                        hintStyle: GoogleFonts.inter(
+                          color: AppColors.textGrey,
+                          fontSize: 13,
                         ),
-                        decoration: InputDecoration(
-                          hintText: _mode == SearchMode.product
-                              ? 'Tìm sản phẩm, thương hiệu...'
-                              : 'Tìm tên sân, loại sân...',
-                          hintStyle: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: const Color(0xFFBBBBBB),
-                          ),
-                          prefixIcon: const Icon(
-                            Icons.search_rounded,
-                            color: Color(0xFFBBBBBB),
-                            size: 20,
-                          ),
-                          suffixIcon: _query.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(
-                                    Icons.clear_rounded,
-                                    size: 18,
-                                    color: Color(0xFFAAAAAA),
-                                  ),
-                                  onPressed: () {
-                                    _controller.clear();
-                                    _onQueryChanged('');
-                                  },
-                                )
-                              : null,
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 13,
-                          ),
-                        ),
+                        border: InputBorder.none,
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // ── Mode toggle ───────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  _ModeChip(
-                    label: 'Sản phẩm',
-                    icon: Icons.shopping_bag_outlined,
-                    isActive: _mode == SearchMode.product,
-                    onTap: () => setState(() => _mode = SearchMode.product),
-                  ),
-                  const SizedBox(width: 8),
-                  _ModeChip(
-                    label: 'Sân',
-                    icon: Icons.sports_soccer_rounded,
-                    isActive: _mode == SearchMode.pitch,
-                    onTap: () => setState(() => _mode = SearchMode.pitch),
-                  ),
-                  const Spacer(),
-                  // Số kết quả
                   if (_query.isNotEmpty)
-                    Text(
-                      '${_mode == SearchMode.product ? _filteredProducts.length : _filteredPitches.length} kết quả',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
+                    GestureDetector(
+                      onTap: () {
+                        _controller.clear();
+                        _onQueryChanged('');
+                      },
+                      child: const Icon(
+                        Icons.cancel_rounded,
                         color: AppColors.textGrey,
+                        size: 18,
                       ),
                     ),
                 ],
               ),
             ),
-
-            const SizedBox(height: 10),
-            const Divider(height: 1, color: Color(0xFFEEEEEE)),
-
-            // ── District chips (chỉ hiện khi mode sân + có kq) ───────────
-            if (_mode == SearchMode.pitch && _availableDistricts.isNotEmpty)
-              _buildDistrictBar(),
-
-            // ── Results ───────────────────────────────────────────────────
-            Expanded(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: _query.isEmpty
-                    ? _buildEmptyHint(key: const ValueKey('hint'))
-                    : _mode == SearchMode.product
-                    ? _buildProductResults(key: const ValueKey('products'))
-                    : _buildPitchResults(key: const ValueKey('pitches')),
+          ),
+          if (_mode == SearchMode.pitch) ...[
+            const SizedBox(width: 12),
+            GestureDetector(
+              onTap: _showFilterSheet,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: (state.selectedPitchType.isNotEmpty ||
+                          state.pitchSortOrder != 'none')
+                      ? AppColors.primaryRed.withValues(alpha: 0.1)
+                      : const Color(0xFFF6F6F6),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: (state.selectedPitchType.isNotEmpty ||
+                            state.pitchSortOrder != 'none')
+                        ? AppColors.primaryRed.withValues(alpha: 0.3)
+                        : Colors.transparent,
+                  ),
+                ),
+                child: Icon(
+                  Icons.tune,
+                  color: (state.selectedPitchType.isNotEmpty ||
+                          state.pitchSortOrder != 'none')
+                      ? AppColors.primaryRed
+                      : AppColors.textGrey,
+                  size: 20,
+                ),
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyHint({Key? key}) {
-    return Center(
-      key: key,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.search_rounded, size: 72, color: Colors.grey[200]),
-          const SizedBox(height: 16),
-          Text(
-            'Nhập tên để tìm kiếm',
-            style: GoogleFonts.inter(fontSize: 15, color: Colors.grey[400]),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            _mode == SearchMode.product
-                ? 'Tìm theo tên sản phẩm hoặc thương hiệu'
-                : 'Tìm theo tên sân hoặc loại sân',
-            style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[350]),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildProductResults({Key? key}) {
-    final results = _filteredProducts;
-    if (results.isEmpty) {
-      return _buildNoResult(key: key);
-    }
-    return FadeTransition(
-      key: key,
-      opacity: _fadeAnim,
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: results.length,
-        separatorBuilder: (_, _) =>
-            const Divider(height: 1, indent: 80, color: Color(0xFFF0F0F0)),
-        itemBuilder: (_, i) => _ProductResultItem(product: results[i]),
-      ),
-    );
-  }
-
-  Widget _buildPitchResults({Key? key}) {
-    final results = _filteredPitches;
-    if (results.isEmpty) {
-      return _buildNoResult(key: key);
-    }
-    return FadeTransition(
-      key: key,
-      opacity: _fadeAnim,
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: results.length,
-        separatorBuilder: (_, _) =>
-            const Divider(height: 1, indent: 80, color: Color(0xFFF0F0F0)),
-        itemBuilder: (_, i) => _PitchResultItem(pitch: results[i]),
-      ),
-    );
-  }
-
-  Widget _buildNoResult({Key? key}) {
-    return Center(
-      key: key,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+  Widget _buildModeToggle() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
         children: [
-          Icon(Icons.search_off_rounded, size: 72, color: Colors.grey[200]),
-          const SizedBox(height: 16),
-          Text(
-            'Không tìm thấy kết quả',
-            style: GoogleFonts.inter(fontSize: 15, color: Colors.grey[400]),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Thử với từ khoá khác',
-            style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[350]),
-          ),
+          _modeChip('Sân bóng', SearchMode.pitch),
+          const SizedBox(width: 8),
+          _modeChip('Sản phẩm', SearchMode.product),
         ],
       ),
     );
   }
 
-  // ── District chip bar ────────────────────────────────────────────────────
-
-  Widget _buildDistrictBar() {
-    final districts = _availableDistricts;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 10),
-        SizedBox(
-          height: 36,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: districts.length + 1,
-            separatorBuilder: (_, _) => const SizedBox(width: 8),
-            itemBuilder: (_, i) {
-              if (i == 0) {
-                // Chip "Tất cả"
-                final isActive = _selectedDistrict.isEmpty;
-                return _SearchDistrictChip(
-                  label: 'Tất cả',
-                  isActive: isActive,
-                  onTap: () => setState(() => _selectedDistrict = ''),
-                );
-              }
-              final district = districts[i - 1];
-              final isActive = _selectedDistrict == district;
-              return _SearchDistrictChip(
-                label: district,
-                isActive: isActive,
-                onTap: () => setState(() {
-                  _selectedDistrict = _selectedDistrict == district
-                      ? ''
-                      : district;
-                }),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Divider(height: 1, color: Color(0xFFEEEEEE)),
-      ],
-    );
-  }
-}
-
-// ── Search District Chip ─────────────────────────────────────────────────────
-
-class _SearchDistrictChip extends StatelessWidget {
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _SearchDistrictChip({
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _modeChip(String label, SearchMode mode) {
+    final isSel = _mode == mode;
     return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+      onTap: () => setState(() => _mode = mode),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.primaryRed : const Color(0xFFF3F3F3),
+          color: isSel ? AppColors.textDark : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isActive ? AppColors.primaryRed : const Color(0xFFE0E0E0),
+            color: isSel ? AppColors.textDark : const Color(0xFFEEEEEE),
           ),
         ),
         child: Text(
           label,
           style: GoogleFonts.inter(
             fontSize: 12,
-            fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-            color: isActive ? Colors.white : AppColors.textGrey,
+            fontWeight: isSel ? FontWeight.w600 : FontWeight.w400,
+            color: isSel ? Colors.white : AppColors.textGrey,
           ),
         ),
       ),
     );
   }
+
+  Widget _buildPitchList(List<PitchEntity> pitches) {
+    if (pitches.isEmpty) return _buildEmptyState();
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      itemCount: pitches.length,
+      itemBuilder: (context, index) => _PitchCard(pitch: pitches[index]),
+    );
+  }
+
+  Widget _buildProductList(List<ProductEntity> products) {
+    if (products.isEmpty) return _buildEmptyState();
+    return GridView.builder(
+      padding: const EdgeInsets.all(20),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.7,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+      ),
+      itemCount: products.length,
+      itemBuilder: (context, index) => _ProductCard(product: products[index]),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search_off_rounded, size: 64, color: Colors.grey[300]),
+          const SizedBox(height: 16),
+          Text(
+            'Không tìm thấy kết quả nào',
+            style: GoogleFonts.inter(color: AppColors.textGrey),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-// ── Mode chip ────────────────────────────────────────────────────────────────
-
-class _ModeChip extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _ModeChip({
-    required this.label,
-    required this.icon,
-    required this.isActive,
-    required this.onTap,
-  });
+class _PitchCard extends StatelessWidget {
+  final PitchEntity pitch;
+  const _PitchCard({required this.pitch});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => PitchDetailScreen(pitch: pitch)),
+      ),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 20),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.primaryRed : const Color(0xFFF5F5F5),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 14,
-              color: isActive ? Colors.white : AppColors.textGrey,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
             ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: isActive ? Colors.white : AppColors.textGrey,
+          ],
+        ),
+        child: Column(
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              child: pitch.primaryImage.isNotEmpty
+                  ? Image.network(
+                      pitch.primaryImage,
+                      height: 180,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => _placeholder(),
+                    )
+                  : _placeholder(),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryRed.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          pitch.displayType,
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryRed,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '${pitch.price.toStringAsFixed(0)}k/h',
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.primaryRed,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    pitch.name,
+                    style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on_rounded, size: 14, color: AppColors.textGrey),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          pitch.address,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(fontSize: 12, color: AppColors.textGrey),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
@@ -457,196 +372,78 @@ class _ModeChip extends StatelessWidget {
       ),
     );
   }
+
+  Widget _placeholder() => Container(
+        height: 180,
+        width: double.infinity,
+        color: const Color(0xFFF5F5F5),
+        child: const Icon(Icons.sports_soccer, color: Colors.grey, size: 48),
+      );
 }
 
-// ── Product result item ──────────────────────────────────────────────────────
-
-class _ProductResultItem extends StatelessWidget {
+class _ProductCard extends StatelessWidget {
   final ProductEntity product;
-
-  const _ProductResultItem({required this.product});
+  const _ProductCard({required this.product});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          // Thumbnail
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: product.imageUrl.isNotEmpty
-                ? Image.network(
-                    product.imageUrl,
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => _placeholder(),
-                  )
-                : _placeholder(),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
           ),
-          const SizedBox(width: 12),
-          // Info
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Expanded(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: product.imageUrl.isNotEmpty
+                  ? Image.network(
+                      product.imageUrl,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => _placeholder(),
+                    )
+                  : _placeholder(),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   product.name,
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textDark,
-                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
-                  [
-                    if (product.brand.isNotEmpty) product.brand,
-                    if (product.sex.isNotEmpty) product.sex,
-                  ].join(' · '),
+                  NumberFormat.currency(locale: 'vi_VN', symbol: 'đ').format(product.price),
                   style: GoogleFonts.inter(
-                    fontSize: 11,
-                    color: AppColors.textGrey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Price
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              if (product.isOnSale && product.salePrice != null) ...[
-                Text(
-                  '${_fmt(product.price)}đ',
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    color: AppColors.textGrey,
-                    decoration: TextDecoration.lineThrough,
-                  ),
-                ),
-                Text(
-                  '${_fmt(product.salePrice!)}đ',
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
                     color: AppColors.primaryRed,
-                  ),
-                ),
-              ] else
-                Text(
-                  '${_fmt(product.price)}đ',
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textDark,
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _placeholder() => Container(
-    width: 60,
-    height: 60,
-    color: const Color(0xFFF0F0F0),
-    child: const Icon(Icons.image_not_supported, color: Colors.grey, size: 24),
-  );
-
-  String _fmt(double price) {
-    // Format số: 1000000 → 1.000.000
-    return price
-        .toStringAsFixed(0)
-        .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]}.');
-  }
-}
-
-// ── Pitch result item ────────────────────────────────────────────────────────
-
-class _PitchResultItem extends StatelessWidget {
-  final PitchEntity pitch;
-
-  const _PitchResultItem({required this.pitch});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          // Thumbnail
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: pitch.primaryImage.isNotEmpty
-                ? Image.network(
-                    pitch.primaryImage,
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => _placeholder(),
-                  )
-                : _placeholder(),
-          ),
-          const SizedBox(width: 12),
-          // Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  pitch.name,
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textDark,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${pitch.displayType} · ${pitch.environment}',
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    color: AppColors.textGrey,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          // Price
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.primaryRed,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              '${pitch.price.toStringAsFixed(0)}k/h',
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 
   Widget _placeholder() => Container(
-    width: 60,
-    height: 60,
-    color: const Color(0xFFF0F0F0),
-    child: const Icon(Icons.sports_soccer, color: Colors.grey, size: 24),
-  );
+        color: const Color(0xFFF5F5F5),
+        child: const Center(child: Icon(Icons.image, color: Colors.grey)),
+      );
 }

@@ -9,7 +9,11 @@ import 'features/auth/data/datasources/auth_remote_datasource.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/login/presentation/bloc/auth_cubit.dart';
+import 'features/home/data/datasources/home_remote_datasource.dart';
+import 'features/home/data/repositories/home_repository_impl.dart';
+import 'features/home/presentation/cubit/home_cubit.dart';
 import 'features/welcome/presentation/pages/welcome_screen.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,6 +24,10 @@ void main() async {
   final dioClient = DioClient(tokenStorage);
   final authDatasource = AuthRemoteDatasource(dioClient.dio);
   final authRepository = AuthRepositoryImpl(authDatasource);
+
+  final homeDatasource = HomeRemoteDatasource(dioClient.dio);
+  final homeRepository = HomeRepositoryImpl(homeDatasource);
+
 
   runApp(
     MultiRepositoryProvider(
@@ -36,7 +44,11 @@ void main() async {
               tokenStorage: tokenStorage,
             ),
           ),
+          BlocProvider<HomeCubit>(
+            create: (context) => HomeCubit(repository: homeRepository)..loadAll(),
+          ),
         ],
+
         child: const MyApp(),
       ),
     ),

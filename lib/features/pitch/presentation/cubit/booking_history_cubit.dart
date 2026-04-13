@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/repositories/booking_repository_impl.dart';
 import 'booking_history_state.dart';
@@ -23,6 +24,9 @@ class BookingHistoryCubit extends Cubit<BookingHistoryState> {
         allBookings: bookings,
         filteredBookings: bookings,
       ));
+    } on DioException catch (e) {
+      final message = e.response?.data?['message'] ?? e.message ?? e.toString();
+      emit(BookingHistoryError(message));
     } catch (e) {
       emit(BookingHistoryError(e.toString()));
     }

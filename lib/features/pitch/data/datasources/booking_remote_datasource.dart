@@ -37,8 +37,10 @@ class BookingRemoteDataSource {
       final response = await dioClient.dio.get(
         '${ApiConstants.userBookings}/$userId',
       );
+
       return (response.data as List)
-          .map((e) => BookingResponseModel.fromJson(          .toList();
+          .map((e) => BookingResponseModel.fromJson(e))
+          .toList();
     } catch (e) {
       rethrow;
     }

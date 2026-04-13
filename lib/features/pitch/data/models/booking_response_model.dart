@@ -11,7 +11,10 @@ class BookingResponseModel {
   final String paymentMethod;
   final String providerName;
   final String pitchName;
+  final String? pitchImageUrl;
   final List<int> slots;
+  final String? createdAt;
+  final String? paidAt;
 
   BookingResponseModel({
     required this.userId,
@@ -26,7 +29,10 @@ class BookingResponseModel {
     required this.paymentMethod,
     required this.providerName,
     required this.pitchName,
+    this.pitchImageUrl,
     required this.slots,
+    this.createdAt,
+    this.paidAt,
   });
 
   factory BookingResponseModel.fromJson(Map<String, dynamic> json) {
@@ -43,7 +49,10 @@ class BookingResponseModel {
       paymentMethod: json['paymentMethod'] ?? '',
       providerName: json['providerName'] ?? '',
       pitchName: json['pitchName'] ?? '',
+      pitchImageUrl: json['pitchImageUrl'],
       slots: (json['slots'] as List<dynamic>?)?.map((e) => e as int).toList() ?? [],
+      createdAt: json['createdAt'],
+      paidAt: json['paidAt'],
     );
   }
 
@@ -61,7 +70,10 @@ class BookingResponseModel {
       'paymentMethod': paymentMethod,
       'providerName': providerName,
       'pitchName': pitchName,
+      'pitchImageUrl': pitchImageUrl,
       'slots': slots,
+      'createdAt': createdAt,
+      'paidAt': paidAt,
     };
   }
 }

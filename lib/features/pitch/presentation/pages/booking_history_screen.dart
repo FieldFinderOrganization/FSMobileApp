@@ -8,11 +8,10 @@ import '../../data/models/booking_response_model.dart';
 import '../cubit/booking_history_cubit.dart';
 import '../cubit/booking_history_state.dart';
 
-import '../../../auth/login/presentation/bloc/auth_cubit.dart';
-import '../../../auth/login/presentation/bloc/auth_state.dart';
 import '../../data/datasources/booking_remote_datasource.dart';
 import '../../data/repositories/booking_repository_impl.dart';
 import '../../../../core/network/dio_client.dart';
+import 'booking_detail_screen.dart';
 
 class BookingHistoryScreen extends StatelessWidget {
   final String userId;
@@ -53,7 +52,9 @@ class _BookingHistoryBody extends StatelessWidget {
                   builder: (context, state) {
                     if (state is BookingHistoryLoading) {
                       return const Center(
-                        child: CircularProgressIndicator(color: AppColors.primaryRed),
+                        child: CircularProgressIndicator(
+                          color: AppColors.primaryRed,
+                        ),
                       );
                     } else if (state is BookingHistoryError) {
                       return _buildErrorState(context, state.message);
@@ -62,14 +63,17 @@ class _BookingHistoryBody extends StatelessWidget {
                         return _buildEmptyState();
                       }
                       return RefreshIndicator(
-                        onRefresh: () => context.read<BookingHistoryCubit>().loadBookings(),
+                        onRefresh: () =>
+                            context.read<BookingHistoryCubit>().loadBookings(),
                         color: AppColors.primaryRed,
                         child: ListView.builder(
                           padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
                           physics: const BouncingScrollPhysics(),
                           itemCount: state.filteredBookings.length,
                           itemBuilder: (context, index) {
-                            return _BookingItemCard(booking: state.filteredBookings[index]);
+                            return _BookingItemCard(
+                              booking: state.filteredBookings[index],
+                            );
                           },
                         ),
                       );
@@ -112,15 +116,23 @@ class _BookingHistoryBody extends StatelessWidget {
   }
 
   Widget _buildFilterBar(BuildContext context) {
-    final statusList = ['Tất cả', 'PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED'];
-    
+    final statusList = [
+      'Tất cả',
+      'PENDING',
+      'CONFIRMED',
+      'CANCELLED',
+      'COMPLETED',
+    ];
+
     return Container(
       height: 60,
       color: Colors.white,
       child: BlocBuilder<BookingHistoryCubit, BookingHistoryState>(
         builder: (context, state) {
-          final selectedStatus = state is BookingHistorySuccess ? state.selectedStatus ?? 'Tất cả' : 'Tất cả';
-          
+          final selectedStatus = state is BookingHistorySuccess
+              ? state.selectedStatus ?? 'Tất cả'
+              : 'Tất cả';
+
           return ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -128,9 +140,11 @@ class _BookingHistoryBody extends StatelessWidget {
             itemBuilder: (context, index) {
               final status = statusList[index];
               final isSelected = selectedStatus == status;
-              
+
               return GestureDetector(
-                onTap: () => context.read<BookingHistoryCubit>().filterByStatus(status == 'Tất cả' ? null : status),
+                onTap: () => context.read<BookingHistoryCubit>().filterByStatus(
+                  status == 'Tất cả' ? null : status,
+                ),
                 child: Container(
                   margin: const EdgeInsets.only(right: 10),
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -138,22 +152,30 @@ class _BookingHistoryBody extends StatelessWidget {
                     color: isSelected ? AppColors.primaryRed : Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: isSelected ? AppColors.primaryRed : const Color(0xFFEEEEEE),
+                      color: isSelected
+                          ? AppColors.primaryRed
+                          : const Color(0xFFEEEEEE),
                     ),
-                    boxShadow: isSelected ? [
-                      BoxShadow(
-                        color: AppColors.primaryRed.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      )
-                    ] : null,
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: AppColors.primaryRed.withValues(
+                                alpha: 0.3,
+                              ),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
                   ),
                   alignment: Alignment.center,
                   child: Text(
                     _translateStatus(status),
                     style: GoogleFonts.inter(
                       fontSize: 13,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
                       color: isSelected ? Colors.white : AppColors.textGrey,
                     ),
                   ),
@@ -168,12 +190,18 @@ class _BookingHistoryBody extends StatelessWidget {
 
   String _translateStatus(String status) {
     switch (status.toUpperCase()) {
-      case 'TẤT CẢ': return 'Tất cả';
-      case 'PENDING': return 'Chờ xác nhận';
-      case 'CONFIRMED': return 'Đã xác nhận';
-      case 'CANCELLED': return 'Đã hủy';
-      case 'COMPLETED': return 'Hoàn thành';
-      default: return status;
+      case 'TẤT CẢ':
+        return 'Tất cả';
+      case 'PENDING':
+        return 'Chờ xác nhận';
+      case 'CONFIRMED':
+        return 'Đã xác nhận';
+      case 'CANCELLED':
+        return 'Đã hủy';
+      case 'COMPLETED':
+        return 'Hoàn thành';
+      default:
+        return status;
     }
   }
 
@@ -188,7 +216,11 @@ class _BookingHistoryBody extends StatelessWidget {
               color: Colors.grey[100],
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.history_rounded, size: 64, color: Colors.grey[400]),
+            child: Icon(
+              Icons.history_rounded,
+              size: 64,
+              color: Colors.grey[400],
+            ),
           ),
           const SizedBox(height: 16),
           Text(
@@ -219,11 +251,18 @@ class _BookingHistoryBody extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline_rounded, size: 50, color: AppColors.primaryRed),
+            const Icon(
+              Icons.error_outline_rounded,
+              size: 50,
+              color: AppColors.primaryRed,
+            ),
             const SizedBox(height: 16),
             Text(
               'Đã có lỗi xảy ra',
-              style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold),
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -233,12 +272,18 @@ class _BookingHistoryBody extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () => context.read<BookingHistoryCubit>().loadBookings(),
+              onPressed: () =>
+                  context.read<BookingHistoryCubit>().loadBookings(),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryRed,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              child: const Text('Thử lại', style: TextStyle(color: Colors.white)),
+              child: const Text(
+                'Thử lại',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
@@ -254,9 +299,20 @@ class _BookingItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => BookingDetailScreen(booking: booking),
+        ),
+      ),
+      child: _buildCardContent(context),
+    );
+  }
+
+  Widget _buildCardContent(BuildContext context) {
     final statusColor = _getStatusColor(booking.status);
     final statusBg = statusColor.withValues(alpha: 0.1);
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -279,11 +335,16 @@ class _BookingItemCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: statusBg,
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: statusColor.withValues(alpha: 0.2)),
+                    border: Border.all(
+                      color: statusColor.withValues(alpha: 0.2),
+                    ),
                   ),
                   child: Text(
                     _translateStatus(booking.status),
@@ -306,7 +367,7 @@ class _BookingItemCard extends StatelessWidget {
             ),
           ),
           const Divider(height: 1, color: Color(0xFFF0F0F0)),
-          
+
           // Main Info
           Padding(
             padding: const EdgeInsets.all(16),
@@ -314,15 +375,21 @@ class _BookingItemCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Pitch Thumbnail Placeholder
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F5),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.sports_soccer_rounded, color: AppColors.primaryRed),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child:
+                      booking.pitchImageUrl != null &&
+                          booking.pitchImageUrl!.isNotEmpty
+                      ? Image.network(
+                          booking.pitchImageUrl!,
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => _placeholder(),
+                        )
+                      : _placeholder(),
                 ),
+
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -339,11 +406,18 @@ class _BookingItemCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.calendar_today_outlined, size: 13, color: AppColors.textGrey),
+                          const Icon(
+                            Icons.calendar_today_outlined,
+                            size: 13,
+                            color: AppColors.textGrey,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             _formatDate(booking.bookingDate),
-                            style: GoogleFonts.inter(fontSize: 13, color: AppColors.textGrey),
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: AppColors.textGrey,
+                            ),
                           ),
                         ],
                       ),
@@ -351,7 +425,11 @@ class _BookingItemCard extends StatelessWidget {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.access_time_rounded, size: 13, color: AppColors.textGrey),
+                          const Icon(
+                            Icons.access_time_rounded,
+                            size: 13,
+                            color: AppColors.textGrey,
+                          ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
@@ -371,9 +449,9 @@ class _BookingItemCard extends StatelessWidget {
               ],
             ),
           ),
-          
+
           const Divider(height: 1, color: Color(0xFFF0F0F0)),
-          
+
           // Footer: Total & Actions
           Padding(
             padding: const EdgeInsets.all(16),
@@ -385,11 +463,17 @@ class _BookingItemCard extends StatelessWidget {
                   children: [
                     Text(
                       'Tổng thanh toán',
-                      style: GoogleFonts.inter(fontSize: 11, color: AppColors.textGrey),
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: AppColors.textGrey,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      NumberFormat.currency(locale: 'vi_VN', symbol: 'đ').format(booking.totalPrice),
+                      NumberFormat.currency(
+                        locale: 'vi_VN',
+                        symbol: 'đ',
+                      ).format(booking.totalPrice),
                       style: GoogleFonts.inter(
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
@@ -405,20 +489,39 @@ class _BookingItemCard extends StatelessWidget {
                       backgroundColor: AppColors.primaryRed,
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
-                    child: const Text('Thanh toán', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'Thanh toán',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   )
                 else
                   OutlinedButton(
                     onPressed: () {},
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       side: const BorderSide(color: Color(0xFFEEEEEE)),
                     ),
-                    child: const Text('Chi tiết', style: TextStyle(color: AppColors.textDark, fontSize: 13)),
+                    child: const Text(
+                      'Chi tiết',
+                      style: TextStyle(color: AppColors.textDark, fontSize: 13),
+                    ),
                   ),
               ],
             ),
@@ -430,11 +533,16 @@ class _BookingItemCard extends StatelessWidget {
 
   Color _getStatusColor(String status) {
     switch (status.toUpperCase()) {
-      case 'PENDING': return Colors.orange;
-      case 'CONFIRMED': return const Color(0xFF2E7D32);
-      case 'CANCELLED': return AppColors.primaryRed;
-      case 'COMPLETED': return Colors.blue;
-      default: return AppColors.textGrey;
+      case 'PENDING':
+        return Colors.orange;
+      case 'CONFIRMED':
+        return const Color(0xFF2E7D32);
+      case 'CANCELLED':
+        return AppColors.primaryRed;
+      case 'COMPLETED':
+        return Colors.blue;
+      default:
+        return AppColors.textGrey;
     }
   }
 
@@ -449,24 +557,39 @@ class _BookingItemCard extends StatelessWidget {
 
   String _formatSlots(List<int> slots) {
     if (slots.isEmpty) return 'N/A';
-    
+
     // Simple slot mapping based on index if exact times aren't provided in JSON
     // Mapping: Slot 1 -> 06:00, Slot 18 -> 23:00
     final List<String> timeStrings = slots.map((s) {
       int startHour = 5 + s; // Slot 1 -> 6:00
       return '${startHour.toString().padLeft(2, '0')}:00';
     }).toList();
-    
+
     return timeStrings.join(', ');
   }
 
   String _translateStatus(String status) {
     switch (status.toUpperCase()) {
-      case 'PENDING': return 'Chờ xác nhận';
-      case 'CONFIRMED': return 'Đã xác nhận';
-      case 'CANCELLED': return 'Đã hủy';
-      case 'COMPLETED': return 'Hoàn thành';
-      default: return status;
+      case 'PENDING':
+        return 'Chờ xác nhận';
+      case 'CONFIRMED':
+        return 'Đã xác nhận';
+      case 'CANCELLED':
+        return 'Đã hủy';
+      case 'COMPLETED':
+        return 'Hoàn thành';
+      default:
+        return status;
     }
   }
+
+  Widget _placeholder() => Container(
+    width: 60,
+    height: 60,
+    decoration: BoxDecoration(
+      color: const Color(0xFFF5F5F5),
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: const Icon(Icons.sports_soccer, color: Colors.grey, size: 24),
+  );
 }

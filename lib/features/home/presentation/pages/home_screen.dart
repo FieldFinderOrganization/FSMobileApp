@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/network/dio_client.dart';
-import '../../../../core/storage/token_storage.dart';
-import '../../data/datasources/home_remote_datasource.dart';
-import '../../data/repositories/home_repository_impl.dart';
+// import '../../../../core/network/dio_client.dart';
+// import '../../../../core/storage/token_storage.dart';
+// import '../../data/datasources/home_remote_datasource.dart';
+// import '../../data/repositories/home_repository_impl.dart';
 import '../cubit/home_cubit.dart';
 import '../../../product/presentation/widgets/all_products_section.dart';
 import '../../../pitch/presentation/widgets/featured_pitches_section.dart';
@@ -18,15 +18,7 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokenStorage = TokenStorage();
-    final dioClient = DioClient(tokenStorage);
-    final datasource = HomeRemoteDatasource(dioClient.dio);
-    final repository = HomeRepositoryImpl(datasource);
-
-    return BlocProvider(
-      create: (_) => HomeCubit(repository: repository)..loadAll(),
-      child: const _HomeBody(),
-    );
+    return const _HomeBody();
   }
 }
 
@@ -56,6 +48,8 @@ class _HomeBodyState extends State<_HomeBody> {
     }
   }
 
+
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -66,18 +60,18 @@ class _HomeBodyState extends State<_HomeBody> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          BlocBuilder<HomeCubit, HomeState>(
-            builder: (context, state) {
-              return RefreshIndicator(
+      body: BlocBuilder<HomeCubit, HomeState>(
+        builder: (context, state) {
+          return Stack(
+            children: [
+              // Main Home Content
+              RefreshIndicator(
                 color: const Color(0xFF7B0323),
                 onRefresh: () => context.read<HomeCubit>().refresh(),
                 child: CustomScrollView(
                   controller: _scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
                   slivers: [
-                    // Space for the floating header
                     SliverToBoxAdapter(
                       child: SizedBox(
                         height: MediaQuery.of(context).padding.top + 56,
@@ -92,33 +86,32 @@ class _HomeBodyState extends State<_HomeBody> {
                     const SliverToBoxAdapter(child: HomeFooter()),
                   ],
                 ),
-              );
-            },
-          ),
-          // Floating sticky header
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: BlocBuilder<HomeCubit, HomeState>(
-              buildWhen: (prev, curr) =>
-                  prev.products != curr.products ||
-                  prev.pitches != curr.pitches,
-              builder: (context, state) => HomeHeader(
-                opacity: _headerOpacity,
-                onSearchTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => SearchScreen(
-                      products: state.products,
-                      pitches: state.pitches,
-                    ),
-                  ),
+              ),
+
+              // Sticky Header
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: HomeHeader(
+                  opacity: _headerOpacity,
+                  onSearchTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SearchScreen(),
+                      ),
+                    );
+                  },
                 ),
               ),
-            ),
-          ),
-        ],
+
+
+            ],
+          );
+        },
       ),
     );
   }
 }
+
