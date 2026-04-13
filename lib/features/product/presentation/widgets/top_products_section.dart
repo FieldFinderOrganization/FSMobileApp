@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/constants/app_colors.dart';
 import '../../../home/presentation/cubit/home_state.dart';
 import '../../../home/presentation/widgets/fade_in_section.dart';
 import '../../../home/presentation/widgets/section_header.dart';
 import '../../../home/presentation/widgets/shimmer_card.dart';
 import '../../domain/entities/product_entity.dart';
-import 'sale_badge.dart';
 
 class TopProductsSection extends StatelessWidget {
   final HomeState state;
@@ -21,7 +21,7 @@ class TopProductsSection extends StatelessWidget {
     return FadeInSection(
       delay: const Duration(milliseconds: 200),
       child: Container(
-        color: const Color(0xFF111111),
+        color: const Color(0xFFFAFAFA),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -29,7 +29,7 @@ class TopProductsSection extends StatelessWidget {
               title: 'Bán chạy nhất',
               onSeeAll: null,
               index: '02',
-              darkMode: true,
+              darkMode: false,
             ),
             if (isLoading)
               _buildShimmer()
@@ -37,7 +37,7 @@ class TopProductsSection extends StatelessWidget {
               const SizedBox.shrink()
             else
               _buildPodium(context, state.topProducts),
-            const SizedBox(height: 32),
+            const SizedBox(height: 40),
           ],
         ),
       ),
@@ -45,35 +45,77 @@ class TopProductsSection extends StatelessWidget {
   }
 
   Widget _buildPodium(BuildContext context, List<ProductEntity> products) {
-    // Podium order: #2 left, #1 center (tallest), #3 right
+    // Top 5 Podium order: Rank 4 | Rank 2 | Rank 1 | Rank 3 | Rank 5
     final top1 = products.isNotEmpty ? products[0] : null;
     final top2 = products.length > 1 ? products[1] : null;
     final top3 = products.length > 2 ? products[2] : null;
+    final top4 = products.length > 3 ? products[3] : null;
+    final top5 = products.length > 4 ? products[4] : null;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // #2 — left, medium height
+          // #4
+          if (top4 != null)
+            Expanded(
+              child: _PodiumBubble(
+                product: top4,
+                rank: 4,
+                columnHeight: 45,
+                bubbleSize: 55,
+              ),
+            ),
+          if (top4 != null) const SizedBox(width: 4),
+
+          // #2
           if (top2 != null)
             Expanded(
-              child: _PodiumCard(product: top2, rank: 2, imageHeight: 110),
+              child: _PodiumBubble(
+                product: top2,
+                rank: 2,
+                columnHeight: 85,
+                bubbleSize: 75,
+              ),
             ),
-          if (top2 != null) const SizedBox(width: 8),
+          if (top2 != null) const SizedBox(width: 4),
 
-          // #1 — center, tallest
+          // #1 - Center, Tallest
           if (top1 != null)
             Expanded(
               flex: 2,
-              child: _PodiumCard(product: top1, rank: 1, imageHeight: 160),
+              child: _PodiumBubble(
+                product: top1,
+                rank: 1,
+                columnHeight: 140,
+                bubbleSize: 100,
+                isCenter: true,
+              ),
             ),
+          if (top1 != null) const SizedBox(width: 4),
 
-          if (top3 != null) const SizedBox(width: 8),
-          // #3 — right, shortest
+          // #3
           if (top3 != null)
             Expanded(
-              child: _PodiumCard(product: top3, rank: 3, imageHeight: 90),
+              child: _PodiumBubble(
+                product: top3,
+                rank: 3,
+                columnHeight: 85,
+                bubbleSize: 75,
+              ),
+            ),
+          if (top3 != null) const SizedBox(width: 4),
+
+          // #5
+          if (top5 != null)
+            Expanded(
+              child: _PodiumBubble(
+                product: top5,
+                rank: 5,
+                columnHeight: 45,
+                bubbleSize: 55,
+              ),
             ),
         ],
       ),
@@ -85,130 +127,152 @@ class TopProductsSection extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Expanded(
-            child: ShimmerCard(
-              width: double.infinity,
-              height: 200,
-              borderRadius: BorderRadius.circular(6),
+        children: List.generate(
+          5,
+          (i) => Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: ShimmerCard(
+                width: double.infinity,
+                height: i == 2 ? 220 : (i == 1 || i == 3 ? 180 : 140),
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 2,
-            child: ShimmerCard(
-              width: double.infinity,
-              height: 260,
-              borderRadius: BorderRadius.circular(6),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: ShimmerCard(
-              width: double.infinity,
-              height: 170,
-              borderRadius: BorderRadius.circular(6),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-// ── Podium card ───────────────────────────────────────────────────────────────
+// ── Podium bubble ─────────────────────────────────────────────────────────────
 
-class _PodiumCard extends StatelessWidget {
+class _PodiumBubble extends StatelessWidget {
   final ProductEntity product;
   final int rank;
-  final double imageHeight;
+  final double columnHeight;
+  final double bubbleSize;
+  final bool isCenter;
 
-  const _PodiumCard({
+  const _PodiumBubble({
     required this.product,
     required this.rank,
-    required this.imageHeight,
+    required this.columnHeight,
+    required this.bubbleSize,
+    this.isCenter = false,
   });
 
   static const _rankColors = {
-    1: Color(0xFFD4A017), // gold
-    2: Color(0xFFAAAAAA), // silver
-    3: Color(0xFFCD7F32), // bronze
+    1: Color(0xFFFFD700), // Gold
+    2: Color(0xFFC0C0C0), // Silver
+    3: Color(0xFFCD7F32), // Bronze
+    4: Color(0xFF7B0323), // Deep Red
+    5: Color(0xFF607D8B), // Blue Grey
   };
 
   @override
   Widget build(BuildContext context) {
-    final rankColor = _rankColors[rank] ?? Colors.white54;
-    final isTop1 = rank == 1;
+    final rankColor = _rankColors[rank] ?? Colors.grey;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Card
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Image area
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(6),
+        // Bubble container
+        Stack(
+          alignment: Alignment.bottomCenter,
+          clipBehavior: Clip.none,
+          children: [
+            // Bubble with image
+            Container(
+              width: bubbleSize,
+              height: bubbleSize,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+                border: Border.all(color: rankColor, width: isCenter ? 3 : 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: rankColor.withValues(alpha: 0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipOval(
+                child: _buildImage(),
+              ),
+            ),
+
+            // Rank Badge Overlay
+            Positioned(
+              bottom: -10,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: rankColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
                 ),
-                child: Stack(
-                  children: [
-                    _buildImage(),
-                    if (product.isOnSale)
-                      SaleBadge(percent: product.salePercent!),
-                  ],
+                child: Text(
+                  rank.toString(),
+                  style: GoogleFonts.inter(
+                    fontSize: isCenter ? 12 : 10,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                  ),
                 ),
               ),
-              // Text area
-              Padding(
-                padding: EdgeInsets.all(isTop1 ? 10 : 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.name,
-                      style: GoogleFonts.inter(
-                        fontSize: isTop1 ? 12 : 10,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF1A1A1A),
-                        height: 1.2,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    _buildPrice(isTop1),
-                  ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // Product Info (Compact)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: Column(
+            children: [
+              Text(
+                product.name,
+                textAlign: TextAlign.center,
+                maxLines: isCenter ? 2 : 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  fontSize: isCenter ? 11 : 9,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textDark,
+                  height: 1.1,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${product.salePrice?.toStringAsFixed(0) ?? product.price.toStringAsFixed(0)}k',
+                style: GoogleFonts.inter(
+                  fontSize: isCenter ? 12 : 10,
+                  fontWeight: FontWeight.w800,
+                  color: rank == 1 ? AppColors.primaryRed : rankColor,
                 ),
               ),
             ],
           ),
         ),
+        const SizedBox(height: 8),
 
-        // Podium rank block
+        // Podium Column
         Container(
           width: double.infinity,
-          padding: EdgeInsets.symmetric(vertical: isTop1 ? 10 : 7),
+          height: columnHeight,
           decoration: BoxDecoration(
-            color: rankColor.withValues(alpha: 0.15),
-            border: Border(
-              bottom: BorderSide(color: rankColor, width: isTop1 ? 2 : 1),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                rankColor.withValues(alpha: 0.5),
+                rankColor.withValues(alpha: 0.1),
+              ],
             ),
-          ),
-          child: Text(
-            '#$rank',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: isTop1 ? 14 : 12,
-              fontWeight: FontWeight.w800,
-              color: rankColor,
-              letterSpacing: 1,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(8),
             ),
           ),
         ),
@@ -219,56 +283,18 @@ class _PodiumCard extends StatelessWidget {
   Widget _buildImage() {
     if (product.imageUrl.isEmpty) {
       return Container(
-        width: double.infinity,
-        height: imageHeight,
         color: const Color(0xFFF0F0F0),
-        child: const Icon(Icons.image_not_supported, color: Colors.grey),
+        child: Icon(Icons.image, size: bubbleSize * 0.5, color: Colors.grey),
       );
     }
     return Image.network(
       product.imageUrl,
       width: double.infinity,
-      height: imageHeight,
+      height: double.infinity,
       fit: BoxFit.cover,
       errorBuilder: (_, _, _) => Container(
-        width: double.infinity,
-        height: imageHeight,
         color: const Color(0xFFF0F0F0),
-        child: const Icon(Icons.image_not_supported, color: Colors.grey),
-      ),
-    );
-  }
-
-  Widget _buildPrice(bool large) {
-    if (product.isOnSale && product.salePrice != null) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '${product.price.toStringAsFixed(0)}k',
-            style: GoogleFonts.inter(
-              fontSize: large ? 10 : 9,
-              color: Colors.grey,
-              decoration: TextDecoration.lineThrough,
-            ),
-          ),
-          Text(
-            '${product.salePrice!.toStringAsFixed(0)}k',
-            style: GoogleFonts.inter(
-              fontSize: large ? 13 : 11,
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF7B0323),
-            ),
-          ),
-        ],
-      );
-    }
-    return Text(
-      '${product.price.toStringAsFixed(0)}k',
-      style: GoogleFonts.inter(
-        fontSize: large ? 13 : 11,
-        fontWeight: FontWeight.w800,
-        color: const Color(0xFF1A1A1A),
+        child: Icon(Icons.image, size: bubbleSize * 0.5, color: Colors.grey),
       ),
     );
   }
