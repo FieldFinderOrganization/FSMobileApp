@@ -150,6 +150,7 @@ class BookingCubit extends Cubit<BookingState> {
             priceDetail: pitch.price,
           );
         }).toList(),
+        paymentMethod: currentState.paymentMethod,
       );
 
       final bookingId = await repository.createBooking(bookingRequest);

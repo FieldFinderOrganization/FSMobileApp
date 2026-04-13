@@ -4,6 +4,7 @@ class BookingRequestModel {
   final String bookingDate; // yyyy-MM-dd
   final double totalPrice;
   final List<BookingDetailModel> bookingDetails;
+  final String paymentMethod;
 
   BookingRequestModel({
     required this.pitchId,
@@ -11,6 +12,7 @@ class BookingRequestModel {
     required this.bookingDate,
     required this.totalPrice,
     required this.bookingDetails,
+    required this.paymentMethod,
   });
 
   Map<String, dynamic> toJson() {
@@ -20,6 +22,7 @@ class BookingRequestModel {
       'bookingDate': bookingDate,
       'totalPrice': totalPrice,
       'bookingDetails': bookingDetails.map((x) => x.toJson()).toList(),
+      'paymentMethod': paymentMethod,
     };
   }
 }

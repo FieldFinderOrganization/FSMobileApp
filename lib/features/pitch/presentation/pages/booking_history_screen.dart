@@ -120,8 +120,7 @@ class _BookingHistoryBody extends StatelessWidget {
       'Tất cả',
       'PENDING',
       'CONFIRMED',
-      'CANCELLED',
-      'COMPLETED',
+      'CANCELED',
     ];
 
     return Container(
@@ -196,10 +195,8 @@ class _BookingHistoryBody extends StatelessWidget {
         return 'Chờ xác nhận';
       case 'CONFIRMED':
         return 'Đã xác nhận';
-      case 'CANCELLED':
+      case 'CANCELED':
         return 'Đã hủy';
-      case 'COMPLETED':
-        return 'Hoàn thành';
       default:
         return status;
     }
@@ -537,10 +534,8 @@ class _BookingItemCard extends StatelessWidget {
         return Colors.orange;
       case 'CONFIRMED':
         return const Color(0xFF2E7D32);
-      case 'CANCELLED':
+      case 'CANCELED':
         return AppColors.primaryRed;
-      case 'COMPLETED':
-        return Colors.blue;
       default:
         return AppColors.textGrey;
     }
@@ -574,10 +569,8 @@ class _BookingItemCard extends StatelessWidget {
         return 'Chờ xác nhận';
       case 'CONFIRMED':
         return 'Đã xác nhận';
-      case 'CANCELLED':
+      case 'CANCELED':
         return 'Đã hủy';
-      case 'COMPLETED':
-        return 'Hoàn thành';
       default:
         return status;
     }
