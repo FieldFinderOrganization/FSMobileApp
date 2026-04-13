@@ -24,7 +24,7 @@ class AllProductsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(title: 'Tất cả sản phẩm', onSeeAll: null),
+          SectionHeader(title: 'Tất cả sản phẩm', onSeeAll: null, index: '03'),
 
           // ── Danh mục cha ────────────────────────────────────────────────
           _ParentCategoryChips(state: state),
@@ -56,20 +56,31 @@ class AllProductsSection extends StatelessWidget {
               ),
             )
           else ...[
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisExtent: 250,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
+            // Featured card — first product
+            if (state.visibleProducts.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: ProductCard(
+                  product: state.visibleProducts.first,
+                  mode: ProductCardMode.featured,
+                ),
               ),
-              itemCount: state.visibleProducts.length,
-              itemBuilder: (_, i) =>
-                  ProductCard(product: state.visibleProducts[i]),
-            ),
+            // Grid — remaining products
+            if (state.visibleProducts.length > 1)
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisExtent: 250,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                ),
+                itemCount: state.visibleProducts.length - 1,
+                itemBuilder: (_, i) =>
+                    ProductCard(product: state.visibleProducts[i + 1]),
+              ),
             const SizedBox(height: 12),
             _PaginationButtons(state: state),
           ],

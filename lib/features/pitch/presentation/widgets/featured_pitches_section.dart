@@ -24,20 +24,24 @@ class FeaturedPitchesSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(title: 'Sân nổi bật', onSeeAll: () {}),
+          SectionHeader(title: 'Sân nổi bật', onSeeAll: () {}, index: '01'),
           // ── Pitch list ──────────────────────────────────────────────────
           SizedBox(
-            height: 200,
+            height: 260,
             child: isLoading
                 ? _buildShimmer()
                 : state.pitches.isEmpty
                 ? _buildEmpty()
-                : ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.only(right: 16),
+                : PageView.builder(
+                    controller: PageController(viewportFraction: 0.88),
+                    pageSnapping: true,
+                    padEnds: true,
                     itemCount: state.filteredPitches.length,
-                    itemBuilder: (_, i) => SizedBox(
-                      height: 200,
+                    itemBuilder: (_, i) => Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 10,
+                      ),
                       child: PitchCard(pitch: state.filteredPitches[i]),
                     ),
                   ),
@@ -65,8 +69,8 @@ class FeaturedPitchesSection extends StatelessWidget {
         padding: const EdgeInsets.only(left: 16),
         child: ShimmerCard(
           width: 200,
-          height: 200,
-          borderRadius: BorderRadius.circular(16),
+          height: 240,
+          borderRadius: BorderRadius.circular(20),
         ),
       ),
     );
