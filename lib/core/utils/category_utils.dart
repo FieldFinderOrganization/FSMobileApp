@@ -44,8 +44,11 @@ class CategoryUtils {
     final cat = product.categoryName.toLowerCase();
 
     // Check if category name contains "shoes" or similar
-    if (cat.contains('shoe') || cat.contains('sandal') || cat.contains('slide'))
+    if (cat.contains('shoe') ||
+        cat.contains('sandal') ||
+        cat.contains('slide')) {
       return true;
+    }
 
     // Check keywords in name
     return shoeKeywords.any((kw) => name.contains(kw));

@@ -230,24 +230,20 @@ class _SubCategoryRow extends StatelessWidget {
 class _ProductContent extends StatelessWidget {
   const _ProductContent();
 
-  /// Nhóm products theo pattern: [featured, grid2, grid2] lặp lại.
-  /// Mỗi "row" được đại diện bằng 1 trong 2 loại:
-  ///   - _FeaturedRow: 1 sản phẩm full-width
-  ///   - _GridRow: 1-2 sản phẩm dạng grid
+  // Pattern số cột xen kẽ: 2 → 1 (hero) → 3 → lặp lại
+  // Mỗi chu kỳ 6 sản phẩm, nhịp điệu không đoán được
+  static const _colPattern = [2, 1, 3];
+
   List<_RowData> _buildRows(List<dynamic> products) {
     final rows = <_RowData>[];
     int i = 0;
+    int p = 0;
     while (i < products.length) {
-      // 1 featured card
-      rows.add(_RowData.featured(products[i]));
-      i++;
-      // tối đa 2 hàng grid (mỗi hàng 2 card)
-      for (int r = 0; r < 2 && i < products.length; r++) {
-        final a = products[i];
-        final b = (i + 1 < products.length) ? products[i + 1] : null;
-        rows.add(_RowData.grid(a, b));
-        i += (b != null) ? 2 : 1;
-      }
+      final cols = _colPattern[p % _colPattern.length];
+      final end = (i + cols).clamp(0, products.length);
+      rows.add(_RowData(cols: cols, items: products.sublist(i, end)));
+      i = end;
+      p++;
     }
     return rows;
   }
@@ -290,60 +286,79 @@ class _ProductContent extends StatelessWidget {
             bottom: 24,
           ),
           itemCount: rows.length,
-          itemBuilder: (context, i) {
-            final row = rows[i];
-            if (row.isFeatured) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: ProductCard(
-                  product: row.first,
-                  mode: ProductCardMode.overlay,
-                  overlayHeight: 300,
-                ),
-              );
-            }
-            // Grid row: 1 hoặc 2 card overlay
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ProductCard(
-                      product: row.first,
-                      mode: ProductCardMode.overlay,
-                      overlayHeight: 210,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: row.second != null
-                        ? ProductCard(
-                            product: row.second!,
-                            mode: ProductCardMode.overlay,
-                            overlayHeight: 210,
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-                ],
-              ),
-            );
-          },
+          itemBuilder: (context, i) => _buildRow(rows[i]),
         );
       },
+    );
+  }
+
+  Widget _buildRow(_RowData row) {
+    // Hero full-width
+    if (row.cols == 1) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: ProductCard(
+          product: row.items[0],
+          mode: ProductCardMode.overlay,
+          overlayHeight: 290,
+        ),
+      );
+    }
+
+    // 2 cột — height vừa
+    if (row.cols == 2) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: ProductCard(
+                product: row.items[0],
+                mode: ProductCardMode.overlay,
+                overlayHeight: 215,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: row.items.length > 1
+                  ? ProductCard(
+                      product: row.items[1],
+                      mode: ProductCardMode.overlay,
+                      overlayHeight: 215,
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 3 cột — height nhỏ hơn, tạo mật độ trực quan cao
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: List.generate(3, (j) {
+          final hasItem = j < row.items.length;
+          return Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(left: j == 0 ? 0 : 8),
+              child: hasItem
+                  ? ProductCard(
+                      product: row.items[j],
+                      mode: ProductCardMode.overlay,
+                      overlayHeight: 160,
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          );
+        }),
+      ),
     );
   }
 }
 
 class _RowData {
-  final bool isFeatured;
-  final dynamic first;
-  final dynamic second;
-
-  const _RowData._({required this.isFeatured, required this.first, this.second});
-
-  factory _RowData.featured(dynamic product) =>
-      _RowData._(isFeatured: true, first: product);
-
-  factory _RowData.grid(dynamic a, dynamic b) =>
-      _RowData._(isFeatured: false, first: a, second: b);
+  final int cols;
+  final List<dynamic> items;
+  const _RowData({required this.cols, required this.items});
 }

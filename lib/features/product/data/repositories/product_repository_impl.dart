@@ -20,6 +20,15 @@ class ProductRepositoryImpl implements ProductRepository {
   }
 
   @override
+  Future<ProductEntity> getProductById(String id) async {
+    try {
+      return await _remoteDataSource.getProductById(id);
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
+  @override
   Future<List<CategoryEntity>> fetchCategories() async {
     try {
       final data = await _remoteDataSource.fetchCategories();

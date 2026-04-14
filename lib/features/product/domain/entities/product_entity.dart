@@ -1,3 +1,5 @@
+import 'product_variant_entity.dart';
+
 class ProductEntity {
   final String id;
   final String name;
@@ -11,6 +13,7 @@ class ProductEntity {
   final String sex;
   final List<String> tags;
   final int totalSold;
+  final List<ProductVariantEntity> variants;
 
   const ProductEntity({
     required this.id,
@@ -25,6 +28,7 @@ class ProductEntity {
     required this.sex,
     required this.tags,
     required this.totalSold,
+    this.variants = const [],
   });
 
   bool get isOnSale => salePercent != null && salePercent! > 0;

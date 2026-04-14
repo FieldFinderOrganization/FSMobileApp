@@ -1,4 +1,21 @@
 import '../../domain/entities/product_entity.dart';
+import '../../domain/entities/product_variant_entity.dart';
+
+class ProductVariantModel extends ProductVariantEntity {
+  const ProductVariantModel({
+    required super.size,
+    required super.quantity,
+    required super.stockTotal,
+  });
+
+  factory ProductVariantModel.fromJson(Map<String, dynamic> json) {
+    return ProductVariantModel(
+      size: json['size'] as String? ?? '',
+      quantity: json['quantity'] as int? ?? 0,
+      stockTotal: json['stockTotal'] as int? ?? 0,
+    );
+  }
+}
 
 class ProductModel extends ProductEntity {
   const ProductModel({
@@ -14,6 +31,7 @@ class ProductModel extends ProductEntity {
     required super.sex,
     required super.tags,
     required super.totalSold,
+    super.variants = const [],
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
@@ -35,6 +53,10 @@ class ProductModel extends ProductEntity {
               .toList() ??
           [],
       totalSold: json['totalSold'] as int? ?? 0,
+      variants: (json['variants'] as List<dynamic>?)
+              ?.map((e) => ProductVariantModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../domain/entities/product_entity.dart';
+import '../pages/product_detail_screen.dart';
 import 'sale_badge.dart';
 
 enum ProductCardMode { horizontal, grid, featured, overlay }
@@ -20,16 +21,30 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Widget card;
     switch (mode) {
       case ProductCardMode.grid:
-        return _buildGridCard();
+        card = _buildGridCard();
+        break;
       case ProductCardMode.horizontal:
-        return _buildHorizontalCard();
+        card = _buildHorizontalCard();
+        break;
       case ProductCardMode.featured:
-        return _buildFeaturedCard();
+        card = _buildFeaturedCard();
+        break;
       case ProductCardMode.overlay:
-        return _buildOverlayCard();
+        card = _buildOverlayCard();
+        break;
     }
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ProductDetailScreen(productId: product.id),
+        ),
+      ),
+      child: card,
+    );
   }
 
   Widget _buildGridCard() {
@@ -273,10 +288,10 @@ class ProductCard extends StatelessWidget {
                   colors: [
                     Colors.transparent,
                     Colors.transparent,
-                    Color(0x55000000),
-                    Color(0xCC000000),
+                    Color(0x88000000),
+                    Color(0xEE000000),
                   ],
-                  stops: [0.0, 0.45, 0.70, 1.0],
+                  stops: [0.0, 0.38, 0.65, 1.0],
                 ),
               ),
             ),
@@ -301,8 +316,14 @@ class ProductCard extends StatelessWidget {
                         style: GoogleFonts.inter(
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white60,
+                          color: Colors.white,
                           letterSpacing: 1.2,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.6),
+                              blurRadius: 4,
+                            ),
+                          ],
                         ),
                       ),
                     const SizedBox(height: 3),
@@ -313,6 +334,12 @@ class ProductCard extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                         height: 1.2,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withValues(alpha: 0.5),
+                            blurRadius: 6,
+                          ),
+                        ],
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
