@@ -30,4 +30,11 @@ class ApiConstants {
 
   // Payment endpoints
   static const String payments = '/payments';
+
+  // Cart endpoints
+  static const String cart = '/cart';
+  static const String cartAdd = '/cart/add';
+  static const String cartUpdate = '/cart/update';
+  static const String cartRemove = '/cart/remove';
+  static const String cartClear = '/cart/clear';
 }

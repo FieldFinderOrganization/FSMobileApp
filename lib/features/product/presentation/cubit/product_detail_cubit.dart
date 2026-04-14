@@ -34,4 +34,13 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
   void selectSize(String size) {
     emit(state.copyWith(selectedSize: size));
   }
+
+  void deselectSize() {
+    emit(ProductDetailState(
+      status: state.status,
+      product: state.product,
+      selectedSize: null,
+      errorMessage: state.errorMessage,
+    ));
+  }
 }

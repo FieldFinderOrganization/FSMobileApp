@@ -16,6 +16,10 @@ import 'features/product/data/datasources/product_remote_data_source.dart';
 import 'features/product/data/repositories/product_repository_impl.dart';
 import 'features/product/domain/repositories/product_repository.dart';
 import 'features/product/presentation/cubit/product_cubit.dart';
+import 'features/cart/data/datasources/cart_remote_data_source.dart';
+import 'features/cart/data/repositories/cart_repository_impl.dart';
+import 'features/cart/domain/repositories/cart_repository.dart';
+import 'features/cart/presentation/cubit/cart_cubit.dart';
 import 'features/welcome/presentation/pages/welcome_screen.dart';
 
 
@@ -35,6 +39,9 @@ void main() async {
   final productDatasource = ProductRemoteDataSource(dioClient.dio);
   final productRepository = ProductRepositoryImpl(productDatasource);
 
+  final cartDatasource = CartRemoteDataSource(dioClient.dio);
+  final cartRepository = CartRepositoryImpl(cartDatasource);
+
   runApp(
     MultiRepositoryProvider(
       providers: [
@@ -42,6 +49,7 @@ void main() async {
         RepositoryProvider<DioClient>.value(value: dioClient),
         RepositoryProvider<AuthRepository>.value(value: authRepository),
         RepositoryProvider<ProductRepository>.value(value: productRepository),
+        RepositoryProvider<CartRepository>.value(value: cartRepository),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -56,6 +64,9 @@ void main() async {
           ),
           BlocProvider<ProductCubit>(
             create: (context) => ProductCubit(repository: productRepository)..loadProducts(),
+          ),
+          BlocProvider<CartCubit>(
+            create: (context) => CartCubit(cartRepository),
           ),
         ],
         child: const MyApp(),
