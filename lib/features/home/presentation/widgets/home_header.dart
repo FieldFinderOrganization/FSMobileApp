@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../cart/presentation/cubit/cart_cubit.dart';
+import '../../../cart/presentation/cubit/cart_state.dart';
+import '../../../cart/presentation/pages/cart_screen.dart';
 
 class HomeHeader extends StatelessWidget {
   final double opacity;
@@ -66,10 +70,11 @@ class HomeHeader extends StatelessWidget {
                   onTap: onSearchTap ?? () {},
                 ),
                 const SizedBox(width: 4),
-                _HeaderIcon(
-                  icon: Icons.shopping_cart_outlined,
-                  isDark: true,
-                  onTap: () {},
+                _CartIconWithBadge(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CartScreen()),
+                  ),
                 ),
                 const SizedBox(width: 4),
                 _HeaderIcon(
@@ -82,6 +87,62 @@ class HomeHeader extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _CartIconWithBadge extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _CartIconWithBadge({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<CartCubit, CartState>(
+      builder: (context, state) {
+        final count = state.cart?.items.fold(0, (sum, i) => sum + i.quantity) ?? 0;
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            IconButton(
+              onPressed: onTap,
+              icon: const Icon(
+                Icons.shopping_cart_outlined,
+                color: AppColors.textDark,
+                size: 24,
+              ),
+              padding: const EdgeInsets.all(8),
+              constraints: const BoxConstraints(),
+            ),
+            if (count > 0)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: IgnorePointer(
+                  child: Container(
+                    width: 17,
+                    height: 17,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primaryRed,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      count > 99 ? '99+' : '$count',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        height: 1,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

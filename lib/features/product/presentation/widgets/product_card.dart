@@ -2,30 +2,49 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../domain/entities/product_entity.dart';
+import '../pages/product_detail_screen.dart';
 import 'sale_badge.dart';
 
-enum ProductCardMode { horizontal, grid, featured }
+enum ProductCardMode { horizontal, grid, featured, overlay }
 
 class ProductCard extends StatelessWidget {
   final ProductEntity product;
   final ProductCardMode mode;
+  final double overlayHeight;
 
   const ProductCard({
     super.key,
     required this.product,
     this.mode = ProductCardMode.grid,
+    this.overlayHeight = 220,
   });
 
   @override
   Widget build(BuildContext context) {
+    Widget card;
     switch (mode) {
       case ProductCardMode.grid:
-        return _buildGridCard();
+        card = _buildGridCard();
+        break;
       case ProductCardMode.horizontal:
-        return _buildHorizontalCard();
+        card = _buildHorizontalCard();
+        break;
       case ProductCardMode.featured:
-        return _buildFeaturedCard();
+        card = _buildFeaturedCard();
+        break;
+      case ProductCardMode.overlay:
+        card = _buildOverlayCard();
+        break;
     }
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ProductDetailScreen(productId: product.id),
+        ),
+      ),
+      child: card,
+    );
   }
 
   Widget _buildGridCard() {
@@ -246,6 +265,137 @@ class ProductCard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildOverlayCard() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: SizedBox(
+        height: overlayHeight,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Ảnh full-bleed
+            _buildImage(height: overlayHeight),
+
+            // Gradient từ trong suốt → đen phía dưới
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.transparent,
+                    Color(0x88000000),
+                    Color(0xEE000000),
+                  ],
+                  stops: [0.0, 0.38, 0.65, 1.0],
+                ),
+              ),
+            ),
+
+            // Sale badge góc trên phải
+            if (product.isOnSale) SaleBadge(percent: product.salePercent!),
+
+            // Nội dung phía dưới
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (product.brand.isNotEmpty)
+                      Text(
+                        product.brand.toUpperCase(),
+                        style: GoogleFonts.inter(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 1.2,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.6),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 3),
+                    Text(
+                      product.name,
+                      style: GoogleFonts.inter(
+                        fontSize: overlayHeight > 240 ? 15 : 12,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        height: 1.2,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withValues(alpha: 0.5),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    _buildOverlayPriceRow(),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOverlayPriceRow() {
+    if (product.isOnSale && product.salePrice != null) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: AppColors.primaryRed,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              '${product.salePrice!.toStringAsFixed(0)}k',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '${product.price.toStringAsFixed(0)}k',
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              color: Colors.white38,
+              decoration: TextDecoration.lineThrough,
+              decorationColor: Colors.white38,
+            ),
+          ),
+        ],
+      );
+    }
+    return Text(
+      '${product.price.toStringAsFixed(0)}k',
+      style: GoogleFonts.inter(
+        fontSize: 13,
+        fontWeight: FontWeight.w800,
+        color: Colors.white,
+      ),
     );
   }
 

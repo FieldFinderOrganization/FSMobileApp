@@ -1,6 +1,5 @@
 class ApiConstants {
   // Đổi thành IP thực khi test trên thiết bị thật
-  // Android Emulator: 10.0.2.2 trỏ về localhost máy host
   static const String baseUrl = 'http://192.168.1.5:8080/api';
 
   static const String googleLogin = '/auth/google';
@@ -31,4 +30,11 @@ class ApiConstants {
 
   // Payment endpoints
   static const String payments = '/payments';
+
+  // Cart endpoints
+  static const String cart = '/cart';
+  static const String cartAdd = '/cart/add';
+  static const String cartUpdate = '/cart/update';
+  static const String cartRemove = '/cart/remove';
+  static const String cartClear = '/cart/clear';
 }

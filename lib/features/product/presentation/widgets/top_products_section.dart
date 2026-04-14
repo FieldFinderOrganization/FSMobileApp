@@ -198,9 +198,7 @@ class _PodiumBubble extends StatelessWidget {
                   ),
                 ],
               ),
-              child: ClipOval(
-                child: _buildImage(),
-              ),
+              child: ClipOval(child: _buildImage()),
             ),
 
             // Rank Badge Overlay
@@ -271,9 +269,7 @@ class _PodiumBubble extends StatelessWidget {
                 rankColor.withValues(alpha: 0.1),
               ],
             ),
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(8),
-            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
           ),
         ),
       ],
@@ -291,10 +287,11 @@ class _PodiumBubble extends StatelessWidget {
       product.imageUrl,
       width: double.infinity,
       height: double.infinity,
-      fit: BoxFit.cover,
+      fit: BoxFit.contain,
+      alignment: Alignment.center,
       errorBuilder: (_, _, _) => Container(
         color: const Color(0xFFF0F0F0),
-        child: Icon(Icons.image, size: bubbleSize * 0.5, color: Colors.grey),
+        child: Icon(Icons.image_not_supported, color: Colors.grey),
       ),
     );
   }

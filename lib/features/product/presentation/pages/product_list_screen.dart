@@ -4,6 +4,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../home/presentation/cubit/home_state.dart';
+import '../../../cart/presentation/cubit/cart_cubit.dart';
+import '../../../cart/presentation/cubit/cart_state.dart';
+import '../../../cart/presentation/pages/cart_screen.dart';
 import '../cubit/product_cubit.dart';
 import '../cubit/product_state.dart';
 import '../widgets/product_card.dart';
@@ -59,7 +62,9 @@ class ProductListScreen extends StatelessWidget {
                       child: Row(
                         children: [
                           Expanded(child: _buildSearchBar(context)),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
+                          _buildCartButton(context),
+                          const SizedBox(width: 8),
                           _buildFilterButton(context),
                         ],
                       ),
@@ -98,6 +103,59 @@ class ProductListScreen extends StatelessWidget {
           contentPadding: const EdgeInsets.symmetric(vertical: 12),
         ),
       ),
+    );
+  }
+
+  Widget _buildCartButton(BuildContext context) {
+    return BlocBuilder<CartCubit, CartState>(
+      builder: (context, cartState) {
+        final count = cartState.cart?.items.fold(0, (sum, i) => sum + i.quantity) ?? 0;
+        return GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CartScreen()),
+          ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryRed,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.shopping_cart_outlined,
+                    color: Colors.white, size: 20),
+              ),
+              if (count > 0)
+                Positioned(
+                  top: -4,
+                  right: -4,
+                  child: Container(
+                    width: 17,
+                    height: 17,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                          color: AppColors.primaryRed, width: 1.5),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      count > 99 ? '99+' : '$count',
+                      style: const TextStyle(
+                        color: AppColors.primaryRed,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        height: 1,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -230,6 +288,24 @@ class _SubCategoryRow extends StatelessWidget {
 class _ProductContent extends StatelessWidget {
   const _ProductContent();
 
+  // Pattern số cột xen kẽ: 2 → 1 (hero) → 3 → lặp lại
+  // Mỗi chu kỳ 6 sản phẩm, nhịp điệu không đoán được
+  static const _colPattern = [2, 1, 3];
+
+  List<_RowData> _buildRows(List<dynamic> products) {
+    final rows = <_RowData>[];
+    int i = 0;
+    int p = 0;
+    while (i < products.length) {
+      final cols = _colPattern[p % _colPattern.length];
+      final end = (i + cols).clamp(0, products.length);
+      rows.add(_RowData(cols: cols, items: products.sublist(i, end)));
+      i = end;
+      p++;
+    }
+    return rows;
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ProductCubit, ProductState>(
@@ -237,7 +313,7 @@ class _ProductContent extends StatelessWidget {
         if (state.status == LoadStatus.loading) {
           return const Center(child: CircularProgressIndicator(color: AppColors.primaryRed));
         }
-        
+
         if (state.status == LoadStatus.failure) {
           return Center(child: Text(state.errorMessage ?? 'Đã có lỗi xảy ra'));
         }
@@ -258,24 +334,89 @@ class _ProductContent extends StatelessWidget {
 
         final hasSubCats = state.subCategories.isNotEmpty;
         final paddingTop = MediaQuery.of(context).padding.top + (hasSubCats ? 190 : 145);
+        final rows = _buildRows(filtered);
 
-        return GridView.builder(
+        return ListView.builder(
           padding: EdgeInsets.only(
             top: paddingTop,
-            left: 20,
-            right: 20,
-            bottom: 20,
+            left: 16,
+            right: 16,
+            bottom: 24,
           ),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.68,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 20,
-          ),
-          itemCount: filtered.length,
-          itemBuilder: (context, i) => ProductCard(product: filtered[i]),
+          itemCount: rows.length,
+          itemBuilder: (context, i) => _buildRow(rows[i]),
         );
       },
     );
   }
+
+  Widget _buildRow(_RowData row) {
+    // Hero full-width
+    if (row.cols == 1) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: ProductCard(
+          product: row.items[0],
+          mode: ProductCardMode.overlay,
+          overlayHeight: 290,
+        ),
+      );
+    }
+
+    // 2 cột — height vừa
+    if (row.cols == 2) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: ProductCard(
+                product: row.items[0],
+                mode: ProductCardMode.overlay,
+                overlayHeight: 215,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: row.items.length > 1
+                  ? ProductCard(
+                      product: row.items[1],
+                      mode: ProductCardMode.overlay,
+                      overlayHeight: 215,
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 3 cột — height nhỏ hơn, tạo mật độ trực quan cao
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: List.generate(3, (j) {
+          final hasItem = j < row.items.length;
+          return Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(left: j == 0 ? 0 : 8),
+              child: hasItem
+                  ? ProductCard(
+                      product: row.items[j],
+                      mode: ProductCardMode.overlay,
+                      overlayHeight: 160,
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
+
+class _RowData {
+  final int cols;
+  final List<dynamic> items;
+  const _RowData({required this.cols, required this.items});
 }

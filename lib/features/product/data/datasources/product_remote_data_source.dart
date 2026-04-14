@@ -14,6 +14,11 @@ class ProductRemoteDataSource {
         .toList();
   }
 
+  Future<ProductModel> getProductById(String id) async {
+    final response = await _dio.get('${ApiConstants.products}/$id');
+    return ProductModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
   Future<List<Map<String, dynamic>>> fetchCategories() async {
     final response = await _dio.get(ApiConstants.categories);
     return List<Map<String, dynamic>>.from(response.data);
