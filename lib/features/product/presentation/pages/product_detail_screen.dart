@@ -10,6 +10,7 @@ import '../cubit/product_detail_state.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
 import '../../../cart/presentation/cubit/cart_state.dart';
 import '../../../cart/presentation/pages/cart_screen.dart';
+import '../widgets/add_to_cart_modal.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   final String productId;
@@ -776,9 +777,33 @@ class _BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasVariants = state.product?.variants.isNotEmpty ?? false;
+    final product = state.product;
+    final hasVariants = product?.variants.isNotEmpty ?? false;
     final hasSelection = state.selectedSize != null;
-    final canAdd = !hasVariants || hasSelection;
+
+    // Tính số lượng còn có thể thêm (stock - đã có trong giỏ)
+    int availableToAdd = 0;
+    if (hasSelection && product != null) {
+      final stock = product.variants
+              .where((v) => v.size == state.selectedSize)
+              .firstOrNull
+              ?.quantity ??
+          0;
+      final cartState = context.watch<CartCubit>().state;
+      final inCart = cartState.cart?.items
+              .where((i) =>
+                  i.productId == int.parse(product.id) &&
+                  i.size == state.selectedSize)
+              .firstOrNull
+              ?.quantity ??
+          0;
+      availableToAdd = stock - inCart;
+    } else if (!hasVariants && product != null) {
+      // Sản phẩm không có biến thể (không cần chọn size)
+      availableToAdd = 1; // cho phép mở modal; modal sẽ tính maxQty chính xác
+    }
+
+    final canAdd = (!hasVariants || hasSelection) && availableToAdd > 0;
 
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -803,20 +828,41 @@ class _BottomBar extends StatelessWidget {
         child: ElevatedButton(
           onPressed: canAdd
               ? () {
-                  final product = state.product!;
                   final selectedSize = state.selectedSize ?? '';
-                  // Get stock for selected size to pass to client-side guard
-                  final stock = product.variants
-                      .where((v) => v.size == selectedSize)
-                      .firstOrNull
-                      ?.quantity;
-                  context.read<CartCubit>().addItem(
-                        int.parse(product.id),
-                        selectedSize,
-                        1,
+                  final stock = product!.variants
+                          .where((v) => v.size == selectedSize)
+                          .firstOrNull
+                          ?.quantity ??
+                      availableToAdd;
+                  final cartState = context.read<CartCubit>().state;
+                  final inCart = cartState.cart?.items
+                          .where((i) =>
+                              i.productId == int.parse(product.id) &&
+                              i.size == selectedSize)
+                          .firstOrNull
+                          ?.quantity ??
+                      0;
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.white,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(20)),
+                    ),
+                    builder: (_) => Padding(
+                      padding: EdgeInsets.only(
+                        bottom: MediaQuery.of(context).viewInsets.bottom,
+                      ),
+                      child: AddToCartModal(
+                        product: product,
+                        selectedSize: selectedSize,
                         stockAvailable: stock,
-                      );
-                  // SnackBar handled by BlocListener<CartCubit> above
+                        currentInCart: inCart,
+                        cartCubit: context.read<CartCubit>(),
+                      ),
+                    ),
+                  );
                 }
               : null,
           style: ElevatedButton.styleFrom(
