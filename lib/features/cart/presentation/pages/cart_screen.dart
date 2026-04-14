@@ -7,6 +7,8 @@ import '../../domain/entities/cart_entity.dart';
 import '../cubit/cart_cubit.dart';
 import '../cubit/cart_state.dart';
 import '../widgets/cart_item_card.dart';
+import '../../../checkout/domain/entities/checkout_item_entity.dart';
+import '../../../checkout/presentation/pages/checkout_screen.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -270,13 +272,27 @@ class _BottomBar extends StatelessWidget {
                 height: 52,
                 child: ElevatedButton(
                   onPressed: () {
-                    // TODO: navigate to CheckoutScreen
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text('Chức năng thanh toán đang phát triển!',
-                          style: GoogleFonts.inter(color: Colors.white)),
-                      backgroundColor: AppColors.primaryRed,
-                      behavior: SnackBarBehavior.floating,
-                    ));
+                    final cart = context.read<CartCubit>().state.cart;
+                    if (cart == null || cart.isEmpty) return;
+                    final items = cart.items
+                        .map((i) => CheckoutItemEntity(
+                              productId: i.productId,
+                              productName: i.productName,
+                              brand: i.brand,
+                              imageUrl: i.imageUrl,
+                              size: i.size,
+                              unitPrice: i.unitPrice,
+                              originalPrice: i.originalPrice,
+                              salePercent: i.salePercent,
+                              quantity: i.quantity,
+                            ))
+                        .toList();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => CheckoutScreen(items: items),
+                      ),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryRed,
