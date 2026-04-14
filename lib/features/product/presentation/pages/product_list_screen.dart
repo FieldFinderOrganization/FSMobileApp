@@ -230,6 +230,28 @@ class _SubCategoryRow extends StatelessWidget {
 class _ProductContent extends StatelessWidget {
   const _ProductContent();
 
+  /// Nhóm products theo pattern: [featured, grid2, grid2] lặp lại.
+  /// Mỗi "row" được đại diện bằng 1 trong 2 loại:
+  ///   - _FeaturedRow: 1 sản phẩm full-width
+  ///   - _GridRow: 1-2 sản phẩm dạng grid
+  List<_RowData> _buildRows(List<dynamic> products) {
+    final rows = <_RowData>[];
+    int i = 0;
+    while (i < products.length) {
+      // 1 featured card
+      rows.add(_RowData.featured(products[i]));
+      i++;
+      // tối đa 2 hàng grid (mỗi hàng 2 card)
+      for (int r = 0; r < 2 && i < products.length; r++) {
+        final a = products[i];
+        final b = (i + 1 < products.length) ? products[i + 1] : null;
+        rows.add(_RowData.grid(a, b));
+        i += (b != null) ? 2 : 1;
+      }
+    }
+    return rows;
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ProductCubit, ProductState>(
@@ -237,7 +259,7 @@ class _ProductContent extends StatelessWidget {
         if (state.status == LoadStatus.loading) {
           return const Center(child: CircularProgressIndicator(color: AppColors.primaryRed));
         }
-        
+
         if (state.status == LoadStatus.failure) {
           return Center(child: Text(state.errorMessage ?? 'Đã có lỗi xảy ra'));
         }
@@ -258,24 +280,70 @@ class _ProductContent extends StatelessWidget {
 
         final hasSubCats = state.subCategories.isNotEmpty;
         final paddingTop = MediaQuery.of(context).padding.top + (hasSubCats ? 190 : 145);
+        final rows = _buildRows(filtered);
 
-        return GridView.builder(
+        return ListView.builder(
           padding: EdgeInsets.only(
             top: paddingTop,
-            left: 20,
-            right: 20,
-            bottom: 20,
+            left: 16,
+            right: 16,
+            bottom: 24,
           ),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.68,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 20,
-          ),
-          itemCount: filtered.length,
-          itemBuilder: (context, i) => ProductCard(product: filtered[i]),
+          itemCount: rows.length,
+          itemBuilder: (context, i) {
+            final row = rows[i];
+            if (row.isFeatured) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: ProductCard(
+                  product: row.first,
+                  mode: ProductCardMode.overlay,
+                  overlayHeight: 300,
+                ),
+              );
+            }
+            // Grid row: 1 hoặc 2 card overlay
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ProductCard(
+                      product: row.first,
+                      mode: ProductCardMode.overlay,
+                      overlayHeight: 210,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: row.second != null
+                        ? ProductCard(
+                            product: row.second!,
+                            mode: ProductCardMode.overlay,
+                            overlayHeight: 210,
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
   }
+}
+
+class _RowData {
+  final bool isFeatured;
+  final dynamic first;
+  final dynamic second;
+
+  const _RowData._({required this.isFeatured, required this.first, this.second});
+
+  factory _RowData.featured(dynamic product) =>
+      _RowData._(isFeatured: true, first: product);
+
+  factory _RowData.grid(dynamic a, dynamic b) =>
+      _RowData._(isFeatured: false, first: a, second: b);
 }
