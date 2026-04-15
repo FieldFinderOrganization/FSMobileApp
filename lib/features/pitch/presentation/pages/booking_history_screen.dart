@@ -9,10 +9,14 @@ import '../../data/models/booking_response_model.dart';
 import '../cubit/booking_history_cubit.dart';
 import '../cubit/booking_history_state.dart';
 
-import '../../data/datasources/booking_remote_datasource.dart';
-import '../../data/repositories/booking_repository_impl.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../data/datasources/booking_remote_datasource.dart';
+import '../../data/datasources/payment_remote_datasource.dart';
+import '../../data/repositories/booking_repository_impl.dart';
+import '../../data/repositories/payment_repository_impl.dart';
+import '../../domain/entities/pitch_entity.dart';
 import 'booking_detail_screen.dart';
+import 'payment_screen.dart';
 
 class BookingHistoryScreen extends StatelessWidget {
   final String userId;
@@ -91,28 +95,93 @@ class _BookingHistoryBody extends StatelessWidget {
   }
 
   Widget _buildAppBar(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE))),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-            onPressed: () => Navigator.pop(context),
+    return BlocBuilder<BookingHistoryCubit, BookingHistoryState>(
+      buildWhen: (prev, curr) {
+        final prevAsc = prev is BookingHistorySuccess ? prev.sortAscending : false;
+        final currAsc = curr is BookingHistorySuccess ? curr.sortAscending : false;
+        return prevAsc != currAsc;
+      },
+      builder: (context, state) {
+        final sortAscending = state is BookingHistorySuccess
+            ? state.sortAscending
+            : false;
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE))),
           ),
-          Text(
-            'Lịch sử đặt sân',
-            style: GoogleFonts.playfairDisplay(
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-              color: AppColors.textDark,
-            ),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                onPressed: () => Navigator.pop(context),
+              ),
+              Expanded(
+                child: Text(
+                  'Lịch sử đặt sân',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.textDark,
+                  ),
+                ),
+              ),
+              // Sort toggle button
+              GestureDetector(
+                onTap: () => context.read<BookingHistoryCubit>().toggleSortOrder(),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: sortAscending
+                          ? [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9)]
+                          : [const Color(0xFFFCE4EC), const Color(0xFFF8BBD0)],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (sortAscending ? Colors.green : AppColors.primaryRed)
+                            .withValues(alpha: 0.15),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        sortAscending
+                            ? Icons.trending_up_rounded
+                            : Icons.trending_down_rounded,
+                        size: 15,
+                        color: sortAscending
+                            ? const Color(0xFF2E7D32)
+                            : AppColors.primaryRed,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        sortAscending ? 'Cũ nhất' : 'Mới nhất',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: sortAscending
+                              ? const Color(0xFF2E7D32)
+                              : AppColors.primaryRed,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -125,7 +194,7 @@ class _BookingHistoryBody extends StatelessWidget {
     ];
 
     return Container(
-      height: 60,
+      height: 56,
       color: Colors.white,
       child: BlocBuilder<BookingHistoryCubit, BookingHistoryState>(
         builder: (context, state) {
@@ -135,7 +204,7 @@ class _BookingHistoryBody extends StatelessWidget {
 
           return ListView.builder(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             itemCount: statusList.length,
             itemBuilder: (context, index) {
               final status = statusList[index];
@@ -302,6 +371,7 @@ class _BookingItemCard extends StatefulWidget {
 class _BookingItemCardState extends State<_BookingItemCard> {
   Timer? _timer;
   Duration _remaining = Duration.zero;
+  bool _isLoadingPayment = false;
 
   bool get _isPending => widget.booking.status == 'PENDING';
 
@@ -310,10 +380,15 @@ class _BookingItemCardState extends State<_BookingItemCard> {
     final booking = widget.booking;
     if (booking.slots.isEmpty) return null;
     try {
-      final date = DateTime.parse(booking.bookingDate);
+      // Parse date parts directly to avoid UTC→local timezone drift
+      final parts = booking.bookingDate.split('-');
+      if (parts.length != 3) return null;
+      final year = int.parse(parts[0]);
+      final month = int.parse(parts[1]);
+      final day = int.parse(parts[2].substring(0, 2)); // handle possible trailing T
       final minSlot = booking.slots.reduce((a, b) => a < b ? a : b);
       final startHour = 5 + minSlot; // slot 1 → 06:00
-      return DateTime(date.year, date.month, date.day, startHour, 0)
+      return DateTime(year, month, day, startHour, 0)
           .subtract(const Duration(minutes: 5));
     } catch (_) {
       return null;
@@ -325,9 +400,11 @@ class _BookingItemCardState extends State<_BookingItemCard> {
     super.initState();
     if (_isPending) {
       _updateRemaining();
-      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-        if (mounted) _updateRemaining();
-      });
+      if (_remaining > Duration.zero) {
+        _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+          if (mounted) _updateRemaining();
+        });
+      }
     }
   }
 
@@ -335,7 +412,12 @@ class _BookingItemCardState extends State<_BookingItemCard> {
     final deadline = _calcDeadline();
     if (deadline == null) return;
     final diff = deadline.difference(DateTime.now());
-    setState(() => _remaining = diff.isNegative ? Duration.zero : diff);
+    if (diff.isNegative) {
+      setState(() => _remaining = Duration.zero);
+      _timer?.cancel(); // stop ticking when expired
+    } else {
+      setState(() => _remaining = diff);
+    }
   }
 
   @override
@@ -351,6 +433,53 @@ class _BookingItemCardState extends State<_BookingItemCard> {
     final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
     if (h > 0) return '$h giờ $m phút $s giây';
     return '$m phút $s giây';
+  }
+
+  Future<void> _navigateToPayment(BuildContext context) async {
+    setState(() => _isLoadingPayment = true);
+    try {
+      final dioClient = context.read<DioClient>();
+      final paymentRepo = PaymentRepositoryImpl(
+        remoteDataSource: PaymentRemoteDataSource(dioClient: dioClient),
+      );
+
+      final paymentRes = await paymentRepo.getPaymentStatusByBookingId(widget.booking.bookingId);
+      
+      if (!mounted) return;
+
+      // Reconstruct a partial PitchEntity for the PaymentScreen
+      final pitch = PitchEntity(
+        pitchId: widget.booking.providerId, // Fallback to providerId if needed, or booking has pitch info
+        name: widget.booking.pitchName,
+        type: '', // Unknown detail
+        environment: '', 
+        price: 0, 
+        description: '',
+        imageUrls: widget.booking.pitchImageUrl != null ? [widget.booking.pitchImageUrl!] : [],
+      );
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PaymentScreen(
+            pitch: pitch,
+            bookingId: widget.booking.bookingId,
+            userId: widget.booking.userId,
+            paymentResponse: paymentRes,
+            deadline: _calcDeadline(),
+            bookingDate: widget.booking.bookingDate,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Không thể tải thông tin thanh toán: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoadingPayment = false);
+    }
   }
 
   @override
@@ -547,7 +676,9 @@ class _BookingItemCardState extends State<_BookingItemCard> {
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            'Cần xác nhận trước: ${_formatRemaining(_remaining)}',
+                            _remaining == Duration.zero 
+                                ? 'Đã quá hạn thanh toán' 
+                                : 'Thanh toán trong: ${_formatRemaining(_remaining)}',
                             style: GoogleFonts.inter(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -588,7 +719,7 @@ class _BookingItemCardState extends State<_BookingItemCard> {
                     ),
                     if (booking.status == 'PENDING')
                       ElevatedButton(
-                        onPressed: () {}, // Redirect to payment or details
+                        onPressed: _isLoadingPayment ? null : () => _navigateToPayment(context), 
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryRed,
                           foregroundColor: Colors.white,
@@ -601,13 +732,15 @@ class _BookingItemCardState extends State<_BookingItemCard> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: const Text(
-                          'Thanh toán',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child: _isLoadingPayment 
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Text(
+                              'Thanh toán',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                       )
                     else
                       OutlinedButton(

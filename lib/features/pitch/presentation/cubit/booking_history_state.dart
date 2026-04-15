@@ -17,12 +17,14 @@ class BookingHistorySuccess extends BookingHistoryState {
   final List<BookingResponseModel> filteredBookings;
   final String? selectedStatus;
   final DateTimeRange? selectedDateRange;
+  final bool sortAscending;
 
   const BookingHistorySuccess({
     required this.allBookings,
     required this.filteredBookings,
     this.selectedStatus,
     this.selectedDateRange,
+    this.sortAscending = false,
   });
 
   BookingHistorySuccess copyWith({
@@ -30,6 +32,7 @@ class BookingHistorySuccess extends BookingHistoryState {
     List<BookingResponseModel>? filteredBookings,
     String? selectedStatus,
     DateTimeRange? selectedDateRange,
+    bool? sortAscending,
     bool clearStatus = false,
     bool clearDateRange = false,
   }) {
@@ -38,6 +41,7 @@ class BookingHistorySuccess extends BookingHistoryState {
       filteredBookings: filteredBookings ?? this.filteredBookings,
       selectedStatus: clearStatus ? null : (selectedStatus ?? this.selectedStatus),
       selectedDateRange: clearDateRange ? null : (selectedDateRange ?? this.selectedDateRange),
+      sortAscending: sortAscending ?? this.sortAscending,
     );
   }
 
@@ -47,6 +51,7 @@ class BookingHistorySuccess extends BookingHistoryState {
         filteredBookings,
         selectedStatus,
         selectedDateRange,
+        sortAscending,
       ];
 }
 

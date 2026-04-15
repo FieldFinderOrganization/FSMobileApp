@@ -12,6 +12,9 @@ import '../../data/models/order_item_model.dart';
 import '../../data/models/order_model.dart';
 import '../cubit/order_history_cubit.dart';
 import '../cubit/order_history_state.dart';
+import '../../../checkout/presentation/pages/shop_payment_screen.dart';
+import '../../../checkout/domain/entities/checkout_item_entity.dart';
+import '../../../pitch/data/datasources/payment_remote_datasource.dart';
 
 class OrderHistoryScreen extends StatelessWidget {
   final String userId;
@@ -300,6 +303,7 @@ class _OrderItemCard extends StatefulWidget {
 class _OrderItemCardState extends State<_OrderItemCard> {
   static const int _previewLimit = 2;
   bool _expanded = false;
+  bool _isLoadingPayment = false;
   Timer? _timer;
   Duration _remaining = Duration.zero;
 
@@ -565,7 +569,9 @@ class _OrderItemCardState extends State<_OrderItemCard> {
                       ),
                       const SizedBox(height: 6),
                       ElevatedButton(
-                        onPressed: null, // TODO: implement payment
+                        onPressed: (_isLoadingPayment || _remaining == Duration.zero)
+                            ? null
+                            : () => _navigateToPayment(context),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryRed,
                           disabledBackgroundColor:
@@ -579,14 +585,23 @@ class _OrderItemCardState extends State<_OrderItemCard> {
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                        child: const Text(
-                          'Thanh toán',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child: _isLoadingPayment
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                'Thanh toán',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
                     ],
                   ],
@@ -597,6 +612,62 @@ class _OrderItemCardState extends State<_OrderItemCard> {
         ],
       ),
     );
+  }
+
+  Future<void> _navigateToPayment(BuildContext context) async {
+    setState(() => _isLoadingPayment = true);
+    try {
+      final dioClient = context.read<DioClient>();
+      final paymentDataSource = PaymentRemoteDataSource(dioClient: dioClient);
+
+      // Fetch payment info (QR code, bank details) for this order
+      final paymentRes = await paymentDataSource.getShopPaymentStatus(
+        widget.order.orderId.toString(),
+      );
+
+      if (!mounted) return;
+
+      // Convert OrderItemModels → CheckoutItemEntities for ShopPaymentScreen
+      final checkoutItems = widget.order.items.map((item) {
+        return CheckoutItemEntity(
+          productId: item.productId,
+          productName: item.productName,
+          brand: '',
+          imageUrl: item.imageUrl ?? '',
+          size: item.size,
+          unitPrice: item.price,
+          originalPrice: item.price,
+          quantity: item.quantity,
+        );
+      }).toList();
+
+      // Get userId from the cubit
+      final userId = context.read<OrderHistoryCubit>().userId;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ShopPaymentScreen(
+            items: checkoutItems,
+            paymentResponse: paymentRes,
+            userId: userId,
+            orderId: widget.order.orderId.toString(),
+            dioClient: dioClient,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Không thể tải thông tin thanh toán: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoadingPayment = false);
+    }
   }
 
   Widget _buildItemRow(OrderItemModel item) {

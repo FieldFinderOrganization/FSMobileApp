@@ -86,6 +86,7 @@ class _BookingView extends StatelessWidget {
                   userId: userId,
                   paymentResponse: state.paymentResponse,
                   bookingCubit: context.read<BookingCubit>(),
+                  deadline: context.read<BookingCubit>().paymentDeadline,
                 ),
               ),
             ),
