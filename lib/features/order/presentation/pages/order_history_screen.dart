@@ -604,10 +604,58 @@ class _OrderItemCardState extends State<_OrderItemCard> {
                               ),
                       ),
                     ],
+                    if (widget.order.status == 'PENDING') ...[
+                      const SizedBox(height: 6),
+                      OutlinedButton(
+                        onPressed: () => _showCancelDialog(context),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primaryRed,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 6),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          side: const BorderSide(color: AppColors.primaryRed),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: const Text(
+                          'Hủy đơn',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCancelDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xác nhận hủy'),
+        content: const Text('Bạn có chắc chắn muốn hủy đơn hàng này không?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Không'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              context.read<OrderHistoryCubit>().cancelOrder(widget.order.orderId);
+            },
+            style: TextButton.styleFrom(foregroundColor: AppColors.primaryRed),
+            child: const Text('Hủy đơn'),
           ),
         ],
       ),

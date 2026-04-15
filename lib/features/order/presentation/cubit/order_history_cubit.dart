@@ -25,6 +25,18 @@ class OrderHistoryCubit extends Cubit<OrderHistoryState> {
     }
   }
 
+  Future<void> cancelOrder(int orderId) async {
+    try {
+      await dataSource.cancelOrder(orderId);
+      await loadOrders();
+    } on DioException catch (e) {
+      final message = e.response?.data?['message'] ?? e.message ?? e.toString();
+      emit(OrderHistoryError(message));
+    } catch (e) {
+      emit(OrderHistoryError(e.toString()));
+    }
+  }
+
   void filterByStatus(String? status) {
     if (state is! OrderHistorySuccess) return;
     final current = state as OrderHistorySuccess;

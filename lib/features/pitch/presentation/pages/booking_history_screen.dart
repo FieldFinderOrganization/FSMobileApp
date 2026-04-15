@@ -435,6 +435,30 @@ class _BookingItemCardState extends State<_BookingItemCard> {
     return '$m phút $s giây';
   }
 
+  void _showCancelDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xác nhận hủy'),
+        content: const Text('Bạn có chắc chắn muốn hủy đặt sân này không?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Không'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              context.read<BookingHistoryCubit>().cancelBooking(widget.booking.bookingId);
+            },
+            style: TextButton.styleFrom(foregroundColor: AppColors.primaryRed),
+            child: const Text('Hủy đơn'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _navigateToPayment(BuildContext context) async {
     setState(() => _isLoadingPayment = true);
     try {
@@ -718,29 +742,56 @@ class _BookingItemCardState extends State<_BookingItemCard> {
                       ],
                     ),
                     if (booking.status == 'PENDING')
-                      ElevatedButton(
-                        onPressed: _isLoadingPayment ? null : () => _navigateToPayment(context), 
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryRed,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: _isLoadingPayment 
-                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Text(
-                              'Thanh toán',
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          OutlinedButton(
+                            onPressed: () => _showCancelDialog(context),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.primaryRed,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              side: const BorderSide(color: AppColors.primaryRed),
+                            ),
+                            child: const Text(
+                              'Hủy đơn',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: _isLoadingPayment ? null : () => _navigateToPayment(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryRed,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: _isLoadingPayment
+                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Text(
+                                  'Thanh toán',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                          ),
+                        ],
                       )
                     else
                       OutlinedButton(

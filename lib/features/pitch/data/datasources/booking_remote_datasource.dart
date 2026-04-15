@@ -32,6 +32,16 @@ class BookingRemoteDataSource {
     }
   }
 
+  Future<void> cancelBooking(String bookingId) async {
+    try {
+      await dioClient.dio.put(
+        '${ApiConstants.bookings}/$bookingId/cancel',
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<List<BookingResponseModel>> getBookingsByUser(String userId) async {
     try {
       final response = await dioClient.dio.get(

@@ -86,6 +86,18 @@ class BookingHistoryCubit extends Cubit<BookingHistoryState> {
     ));
   }
 
+  Future<void> cancelBooking(String bookingId) async {
+    try {
+      await repository.cancelBooking(bookingId);
+      await loadBookings();
+    } on DioException catch (e) {
+      final message = e.response?.data?['message'] ?? e.message ?? e.toString();
+      emit(BookingHistoryError(message));
+    } catch (e) {
+      emit(BookingHistoryError(e.toString()));
+    }
+  }
+
   List<BookingResponseModel> _applyFilters(
     List<BookingResponseModel> all,
     String? status,
