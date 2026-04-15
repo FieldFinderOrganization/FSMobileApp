@@ -31,6 +31,9 @@ class ApiConstants {
   // Payment endpoints
   static const String payments = '/payments';
 
+  // Order endpoints
+  static const String orders = '/orders';
+
   // Cart endpoints
   static const String cart = '/cart';
   static const String cartAdd = '/cart/add';

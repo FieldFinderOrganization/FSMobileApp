@@ -12,6 +12,7 @@ class BookingCubit extends Cubit<BookingState> {
   final PaymentRepository paymentRepository;
   final PitchEntity pitch;
   final DateTime date;
+  DateTime? paymentDeadline;
 
   BookingCubit({
     required this.repository,
@@ -135,6 +136,8 @@ class BookingCubit extends Cubit<BookingState> {
 
     emit(BookingLoading());
     try {
+      final minSlot = currentState.selectedSlotIds.reduce((a, b) => a < b ? a : b);
+      paymentDeadline = DateTime(date.year, date.month, date.day, 5 + minSlot, 0).subtract(const Duration(minutes: 5));
       final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
       
       final bookingRequest = BookingRequestModel(

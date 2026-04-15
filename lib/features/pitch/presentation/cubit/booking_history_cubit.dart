@@ -40,6 +40,7 @@ class BookingHistoryCubit extends Cubit<BookingHistoryState> {
       currentState.allBookings,
       status,
       currentState.selectedDateRange,
+      currentState.sortAscending,
     );
 
     emit(currentState.copyWith(
@@ -57,6 +58,7 @@ class BookingHistoryCubit extends Cubit<BookingHistoryState> {
       currentState.allBookings,
       currentState.selectedStatus,
       range,
+      currentState.sortAscending,
     );
 
     emit(currentState.copyWith(
@@ -66,12 +68,31 @@ class BookingHistoryCubit extends Cubit<BookingHistoryState> {
     ));
   }
 
+  void toggleSortOrder() {
+    if (state is! BookingHistorySuccess) return;
+    final currentState = state as BookingHistorySuccess;
+    final newAscending = !currentState.sortAscending;
+
+    final filtered = _applyFilters(
+      currentState.allBookings,
+      currentState.selectedStatus,
+      currentState.selectedDateRange,
+      newAscending,
+    );
+
+    emit(currentState.copyWith(
+      filteredBookings: filtered,
+      sortAscending: newAscending,
+    ));
+  }
+
   List<BookingResponseModel> _applyFilters(
     List<BookingResponseModel> all,
     String? status,
     DateTimeRange? range,
+    bool ascending,
   ) {
-    return all.where((booking) {
+    final result = all.where((booking) {
       bool matchStatus = true;
       if (status != null && status != 'Tất cả') {
         matchStatus = booking.status.toUpperCase() == status.toUpperCase();
@@ -86,5 +107,12 @@ class BookingHistoryCubit extends Cubit<BookingHistoryState> {
 
       return matchStatus && matchDate;
     }).toList();
+
+    result.sort((a, b) {
+      final cmp = a.bookingDate.compareTo(b.bookingDate);
+      return ascending ? cmp : -cmp;
+    });
+
+    return result;
   }
 }

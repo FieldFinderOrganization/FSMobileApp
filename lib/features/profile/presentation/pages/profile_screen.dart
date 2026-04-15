@@ -8,6 +8,7 @@ import '../../../../features/auth/login/presentation/bloc/auth_state.dart';
 import '../../../../features/auth/login/presentation/pages/login_screen.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../pitch/presentation/pages/booking_history_screen.dart';
+import '../../../order/presentation/pages/order_history_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final UserEntity user;
@@ -364,6 +365,18 @@ class _ProfileBody extends StatelessWidget {
               );
             },
             isFirst: true,
+          ),
+          _ActionRow(
+            icon: Icons.shopping_bag_outlined,
+            label: 'Lịch sử đặt hàng',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => OrderHistoryScreen(userId: user.userId),
+                ),
+              );
+            },
           ),
           _ActionRow(
             icon: Icons.favorite_border_rounded,

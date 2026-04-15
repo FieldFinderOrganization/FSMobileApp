@@ -10,6 +10,9 @@ import '../../domain/entities/pitch_entity.dart';
 import '../cubit/booking_cubit.dart';
 import '../cubit/booking_state.dart';
 import '../../data/models/payment_response_model.dart';
+import '../../data/repositories/payment_repository_impl.dart';
+import '../../data/datasources/payment_remote_datasource.dart';
+import '../../../../core/network/dio_client.dart';
 import 'booking_history_screen.dart';
 
 class PaymentScreen extends StatefulWidget {
@@ -17,7 +20,9 @@ class PaymentScreen extends StatefulWidget {
   final String bookingId;
   final String userId;
   final PaymentResponseModel paymentResponse;
-  final BookingCubit bookingCubit;
+  final BookingCubit? bookingCubit;
+  final DateTime? deadline;
+  final String? bookingDate; // ISO date string, used when bookingCubit is null
 
   const PaymentScreen({
     super.key,
@@ -25,7 +30,9 @@ class PaymentScreen extends StatefulWidget {
     required this.bookingId,
     required this.userId,
     required this.paymentResponse,
-    required this.bookingCubit,
+    this.bookingCubit,
+    this.deadline,
+    this.bookingDate,
   });
 
   @override
@@ -34,89 +41,140 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   Timer? _pollingTimer;
+  Timer? _countdownTimer;
+  Duration _remaining = Duration.zero;
+  bool _isSuccessTriggered = false;
 
   @override
   void initState() {
     super.initState();
+    if (widget.deadline != null) {
+      _updateRemaining();
+      _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) _updateRemaining();
+      });
+    }
+
     // Start polling every 5 seconds
     _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      widget.bookingCubit.checkPaymentStatus(widget.bookingId);
+      if (widget.bookingCubit != null) {
+        widget.bookingCubit!.checkPaymentStatus(widget.bookingId);
+      } else {
+        _checkPaymentStatusInternally();
+      }
     });
+  }
+
+  Future<void> _checkPaymentStatusInternally() async {
+    if (_isSuccessTriggered) return;
+    try {
+      final repository = PaymentRepositoryImpl(
+        remoteDataSource: PaymentRemoteDataSource(
+          dioClient: context.read<DioClient>(),
+        ),
+      );
+      final status = await repository.getPaymentStatusByBookingId(widget.bookingId);
+      if (status.isPaid && !_isSuccessTriggered) {
+        _isSuccessTriggered = true;
+        _pollingTimer?.cancel();
+        if (mounted) _showSuccessAndClose();
+      }
+    } catch (_) {
+      // Ignore polling errors
+    }
+  }
+
+  void _updateRemaining() {
+    if (widget.deadline == null) return;
+    final diff = widget.deadline!.difference(DateTime.now());
+    setState(() => _remaining = diff.isNegative ? Duration.zero : diff);
   }
 
   @override
   void dispose() {
     _pollingTimer?.cancel();
+    _countdownTimer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<BookingCubit, BookingState>(
-      listener: (context, state) {
-        if (state is BookingConfirmed) {
-          _pollingTimer?.cancel();
-          _showSuccessAndClose();
-        } else if (state is BookingError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
-          );
-        }
-      },
-      child: Scaffold(
-        backgroundColor: const Color(0xFFFBFBFB),
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.close, color: AppColors.textDark),
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => BookingHistoryScreen(userId: widget.userId),
-                ),
-              );
-            },
-          ),
-          title: Text(
-            'THANH TOÁN CHUYỂN KHOẢN',
-            style: GoogleFonts.inter(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF1B5E20),
-            ),
-          ),
-          centerTitle: true,
+    final body = Scaffold(
+      backgroundColor: const Color(0xFFFBFBFB),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: AppColors.textDark),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BookingHistoryScreen(userId: widget.userId),
+              ),
+            );
+          },
         ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              // ── QR Notice ──────────────────────────────────────────────────
-              _buildNotice(),
-              const SizedBox(height: 24),
-
-              // ── QR Code ────────────────────────────────────────────────────
-              _buildQRCode(),
-              const SizedBox(height: 24),
-
-              // ── Transfer Info ──────────────────────────────────────────────
-              _buildTransferDetails(),
-              const SizedBox(height: 24),
-
-              // ── Booking Summary ────────────────────────────────────────────
-              _buildBookingInfo(),
-              const SizedBox(height: 32),
-
-              // ── Status Polling Indicator ───────────────────────────────────
-              _buildPollingStatus(),
-              const SizedBox(height: 40),
-            ],
+        title: Text(
+          'THANH TOÁN CHUYỂN KHOẢN',
+          style: GoogleFonts.inter(
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF1B5E20),
           ),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            // ── QR Notice ──────────────────────────────────────────────────
+            _buildNotice(),
+            const SizedBox(height: 24),
+
+            // ── QR Code ────────────────────────────────────────────────────
+            _buildQRCode(),
+            const SizedBox(height: 24),
+
+            // ── Transfer Info ──────────────────────────────────────────────
+            _buildTransferDetails(),
+            const SizedBox(height: 24),
+
+            // ── Booking Summary ────────────────────────────────────────────
+            _buildBookingInfo(),
+            const SizedBox(height: 32),
+
+            // ── Status Polling Indicator & Countdown ───────────────────────
+            if (widget.deadline != null) ...[
+              _buildCountdownTimer(),
+              const SizedBox(height: 24),
+            ],
+            _buildPollingStatus(),
+            const SizedBox(height: 40),
+          ],
         ),
       ),
     );
+
+    if (widget.bookingCubit != null) {
+      return BlocListener<BookingCubit, BookingState>(
+        bloc: widget.bookingCubit,
+        listener: (context, state) {
+          if (state is BookingConfirmed) {
+            _pollingTimer?.cancel();
+            _showSuccessAndClose();
+          } else if (state is BookingError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+            );
+          }
+        },
+        child: body,
+      );
+    }
+
+    return body;
   }
 
   Widget _buildNotice() {
@@ -225,6 +283,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Widget _buildBookingInfo() {
+    // Resolve the booking date from either BookingCubit or the explicit bookingDate param
+    String dateLabel = '';
+    if (widget.bookingCubit != null) {
+      dateLabel = DateFormat('dd/MM/yyyy').format(widget.bookingCubit!.date);
+    } else if (widget.bookingDate != null) {
+      try {
+        dateLabel = DateFormat('dd/MM/yyyy').format(DateTime.parse(widget.bookingDate!));
+      } catch (_) {
+        dateLabel = widget.bookingDate!;
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -234,8 +304,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
       child: Column(
         children: [
           _buildSummaryItem('Sân bóng', widget.pitch.name),
-          const SizedBox(height: 8),
-          _buildSummaryItem('Ngày đặt', DateFormat('dd/MM/yyyy').format(widget.bookingCubit.date)),
+          if (dateLabel.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _buildSummaryItem('Ngày đặt', dateLabel),
+          ],
           const SizedBox(height: 8),
           _buildSummaryItem('Trạng thái', 'Đang chờ thanh toán'),
         ],
@@ -284,6 +356,60 @@ class _PaymentScreenState extends State<PaymentScreen> {
           style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textDark),
         ),
       ],
+    );
+  }
+
+  Widget _buildCountdownTimer() {
+    final isUrgent = _remaining.inMinutes < 10;
+    
+    String formatDuration(Duration d) {
+      if (d == Duration.zero) return 'Hết hạn thanh toán';
+      final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+      final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+      return '$m : $s';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: isUrgent ? Colors.red.shade50 : Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isUrgent ? Colors.red.shade200 : Colors.orange.shade200,
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'THỜI GIAN THANH TOÁN CÒN LẠI',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: isUrgent ? Colors.red.shade800 : Colors.orange.shade900,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            formatDuration(_remaining),
+            style: GoogleFonts.inter(
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
+              color: _remaining == Duration.zero ? Colors.red : (isUrgent ? Colors.red : Colors.orange.shade900),
+              letterSpacing: 2,
+            ),
+          ),
+          if (_remaining == Duration.zero) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Đơn đặt sân sẽ bị hủy tự động.',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: Colors.red.shade700,
+              ),
+            ),
+          ]
+        ],
+      ),
     );
   }
 
