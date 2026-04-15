@@ -30,4 +30,39 @@ class PaymentRemoteDataSource {
       rethrow;
     }
   }
+
+  Future<Map<String, dynamic>> createOrder(Map<String, dynamic> requestBody) async {
+    try {
+      final response = await dioClient.dio.post(
+        ApiConstants.orders,
+        data: requestBody,
+      );
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<PaymentResponseModel> createShopPayment(Map<String, dynamic> requestBody) async {
+    try {
+      final response = await dioClient.dio.post(
+        '${ApiConstants.payments}/create-shop-payment',
+        data: requestBody,
+      );
+      return PaymentResponseModel.fromJson(response.data);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<PaymentResponseModel> getShopPaymentStatus(String orderId) async {
+    try {
+      final response = await dioClient.dio.get(
+        '${ApiConstants.payments}/status-by-order/$orderId',
+      );
+      return PaymentResponseModel.fromJson(response.data);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

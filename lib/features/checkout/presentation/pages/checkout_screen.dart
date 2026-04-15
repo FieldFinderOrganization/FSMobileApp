@@ -4,9 +4,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/network/dio_client.dart';
 import '../../../auth/login/presentation/bloc/auth_cubit.dart';
 import '../../../auth/login/presentation/bloc/auth_state.dart';
+import '../../../pitch/data/datasources/payment_remote_datasource.dart';
 import '../../domain/entities/checkout_item_entity.dart';
+import 'shop_payment_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final List<CheckoutItemEntity> items;
@@ -49,7 +52,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  void _placeOrder() {
+  bool _isPlacingOrder = false;
+
+  Future<void> _placeOrder() async {
     if (_addressController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -64,17 +69,80 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       return;
     }
 
-    if (_paymentMethod == 'transfer') {
+    final authState = context.read<AuthCubit>().state;
+    final user = authState is AuthSuccess ? authState.authToken.user : null;
+    if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Chức năng thanh toán chuyển khoản đang phát triển!',
-            style: GoogleFonts.inter(color: Colors.white),
-          ),
+          content: Text('Vui lòng đăng nhập để đặt hàng.',
+              style: GoogleFonts.inter(color: Colors.white)),
           backgroundColor: AppColors.primaryRed,
           behavior: SnackBarBehavior.floating,
         ),
       );
+      return;
+    }
+
+    if (_paymentMethod == 'transfer') {
+      setState(() => _isPlacingOrder = true);
+      try {
+        final dioClient = context.read<DioClient>();
+        final dataSource = PaymentRemoteDataSource(dioClient: dioClient);
+
+        // 1. Create order
+        final orderData = await dataSource.createOrder({
+          'userId': user.userId,
+          'paymentMethod': 'BANK',
+          'items': widget.items
+              .map((i) => {
+                    'productId': i.productId,
+                    'size': i.size,
+                    'quantity': i.quantity,
+                  })
+              .toList(),
+          'discountCodes': <String>[],
+        });
+
+        final orderId = orderData['orderId'] as int;
+
+        // 2. Create shop payment (get QR code)
+        final paymentResp = await dataSource.createShopPayment({
+          'userId': user.userId,
+          'amount': _total,
+          'paymentMethod': 'BANK',
+          'orderCode': orderId,
+        });
+
+        if (!mounted) return;
+
+        // 3. Navigate to payment screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ShopPaymentScreen(
+              items: widget.items,
+              paymentResponse: paymentResp,
+              userId: user.userId,
+              orderId: orderId.toString(),
+              dioClient: dioClient,
+            ),
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Đặt hàng thất bại: ${e.toString()}',
+              style: GoogleFonts.inter(color: Colors.white),
+            ),
+            backgroundColor: AppColors.primaryRed,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } finally {
+        if (mounted) setState(() => _isPlacingOrder = false);
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -564,7 +632,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           width: double.infinity,
           height: 50,
           child: ElevatedButton(
-            onPressed: _placeOrder,
+            onPressed: _isPlacingOrder ? null : _placeOrder,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryRed,
               shape: RoundedRectangleBorder(
@@ -572,14 +640,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
               elevation: 0,
             ),
-            child: Text(
-              'Đặt hàng · ${_currencyFormat.format(_total)}đ',
-              style: GoogleFonts.inter(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
+            child: _isPlacingOrder
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(
+                    'Đặt hàng · ${_currencyFormat.format(_total)}đ',
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
           ),
         ),
       ),
