@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -289,17 +290,75 @@ class _BookingHistoryBody extends StatelessWidget {
   }
 }
 
-class _BookingItemCard extends StatelessWidget {
+class _BookingItemCard extends StatefulWidget {
   final BookingResponseModel booking;
 
   const _BookingItemCard({required this.booking});
+
+  @override
+  State<_BookingItemCard> createState() => _BookingItemCardState();
+}
+
+class _BookingItemCardState extends State<_BookingItemCard> {
+  Timer? _timer;
+  Duration _remaining = Duration.zero;
+
+  bool get _isPending => widget.booking.status == 'PENDING';
+
+  /// Deadline = ngày đặt sân + giờ bắt đầu slot nhỏ nhất - 5 phút
+  DateTime? _calcDeadline() {
+    final booking = widget.booking;
+    if (booking.slots.isEmpty) return null;
+    try {
+      final date = DateTime.parse(booking.bookingDate);
+      final minSlot = booking.slots.reduce((a, b) => a < b ? a : b);
+      final startHour = 5 + minSlot; // slot 1 → 06:00
+      return DateTime(date.year, date.month, date.day, startHour, 0)
+          .subtract(const Duration(minutes: 5));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isPending) {
+      _updateRemaining();
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) _updateRemaining();
+      });
+    }
+  }
+
+  void _updateRemaining() {
+    final deadline = _calcDeadline();
+    if (deadline == null) return;
+    final diff = deadline.difference(DateTime.now());
+    setState(() => _remaining = diff.isNegative ? Duration.zero : diff);
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  String _formatRemaining(Duration d) {
+    if (d == Duration.zero) return 'Hết hạn thanh toán';
+    final h = d.inHours;
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    if (h > 0) return '$h giờ $m phút $s giây';
+    return '$m phút $s giây';
+  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => BookingDetailScreen(booking: booking),
+          builder: (_) => BookingDetailScreen(booking: widget.booking),
         ),
       ),
       child: _buildCardContent(context),
@@ -307,8 +366,14 @@ class _BookingItemCard extends StatelessWidget {
   }
 
   Widget _buildCardContent(BuildContext context) {
+    final booking = widget.booking;
     final statusColor = _getStatusColor(booking.status);
     final statusBg = statusColor.withValues(alpha: 0.1);
+
+    // Countdown badge for PENDING bookings
+    final deadline = _isPending ? _calcDeadline() : null;
+    final showCountdown = deadline != null;
+    final isUrgent = showCountdown && _remaining.inMinutes < 30;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -452,74 +517,119 @@ class _BookingItemCard extends StatelessWidget {
           // Footer: Total & Actions
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Tổng thanh toán',
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        color: AppColors.textGrey,
+                // Countdown badge (only for PENDING)
+                if (showCountdown) ...[
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: (isUrgent
+                              ? Colors.red
+                              : Colors.orange)
+                          .withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: (isUrgent ? Colors.red : Colors.orange)
+                            .withValues(alpha: 0.25),
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      NumberFormat.currency(
-                        locale: 'vi_VN',
-                        symbol: 'đ',
-                      ).format(booking.totalPrice),
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.primaryRed,
-                      ),
-                    ),
-                  ],
-                ),
-                if (booking.status == 'PENDING')
-                  ElevatedButton(
-                    onPressed: () {}, // Redirect to payment or details
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryRed,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text(
-                      'Thanh toán',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  )
-                else
-                  OutlinedButton(
-                    onPressed: () {},
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      side: const BorderSide(color: Color(0xFFEEEEEE)),
-                    ),
-                    child: const Text(
-                      'Chi tiết',
-                      style: TextStyle(color: AppColors.textDark, fontSize: 13),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.timer_outlined,
+                          size: 14,
+                          color: isUrgent ? Colors.red : Colors.orange,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Cần xác nhận trước: ${_formatRemaining(_remaining)}',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isUrgent ? Colors.red : Colors.orange,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                ],
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Tổng thanh toán',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: AppColors.textGrey,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          NumberFormat.currency(
+                            locale: 'vi_VN',
+                            symbol: 'đ',
+                          ).format(booking.totalPrice),
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.primaryRed,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (booking.status == 'PENDING')
+                      ElevatedButton(
+                        onPressed: () {}, // Redirect to payment or details
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryRed,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          'Thanh toán',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                    else
+                      OutlinedButton(
+                        onPressed: () {},
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          side: const BorderSide(color: Color(0xFFEEEEEE)),
+                        ),
+                        child: const Text(
+                          'Chi tiết',
+                          style: TextStyle(
+                              color: AppColors.textDark, fontSize: 13),
+                        ),
+                      ),
+                  ],
+                ),
               ],
             ),
           ),

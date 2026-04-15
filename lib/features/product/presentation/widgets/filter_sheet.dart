@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../home/presentation/cubit/home_state.dart';
 import '../cubit/product_cubit.dart';
 import '../cubit/product_state.dart';
 
@@ -23,6 +24,10 @@ class FilterSheet extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(context),
+              const SizedBox(height: 24),
+              _buildSectionTitle('Sắp xếp theo giá'),
+              const SizedBox(height: 12),
+              _buildSortFilter(context, state),
               const SizedBox(height: 24),
               _buildSectionTitle('Thương hiệu'),
               const SizedBox(height: 12),
@@ -75,6 +80,56 @@ class FilterSheet extends StatelessWidget {
         fontWeight: FontWeight.w700,
         color: AppColors.textDark,
       ),
+    );
+  }
+
+  Widget _buildSortFilter(BuildContext context, ProductState state) {
+    const options = [
+      (label: 'Mặc định', icon: Icons.sort_rounded, value: SortOption.none),
+      (label: 'Giá thấp → cao', icon: Icons.arrow_upward_rounded, value: SortOption.priceAsc),
+      (label: 'Giá cao → thấp', icon: Icons.arrow_downward_rounded, value: SortOption.priceDesc),
+    ];
+
+    return Row(
+      children: options.map((opt) {
+        final isSelected = state.sortOption == opt.value;
+        return Expanded(
+          child: GestureDetector(
+            onTap: () => context.read<ProductCubit>().setSortOption(opt.value),
+            child: Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primaryRed : const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected ? AppColors.primaryRed : Colors.transparent,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    opt.icon,
+                    size: 18,
+                    color: isSelected ? Colors.white : AppColors.textGrey,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    opt.label,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected ? Colors.white : AppColors.textGrey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 

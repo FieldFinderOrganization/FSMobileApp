@@ -9,6 +9,7 @@ import '../../../auth/login/presentation/bloc/auth_cubit.dart';
 import '../../../auth/login/presentation/bloc/auth_state.dart';
 import '../../../pitch/data/datasources/payment_remote_datasource.dart';
 import '../../domain/entities/checkout_item_entity.dart';
+import '../../../order/presentation/pages/order_history_screen.dart';
 import 'shop_payment_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -144,16 +145,47 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         if (mounted) setState(() => _isPlacingOrder = false);
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Đặt hàng thành công! Chúng tôi sẽ liên hệ xác nhận sớm.',
-            style: GoogleFonts.inter(color: Colors.white),
+      setState(() => _isPlacingOrder = true);
+      try {
+        final dioClient = context.read<DioClient>();
+        final dataSource = PaymentRemoteDataSource(dioClient: dioClient);
+
+        await dataSource.createOrder({
+          'userId': user.userId,
+          'paymentMethod': 'CASH',
+          'items': widget.items
+              .map((i) => {
+                    'productId': i.productId,
+                    'size': i.size,
+                    'quantity': i.quantity,
+                  })
+              .toList(),
+          'discountCodes': <String>[],
+        });
+
+        if (!mounted) return;
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OrderHistoryScreen(userId: user!.userId),
           ),
-          backgroundColor: Colors.green.shade700,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+          (route) => route.isFirst,
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Đặt hàng thất bại: ${e.toString()}',
+              style: GoogleFonts.inter(color: Colors.white),
+            ),
+            backgroundColor: AppColors.primaryRed,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } finally {
+        if (mounted) setState(() => _isPlacingOrder = false);
+      }
     }
   }
 
@@ -615,7 +647,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   Widget _buildBottomBar() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [

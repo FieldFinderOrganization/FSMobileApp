@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
+import '../../../product/presentation/cubit/product_cubit.dart';
 import '../../../chat/presentation/pages/chat_screen.dart';
 import '../../../home/presentation/pages/home_screen.dart';
 import '../../../pitch/presentation/pages/pitch_tab_screen.dart';
@@ -61,6 +62,10 @@ class _MainShellState extends State<MainShell>
   void _onTabTapped(int index) {
     if (index == _currentIndex) return;
     HapticFeedback.selectionClick();
+    // Refresh product list when switching to Shop tab to ensure fresh stock data
+    if (index == 2) {
+      context.read<ProductCubit>().loadProducts();
+    }
     setState(() => _currentIndex = index);
   }
 

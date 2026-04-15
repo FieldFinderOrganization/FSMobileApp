@@ -10,6 +10,7 @@ import '../../../../core/network/dio_client.dart';
 import '../../domain/entities/checkout_item_entity.dart';
 import '../../../pitch/data/datasources/payment_remote_datasource.dart';
 import '../../../pitch/data/models/payment_response_model.dart';
+import '../../../order/presentation/pages/order_history_screen.dart';
 
 class ShopPaymentScreen extends StatefulWidget {
   final List<CheckoutItemEntity> items;
@@ -418,7 +419,14 @@ class _ShopPaymentScreenState extends State<ShopPaymentScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context); // close dialog
-                Navigator.popUntil(context, (route) => route.isFirst);
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        OrderHistoryScreen(userId: widget.userId),
+                  ),
+                  (route) => route.isFirst,
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1B5E20),
