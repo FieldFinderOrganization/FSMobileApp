@@ -7,6 +7,9 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../auth/login/presentation/bloc/auth_cubit.dart';
 import '../../../auth/login/presentation/bloc/auth_state.dart';
+import '../../../cart/presentation/cubit/cart_cubit.dart';
+import '../../../home/presentation/cubit/home_cubit.dart';
+import '../../../product/presentation/cubit/product_cubit.dart';
 import '../../../pitch/data/datasources/payment_remote_datasource.dart';
 import '../../domain/entities/checkout_item_entity.dart';
 import '../../../order/presentation/pages/order_history_screen.dart';
@@ -116,6 +119,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
         if (!mounted) return;
 
+        // Refresh data sau khi tạo order thành công
+        context.read<CartCubit>().loadCart();
+        context.read<HomeCubit>().refresh();
+        context.read<ProductCubit>().loadProducts();
+
         // 3. Navigate to payment screen
         Navigator.push(
           context,
@@ -164,6 +172,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         });
 
         if (!mounted) return;
+
+        // Refresh data sau khi đặt hàng thành công
+        context.read<CartCubit>().loadCart();
+        context.read<HomeCubit>().refresh();
+        context.read<ProductCubit>().loadProducts();
+
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(

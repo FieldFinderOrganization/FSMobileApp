@@ -57,23 +57,6 @@ class CartCubit extends Cubit<CartState> {
 
   Future<void> addItem(int productId, String size, int quantity,
       {int? stockAvailable}) async {
-    // Client-side stock guard
-    final existingItem = state.cart?.items
-        .where((i) => i.productId == productId && i.size == size)
-        .firstOrNull;
-
-    final stock = stockAvailable ?? existingItem?.stockAvailable;
-    if (stock != null) {
-      final currentQty = existingItem?.quantity ?? 0;
-      if (currentQty + quantity > stock) {
-        emit(state.copyWith(
-          status: CartStatus.failure,
-          errorMessage: 'Số lượng trong giỏ đã đạt giới hạn tồn kho (Còn: $stock)',
-        ));
-        return;
-      }
-    }
-
     try {
       await _cartRepository.addItem(productId, size, quantity);
       // Always reload to get fresh stock info from server

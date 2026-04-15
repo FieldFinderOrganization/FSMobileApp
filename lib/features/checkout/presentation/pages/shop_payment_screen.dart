@@ -58,7 +58,9 @@ class _ShopPaymentScreenState extends State<ShopPaymentScreen> {
 
   Future<void> _checkPaymentStatus() async {
     try {
-      final status = await _paymentDataSource.getShopPaymentStatus(widget.orderId);
+      final status = await _paymentDataSource.getShopPaymentStatus(
+        widget.orderId,
+      );
       if (status.isPaid) {
         _pollingTimer?.cancel();
         if (mounted) _showSuccessDialog();
@@ -119,7 +121,11 @@ class _ShopPaymentScreenState extends State<ShopPaymentScreen> {
       ),
       child: Row(
         children: [
-          Icon(Icons.info_outline_rounded, color: Colors.blue.shade700, size: 20),
+          Icon(
+            Icons.info_outline_rounded,
+            color: Colors.blue.shade700,
+            size: 20,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -224,7 +230,9 @@ class _ShopPaymentScreenState extends State<ShopPaymentScreen> {
   }
 
   Widget _buildProductList() {
-    final displayCount = _showAll ? widget.items.length : widget.items.length.clamp(0, _initialItemCount);
+    final displayCount = _showAll
+        ? widget.items.length
+        : widget.items.length.clamp(0, _initialItemCount);
     final visibleItems = widget.items.take(displayCount).toList();
 
     return Container(
@@ -253,7 +261,9 @@ class _ShopPaymentScreenState extends State<ShopPaymentScreen> {
               onTap: () => setState(() => _showAll = !_showAll),
               child: Center(
                 child: Text(
-                  _showAll ? 'Ẩn bớt' : 'Xem thêm (${widget.items.length - _initialItemCount} sản phẩm)',
+                  _showAll
+                      ? 'Ẩn bớt'
+                      : 'Xem thêm (${widget.items.length - _initialItemCount} sản phẩm)',
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -281,11 +291,15 @@ class _ShopPaymentScreenState extends State<ShopPaymentScreen> {
               width: 56,
               height: 56,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
+              errorBuilder: (_, _, _) => Container(
                 width: 56,
                 height: 56,
                 color: Colors.grey.shade200,
-                child: const Icon(Icons.image_not_supported_outlined, size: 20, color: Colors.grey),
+                child: const Icon(
+                  Icons.image_not_supported_outlined,
+                  size: 20,
+                  color: Colors.grey,
+                ),
               ),
             ),
           ),
@@ -307,7 +321,10 @@ class _ShopPaymentScreenState extends State<ShopPaymentScreen> {
                 const SizedBox(height: 2),
                 Text(
                   'Size: ${item.size} • SL: ${item.quantity}',
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textGrey),
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: AppColors.textGrey,
+                  ),
                 ),
               ],
             ),
@@ -357,15 +374,21 @@ class _ShopPaymentScreenState extends State<ShopPaymentScreen> {
                   Clipboard.setData(ClipboardData(text: value));
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Đã sao chép: $value',
-                          style: GoogleFonts.inter(color: Colors.white)),
+                      content: Text(
+                        'Đã sao chép: $value',
+                        style: GoogleFonts.inter(color: Colors.white),
+                      ),
                       backgroundColor: const Color(0xFF1B5E20),
                       behavior: SnackBarBehavior.floating,
                       duration: const Duration(seconds: 1),
                     ),
                   );
                 },
-                child: const Icon(Icons.copy_rounded, size: 14, color: Color(0xFF1B5E20)),
+                child: const Icon(
+                  Icons.copy_rounded,
+                  size: 14,
+                  color: Color(0xFF1B5E20),
+                ),
               ),
             ],
           ],
@@ -380,7 +403,10 @@ class _ShopPaymentScreenState extends State<ShopPaymentScreen> {
         const SizedBox(
           width: 20,
           height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF1B5E20)),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Color(0xFF1B5E20),
+          ),
         ),
         const SizedBox(height: 12),
         Text(
@@ -404,7 +430,11 @@ class _ShopPaymentScreenState extends State<ShopPaymentScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.check_circle_rounded, color: Colors.green, size: 64),
+            const Icon(
+              Icons.check_circle_rounded,
+              color: Colors.green,
+              size: 64,
+            ),
             const SizedBox(height: 16),
             const Text(
               'THANH TOÁN THÀNH CÔNG',
@@ -422,8 +452,7 @@ class _ShopPaymentScreenState extends State<ShopPaymentScreen> {
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(
-                    builder: (_) =>
-                        OrderHistoryScreen(userId: widget.userId),
+                    builder: (_) => OrderHistoryScreen(userId: widget.userId),
                   ),
                   (route) => route.isFirst,
                 );
@@ -431,7 +460,9 @@ class _ShopPaymentScreenState extends State<ShopPaymentScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1B5E20),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: const Text('Hoàn tất'),
             ),
