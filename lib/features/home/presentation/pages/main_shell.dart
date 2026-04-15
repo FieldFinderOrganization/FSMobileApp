@@ -2,9 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../auth/domain/entities/user_entity.dart';
+import '../../../cart/presentation/cubit/cart_cubit.dart';
 import '../../../chat/presentation/pages/chat_screen.dart';
 import '../../../home/presentation/pages/home_screen.dart';
 import '../../../pitch/presentation/pages/pitch_tab_screen.dart';
@@ -44,6 +46,10 @@ class _MainShellState extends State<MainShell>
       vsync: this,
       duration: const Duration(milliseconds: 200),
     );
+    // Load giỏ hàng ngay khi vào app để cập nhật badge và trạng thái size
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<CartCubit>().loadCart();
+    });
   }
 
   @override

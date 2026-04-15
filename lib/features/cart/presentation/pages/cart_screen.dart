@@ -71,25 +71,30 @@ class _CartScreenState extends State<CartScreen> {
             children: [
               // Scrollable list
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.only(top: 12, bottom: 8),
-                  itemCount: cart.items.length,
-                  itemBuilder: (context, index) {
-                    final item = cart.items[index];
-                    return CartItemCard(
-                      key: ValueKey('${item.productId}_${item.size}'),
-                      item: item,
-                      onIncrease: () => context
-                          .read<CartCubit>()
-                          .updateItem(item.productId, item.size, item.quantity + 1),
-                      onDecrease: () => context
-                          .read<CartCubit>()
-                          .updateItem(item.productId, item.size, item.quantity - 1),
-                      onRemove: () => context
-                          .read<CartCubit>()
-                          .removeItem(item.productId, item.size),
-                    );
-                  },
+                child: RefreshIndicator(
+                  color: AppColors.primaryRed,
+                  onRefresh: () => context.read<CartCubit>().loadCart(),
+                  child: ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.only(top: 12, bottom: 8),
+                    itemCount: cart.items.length,
+                    itemBuilder: (context, index) {
+                      final item = cart.items[index];
+                      return CartItemCard(
+                        key: ValueKey('${item.productId}_${item.size}'),
+                        item: item,
+                        onIncrease: () => context
+                            .read<CartCubit>()
+                            .updateItem(item.productId, item.size, item.quantity + 1),
+                        onDecrease: () => context
+                            .read<CartCubit>()
+                            .updateItem(item.productId, item.size, item.quantity - 1),
+                        onRemove: () => context
+                            .read<CartCubit>()
+                            .removeItem(item.productId, item.size),
+                      );
+                    },
+                  ),
                 ),
               ),
               // Sticky bottom summary + checkout

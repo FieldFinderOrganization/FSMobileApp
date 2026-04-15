@@ -430,24 +430,38 @@ class ProductCard extends StatelessWidget {
 
   Widget _buildImage({required double height}) {
     if (product.imageUrl.isEmpty) {
-      return Container(
-        width: double.infinity,
-        height: height,
-        color: const Color(0xFFF0F0F0),
-        child: const Icon(Icons.image_not_supported, color: Colors.grey),
-      );
+      return _imagePlaceholder(width: double.infinity, height: height);
     }
     return Image.network(
       product.imageUrl,
       width: double.infinity,
       height: height,
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => Container(
-        width: double.infinity,
-        height: height,
-        color: const Color(0xFFF0F0F0),
-        child: const Icon(Icons.image_not_supported, color: Colors.grey),
-      ),
+      loadingBuilder: (_, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return _imageShimmer(width: double.infinity, height: height);
+      },
+      errorBuilder: (context2, e, stack) =>
+          _imagePlaceholder(width: double.infinity, height: height),
+    );
+  }
+
+  Widget _imagePlaceholder({required double width, required double height}) {
+    return Container(
+      width: width,
+      height: height,
+      color: const Color(0xFFF0F0F0),
+      child: const Icon(Icons.image_not_supported_outlined,
+          color: Color(0xFFCCCCCC), size: 32),
+    );
+  }
+
+  Widget _imageShimmer({required double width, required double height}) {
+    return Container(
+      width: width,
+      height: height,
+      color: const Color(0xFFF0F0F0),
+      child: const _ShimmerBox(),
     );
   }
 
@@ -482,6 +496,46 @@ class ProductCard extends StatelessWidget {
         fontWeight: FontWeight.w700,
         color: AppColors.textDark,
       ),
+    );
+  }
+}
+
+// ── Shimmer đơn giản không cần package bên ngoài ─────────────────────────────
+class _ShimmerBox extends StatefulWidget {
+  const _ShimmerBox();
+
+  @override
+  State<_ShimmerBox> createState() => _ShimmerBoxState();
+}
+
+class _ShimmerBoxState extends State<_ShimmerBox>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _anim = Tween<double>(begin: 0.4, end: 1.0).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _anim,
+      child: Container(color: const Color(0xFFE0E0E0)),
     );
   }
 }

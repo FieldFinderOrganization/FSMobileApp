@@ -336,15 +336,20 @@ class _ProductContent extends StatelessWidget {
         final paddingTop = MediaQuery.of(context).padding.top + (hasSubCats ? 190 : 145);
         final rows = _buildRows(filtered);
 
-        return ListView.builder(
-          padding: EdgeInsets.only(
-            top: paddingTop,
-            left: 16,
-            right: 16,
-            bottom: 24,
+        return RefreshIndicator(
+          color: AppColors.primaryRed,
+          onRefresh: () => context.read<ProductCubit>().loadProducts(),
+          child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.only(
+              top: paddingTop,
+              left: 16,
+              right: 16,
+              bottom: 24,
+            ),
+            itemCount: rows.length,
+            itemBuilder: (context, i) => _buildRow(rows[i]),
           ),
-          itemCount: rows.length,
-          itemBuilder: (context, i) => _buildRow(rows[i]),
         );
       },
     );

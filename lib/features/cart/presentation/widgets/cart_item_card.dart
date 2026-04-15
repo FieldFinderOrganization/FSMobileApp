@@ -53,7 +53,11 @@ class CartItemCard extends StatelessWidget {
                         width: 82,
                         height: 82,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => _placeholder(),
+                        loadingBuilder: (_, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return _shimmer();
+                        },
+                        errorBuilder: (context2, e, stack) => _placeholder(),
                       )
                     : _placeholder(),
               ),
@@ -221,6 +225,55 @@ class CartItemCard extends StatelessWidget {
         Icons.image_outlined,
         color: Color(0xFFCCCCCC),
         size: 28,
+      ),
+    );
+  }
+
+  Widget _shimmer() {
+    return const SizedBox(
+      width: 82,
+      height: 82,
+      child: _CartShimmerBox(),
+    );
+  }
+}
+
+class _CartShimmerBox extends StatefulWidget {
+  const _CartShimmerBox();
+
+  @override
+  State<_CartShimmerBox> createState() => _CartShimmerBoxState();
+}
+
+class _CartShimmerBoxState extends State<_CartShimmerBox>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _anim = Tween<double>(begin: 0.4, end: 1.0).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _anim,
+      child: Container(
+        color: const Color(0xFFE0E0E0),
       ),
     );
   }
