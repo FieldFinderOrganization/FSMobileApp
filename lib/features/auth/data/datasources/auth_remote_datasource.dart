@@ -124,4 +124,33 @@ class AuthRemoteDatasource {
 
     return response.data['secure_url'] as String;
   }
+
+  Future<void> verifyCurrentPassword(String userId, String currentPassword) async {
+    await _dio.post(
+      ApiConstants.verifyCurrentPassword,
+      queryParameters: {
+        'userId': userId,
+        'currentPassword': currentPassword,
+      },
+    );
+  }
+
+  Future<void> sendChangePasswordOtp(String email) async {
+    await _dio.post(
+      ApiConstants.changePasswordOtp,
+      queryParameters: {
+        'email': email,
+      },
+    );
+  }
+
+  Future<void> changePassword(String email, String newPassword) async {
+    await _dio.post(
+      ApiConstants.resetPasswordOtp,
+      queryParameters: {
+        'email': email,
+        'newPassword': newPassword,
+      },
+    );
+  }
 }

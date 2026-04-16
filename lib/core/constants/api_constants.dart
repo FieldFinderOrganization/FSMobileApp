@@ -46,6 +46,8 @@ class ApiConstants {
   // User endpoints
   static const String users = '/users';
   static String userUpdate(String userId) => '/users/$userId';
+  static const String verifyCurrentPassword = '/users/verify-current-password';
+  static const String changePasswordOtp = '/users/change-password-otp';
 
   // Cloudinary
   static String get cloudinaryUrl {

@@ -13,6 +13,7 @@ import '../../../home/presentation/cubit/home_cubit.dart';
 import '../../../product/presentation/cubit/product_cubit.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
 import 'edit_profile_screen.dart';
+import 'change_password_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final UserEntity user;
@@ -407,6 +408,16 @@ class _ProfileBody extends StatelessWidget {
             icon: Icons.help_outline_rounded,
             label: 'Trợ giúp & Hỗ trợ',
             onTap: () {},
+          ),
+          _ActionRow(
+            icon: Icons.vpn_key_outlined,
+            label: 'Đổi mật khẩu',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+              );
+            },
             isLast: true,
           ),
         ],

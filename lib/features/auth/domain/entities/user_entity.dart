@@ -8,6 +8,7 @@ class UserEntity extends Equatable {
   final String role;
   final String status;
   final String? imageUrl;
+  final bool hasPassword;
 
   const UserEntity({
     required this.userId,
@@ -17,10 +18,11 @@ class UserEntity extends Equatable {
     required this.role,
     required this.status,
     this.imageUrl,
+    this.hasPassword = true,
   });
 
   @override
-  List<Object?> get props => [userId, name, email, phone, role, status, imageUrl];
+  List<Object?> get props => [userId, name, email, phone, role, status, imageUrl, hasPassword];
 
   UserEntity copyWith({
     String? userId,
@@ -30,6 +32,7 @@ class UserEntity extends Equatable {
     String? role,
     String? status,
     String? imageUrl,
+    bool? hasPassword,
   }) {
     return UserEntity(
       userId: userId ?? this.userId,
@@ -39,6 +42,7 @@ class UserEntity extends Equatable {
       role: role ?? this.role,
       status: status ?? this.status,
       imageUrl: imageUrl ?? this.imageUrl,
+      hasPassword: hasPassword ?? this.hasPassword,
     );
   }
 }

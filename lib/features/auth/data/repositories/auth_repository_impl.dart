@@ -141,6 +141,33 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  @override
+  Future<void> verifyCurrentPassword(String userId, String currentPassword) async {
+    try {
+      await _datasource.verifyCurrentPassword(userId, currentPassword);
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
+  @override
+  Future<void> sendChangePasswordOtp(String email) async {
+    try {
+      await _datasource.sendChangePasswordOtp(email);
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
+  @override
+  Future<void> changePassword(String email, String newPassword) async {
+    try {
+      await _datasource.changePassword(email, newPassword);
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
   Exception _mapDioError(DioException e) {
     final statusCode = e.response?.statusCode;
     if (statusCode == 401) {

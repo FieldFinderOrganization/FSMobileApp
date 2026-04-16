@@ -56,3 +56,15 @@ class AuthOtpVerified extends AuthState {
   @override
   List<Object?> get props => [authToken];
 }
+
+class AuthChangePasswordVerifySuccess extends AuthState {
+  const AuthChangePasswordVerifySuccess();
+}
+
+class AuthChangePasswordOtpVerified extends AuthState {
+  const AuthChangePasswordOtpVerified();
+}
+
+class AuthChangePasswordSuccess extends AuthState {
+  const AuthChangePasswordSuccess();
+}

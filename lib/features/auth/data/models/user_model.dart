@@ -9,6 +9,7 @@ class UserModel extends UserEntity {
     required super.role,
     required super.status,
     super.imageUrl,
+    required super.hasPassword,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -20,6 +21,7 @@ class UserModel extends UserEntity {
       role: json['role'] as String,
       status: json['status'] as String,
       imageUrl: json['imageUrl'] as String?,
+      hasPassword: json['hasPassword'] as bool? ?? true,
     );
   }
 }

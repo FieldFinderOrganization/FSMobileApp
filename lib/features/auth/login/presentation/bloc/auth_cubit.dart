@@ -203,4 +203,66 @@ class AuthCubit extends Cubit<AuthState> {
       emit(AuthSuccess(currentToken));
     }
   }
+
+  Future<void> verifyCurrentPassword(String currentPassword) async {
+    final currentState = state;
+    if (currentState is! AuthSuccess) return;
+
+    emit(const AuthLoading());
+    try {
+      await _authRepository.verifyCurrentPassword(
+        currentState.authToken.user.userId,
+        currentPassword,
+      );
+      emit(const AuthChangePasswordVerifySuccess());
+      emit(AuthSuccess(currentState.authToken));
+    } catch (e) {
+      emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
+      emit(AuthSuccess(currentState.authToken));
+    }
+  }
+
+  Future<void> verifyChangePasswordOtp(String email, String code) async {
+    final currentState = state;
+    if (currentState is! AuthSuccess) return;
+
+    emit(const AuthLoading());
+    try {
+      await _authRepository.verifyOtp(email, code);
+      emit(const AuthChangePasswordOtpVerified());
+      emit(AuthSuccess(currentState.authToken));
+    } catch (e) {
+      emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
+      emit(AuthSuccess(currentState.authToken));
+    }
+  }
+
+  Future<void> changePassword(String email, String newPassword) async {
+    final currentState = state;
+    if (currentState is! AuthSuccess) return;
+
+    emit(const AuthLoading());
+    try {
+      await _authRepository.changePassword(email, newPassword);
+      emit(const AuthChangePasswordSuccess());
+      emit(AuthSuccess(currentState.authToken));
+    } catch (e) {
+      emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
+      emit(AuthSuccess(currentState.authToken));
+    }
+  }
+
+  Future<void> sendChangePasswordOtp(String email) async {
+    final currentState = state;
+    if (currentState is! AuthSuccess) return;
+
+    emit(const AuthLoading());
+    try {
+      await _authRepository.sendChangePasswordOtp(email);
+      emit(AuthSuccess(currentState.authToken));
+    } catch (e) {
+      emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
+      emit(AuthSuccess(currentState.authToken));
+    }
+  }
 }
