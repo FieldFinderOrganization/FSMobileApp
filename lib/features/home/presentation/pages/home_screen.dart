@@ -51,6 +51,14 @@ class _HomeBodyState extends State<_HomeBody> {
     if ((offset - _parallaxOffset.value).abs() > 5.0) {
       _parallaxOffset.value = offset;
     }
+
+    // Infinite scroll for Products
+    final state = context.read<HomeCubit>().state;
+    if (state.isProductsExpanded &&
+        _scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 300) {
+      context.read<HomeCubit>().loadNextPageProducts();
+    }
   }
 
   @override

@@ -46,7 +46,7 @@ class AllProductsSection extends StatelessWidget {
           // ── Bento Grid ──────────────────────────────────────────────────
           if (isLoading)
             _buildShimmerBento()
-          else if (state.visibleProducts.isEmpty)
+          else if (state.products.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 32),
               child: const Center(
@@ -63,23 +63,41 @@ class AllProductsSection extends StatelessWidget {
                 crossAxisCount: 2,
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                children: List.generate(state.visibleProducts.length, (i) {
-                  final product = state.visibleProducts[i];
-                  // Pattern: Index 0 is Large, then 1-2 small, 3 Large, 4-5 small...
-                  final isLarge = i % 3 == 0;
-                  
-                  return StaggeredGridTile.fit(
-                    crossAxisCellCount: isLarge ? 2 : 1,
-                    child: ProductCard(
-                      product: product,
-                      mode: isLarge ? ProductCardMode.featured : ProductCardMode.grid,
-                    ),
-                  );
-                }),
+                children: List.generate(
+                  state.products.length < state.visibleProductCount
+                      ? state.products.length
+                      : state.visibleProductCount,
+                  (i) {
+                    final product = state.products[i];
+                    // Pattern: Index 0 is Large, then 1-2 small, 3 Large, 4-5 small...
+                    final isLarge = i % 3 == 0;
+
+                    return StaggeredGridTile.fit(
+                      crossAxisCellCount: isLarge ? 2 : 1,
+                      child: ProductCard(
+                        product: product,
+                        mode: isLarge
+                            ? ProductCardMode.featured
+                            : ProductCardMode.grid,
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
-            const SizedBox(height: 20),
+            // ── Nút Xem thêm / Ẩn bớt ──────────────────────────────────────
             _PaginationButtons(state: state),
+            
+            if (state.isLoadingMoreProducts)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.primaryRed,
+                    strokeWidth: 2,
+                  ),
+                ),
+              ),
           ],
           const SizedBox(height: 16),
         ],
@@ -185,6 +203,39 @@ class _FilterBar extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          // Hàng 3: Lọc theo thương hiệu
+          Row(
+            children: [
+              Text(
+                'Thương hiệu:',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textGrey,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _BrandChip(label: 'Nike', currentBrand: state.selectedBrand),
+                      const SizedBox(width: 6),
+                      _BrandChip(label: 'Adidas', currentBrand: state.selectedBrand),
+                      const SizedBox(width: 6),
+                      _BrandChip(label: 'Converse', currentBrand: state.selectedBrand),
+                      const SizedBox(width: 6),
+                      _BrandChip(label: 'Puma', currentBrand: state.selectedBrand),
+                      const SizedBox(width: 6),
+                      _BrandChip(label: 'Jordan', currentBrand: state.selectedBrand),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -268,74 +319,38 @@ class _GenderChip extends StatelessWidget {
   }
 }
 
-// ── Nút Ẩn bớt / Xem thêm ───────────────────────────────────────────────────
+class _BrandChip extends StatelessWidget {
+  final String label;
+  final String currentBrand;
 
-class _PaginationButtons extends StatelessWidget {
-  final HomeState state;
-
-  const _PaginationButtons({required this.state});
+  const _BrandChip({
+    required this.label,
+    required this.currentBrand,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final canCollapse = state.visibleProductCount > kProductPageSize;
-    final canLoadMore = state.hasMoreProducts;
-
-    if (!canCollapse && !canLoadMore) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          // ── Nút Ẩn bớt ────────────────────────────────────────────────
-          if (canCollapse)
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => context.read<HomeCubit>().collapseProducts(),
-                icon: const Icon(Icons.keyboard_arrow_up_rounded, size: 16),
-                label: Text(
-                  'Ẩn bớt',
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.textDark,
-                  side: const BorderSide(color: Color(0xFFCCCCCC)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-            ),
-
-          if (canCollapse && canLoadMore) const SizedBox(width: 10),
-
-          // ── Nút Xem thêm ──────────────────────────────────────────────
-          if (canLoadMore)
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => context.read<HomeCubit>().loadMoreProducts(),
-                icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 16),
-                label: Text(
-                   'Xem thêm',
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primaryRed,
-                  side: const BorderSide(color: AppColors.primaryRed),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-            ),
-        ],
+    final isActive = currentBrand == label;
+    return GestureDetector(
+      onTap: () => context.read<HomeCubit>().setBrand(label),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primaryRed : const Color(0xFFF5F5F5),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isActive ? AppColors.primaryRed : const Color(0xFFDDDDDD),
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: isActive ? Colors.white : AppColors.textGrey,
+          ),
+        ),
       ),
     );
   }
@@ -520,6 +535,101 @@ class _SubCategoryChips extends StatelessWidget {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+}
+class _PaginationButtons extends StatelessWidget {
+  final HomeState state;
+  const _PaginationButtons({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    // Nếu chưa có sp nào hoặc đang loading thì không hiện
+    if (state.products.isEmpty) return const SizedBox.shrink();
+
+    final hasMoreToExpand = state.products.length > state.visibleProductCount;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (hasMoreToExpand || state.productsHasMore)
+            _Button(
+              label: 'XEM THÊM',
+              icon: Icons.add_rounded,
+              onTap: () => context.read<HomeCubit>().expandProducts(),
+            ),
+          if (state.isProductsExpanded && !state.productsHasMore)
+             const SizedBox(width: 12), // Spacer if both buttons exist
+          if (state.isProductsExpanded)
+            _Button(
+              label: 'ẨN BỚT',
+              icon: Icons.remove_rounded,
+              onTap: () {
+                context.read<HomeCubit>().collapseProducts();
+                // Optionally scroll back up if needed, but simple collapse for now
+              },
+              isOutlined: true,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Button extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool isOutlined;
+
+  const _Button({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.isOutlined = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          color: isOutlined ? Colors.transparent : AppColors.primaryRed,
+          borderRadius: BorderRadius.circular(30),
+          border: isOutlined ? Border.all(color: AppColors.primaryRed, width: 1.5) : null,
+          boxShadow: isOutlined ? null : [
+            BoxShadow(
+              color: AppColors.primaryRed.withValues(alpha: 0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isOutlined ? AppColors.primaryRed : Colors.white,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: isOutlined ? AppColors.primaryRed : Colors.white,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

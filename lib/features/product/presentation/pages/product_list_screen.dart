@@ -362,7 +362,7 @@ class _ProductContentState extends State<_ProductContent> {
 
         return RefreshIndicator(
           color: AppColors.primaryRed,
-          onRefresh: () => context.read<ProductCubit>().loadProducts(),
+          onRefresh: () => context.read<ProductCubit>().reload(),
           child: ListView.builder(
             controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(),

@@ -1,5 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/repositories/home_repository.dart';
+import '../../../product/domain/entities/product_entity.dart';
+import '../../../pitch/domain/entities/pitch_entity.dart';
 import 'home_state.dart';
 
 export 'home_state.dart';
@@ -12,12 +14,20 @@ class HomeCubit extends Cubit<HomeState> {
         super(const HomeState());
 
   Future<void> loadAll() async {
+    // Reset pages
+    emit(state.copyWith(
+      pitchesPage: 0,
+      pitchesHasMore: true,
+      productsPage: 0,
+      productsHasMore: true,
+    ));
+
     await Future.wait([
       _loadCategories(),
       _loadDiscounts(),
-      _loadPitches(),
+      _loadPitchesFirstPage(),
       _loadTopProducts(),
-      _loadProducts(),
+      _loadProductsFirstPage(),
     ]);
   }
 
@@ -43,14 +53,65 @@ class HomeCubit extends Cubit<HomeState> {
     }
   }
 
-  Future<void> _loadPitches() async {
-    emit(state.copyWith(pitchesStatus: LoadStatus.loading));
+  Future<void> _loadPitchesFirstPage() async {
+    emit(state.copyWith(
+      pitchesStatus: LoadStatus.loading,
+      pitches: [], // Clear old pitches
+      pitchesPage: 0,
+    ));
     try {
-      final data = await _repository.fetchPitches();
-      emit(state.copyWith(pitches: data, pitchesStatus: LoadStatus.success));
+      String? sortStr;
+      if (state.pitchSortOrder == 'asc') sortStr = 'price,asc';
+      if (state.pitchSortOrder == 'desc') sortStr = 'price,desc';
+
+      final result = await _repository.fetchPitches(
+        page: 0,
+        size: 10,
+        district: state.selectedDistrict,
+        type: state.selectedPitchType,
+        sort: sortStr,
+      );
+      emit(state.copyWith(
+        pitches: result['content'] as List<PitchEntity>,
+        pitchesPage: 0,
+        pitchesHasMore: !(result['last'] as bool),
+        pitchesStatus: LoadStatus.success,
+      ));
     } catch (e) {
       emit(state.copyWith(
           pitchesStatus: LoadStatus.failure, errorMessage: e.toString()));
+    }
+  }
+
+  Future<void> loadNextPagePitches() async {
+    if (state.isLoadingMorePitches || !state.pitchesHasMore) return;
+
+    emit(state.copyWith(isLoadingMorePitches: true));
+    try {
+      final nextPage = state.pitchesPage + 1;
+      String? sortStr;
+      if (state.pitchSortOrder == 'asc') sortStr = 'price,asc';
+      if (state.pitchSortOrder == 'desc') sortStr = 'price,desc';
+
+      final result = await _repository.fetchPitches(
+        page: nextPage,
+        size: 10,
+        district: state.selectedDistrict,
+        type: state.selectedPitchType,
+        sort: sortStr,
+      );
+
+      final newPitches = result['content'] as List<PitchEntity>;
+      final isLast = result['last'] as bool;
+
+      emit(state.copyWith(
+        isLoadingMorePitches: false,
+        pitches: [...state.pitches, ...newPitches],
+        pitchesPage: nextPage,
+        pitchesHasMore: !isLast,
+      ));
+    } catch (e) {
+      emit(state.copyWith(isLoadingMorePitches: false));
     }
   }
 
@@ -66,14 +127,73 @@ class HomeCubit extends Cubit<HomeState> {
     }
   }
 
-  Future<void> _loadProducts() async {
+  Future<void> _loadProductsFirstPage() async {
     emit(state.copyWith(productsStatus: LoadStatus.loading));
     try {
-      final data = await _repository.fetchProducts();
-      emit(state.copyWith(products: data, productsStatus: LoadStatus.success));
+      String? sortStr;
+      if (state.sortOption == SortOption.priceAsc) sortStr = 'price,asc';
+      if (state.sortOption == SortOption.priceDesc) sortStr = 'price,desc';
+
+      final result = await _repository.fetchProducts(
+        page: 0,
+        size: 10,
+        categoryId: _getCategoryIdFromName(state.selectedCategoryName),
+        brand: state.selectedBrand,
+        genders: state.selectedGenders,
+        sort: sortStr,
+      );
+      emit(state.copyWith(
+        products: result['content'] as List<ProductEntity>,
+        productsPage: 0,
+        productsHasMore: !(result['last'] as bool),
+        productsStatus: LoadStatus.success,
+      ));
     } catch (e) {
       emit(state.copyWith(
           productsStatus: LoadStatus.failure, errorMessage: e.toString()));
+    }
+  }
+
+  Future<void> loadNextPageProducts() async {
+    if (state.isLoadingMoreProducts || !state.productsHasMore) return;
+
+    emit(state.copyWith(isLoadingMoreProducts: true));
+    try {
+      final nextPage = state.productsPage + 1;
+      String? sortStr;
+      if (state.sortOption == SortOption.priceAsc) sortStr = 'price,asc';
+      if (state.sortOption == SortOption.priceDesc) sortStr = 'price,desc';
+
+      final result = await _repository.fetchProducts(
+        page: nextPage,
+        size: 10,
+        categoryId: _getCategoryIdFromName(state.selectedCategoryName),
+        brand: state.selectedBrand,
+        genders: state.selectedGenders,
+        sort: sortStr,
+      );
+
+      final newProducts = result['content'] as List<ProductEntity>;
+      final isLast = result['last'] as bool;
+
+      emit(state.copyWith(
+        isLoadingMoreProducts: false,
+        products: [...state.products, ...newProducts],
+        productsPage: nextPage,
+        productsHasMore: !isLast,
+      ));
+    } catch (e) {
+      emit(state.copyWith(isLoadingMoreProducts: false));
+    }
+  }
+
+  int? _getCategoryIdFromName(String name) {
+    if (name.isEmpty) return null;
+    try {
+      final category = state.categories.firstWhere((c) => c.name == name);
+      return int.tryParse(category.id);
+    } catch (_) {
+      return null;
     }
   }
 
@@ -83,9 +203,13 @@ class HomeCubit extends Cubit<HomeState> {
     emit(state.copyWith(
       selectedCategoryName: categoryName,
       selectedSubCategoryNames: {},
-      visibleProductCount: kProductPageSize,
+      selectedBrand: '', // Reset brand when changing category
+      isProductsExpanded: false,
+      visibleProductCount: 4,
       hasLoadedMore: false,
     ));
+    // For simplicity in this demo, we just reload all or you could trigger _loadProductsFirstPage with category
+    _loadProductsFirstPage();
   }
 
   void toggleSubCategory(String subCategoryName) {
@@ -97,43 +221,44 @@ class HomeCubit extends Cubit<HomeState> {
     }
     emit(state.copyWith(
       selectedSubCategoryNames: current,
-      visibleProductCount: kProductPageSize,
+      isProductsExpanded: false,
+      visibleProductCount: 4,
       hasLoadedMore: false,
     ));
+    // Trigger reload
+    _loadProductsFirstPage();
   }
 
   // ── Pagination ────────────────────────────────────────────────────────────
 
-  /// Xem thêm: tăng số sản phẩm, đánh dấu hasLoadedMore = true
-  void loadMoreProducts() {
+  /// Xem thêm: Hiện tại chuyển sang Infinite Scroll tự động
+  void loadMoreProducts() => expandProducts();
+
+  void expandProducts() {
     emit(state.copyWith(
-      visibleProductCount: state.visibleProductCount + kProductPageSize,
-      hasLoadedMore: true,
+      isProductsExpanded: true,
+      visibleProductCount: 99, // Show all currently loaded
     ));
   }
 
-  /// Ẩn bớt: trở về số sản phẩm ban đầu
   void collapseProducts() {
-    final newCount = state.visibleProductCount - kProductPageSize;
-    if (newCount >= kProductPageSize) {
-      emit(state.copyWith(
-        visibleProductCount: newCount,
-        hasLoadedMore: newCount > kProductPageSize,
-      ));
-    }
+    emit(state.copyWith(
+      isProductsExpanded: false,
+      visibleProductCount: 4,
+    ));
   }
 
   // ── Filters ───────────────────────────────────────────────────────────────
 
   void setSortOption(SortOption option) {
-    // Toggle: nếu đang chọn cái này thì bỏ (về none)
-    final next =
-        state.sortOption == option ? SortOption.none : option;
+    final next = state.sortOption == option ? SortOption.none : option;
     emit(state.copyWith(
       sortOption: next,
-      visibleProductCount: kProductPageSize,
+      isProductsExpanded: false,
+      visibleProductCount: 4,
       hasLoadedMore: false,
     ));
+    _loadProductsFirstPage();
   }
 
   void toggleGender(String gender) {
@@ -145,17 +270,30 @@ class HomeCubit extends Cubit<HomeState> {
     }
     emit(state.copyWith(
       selectedGenders: current,
-      visibleProductCount: kProductPageSize,
+      isProductsExpanded: false,
+      visibleProductCount: 4,
       hasLoadedMore: false,
     ));
+    _loadProductsFirstPage();
+  }
+
+  void setBrand(String brand) {
+    final next = state.selectedBrand == brand ? '' : brand;
+    emit(state.copyWith(
+      selectedBrand: next,
+      isProductsExpanded: false,
+      visibleProductCount: 4,
+      hasLoadedMore: false,
+    ));
+    _loadProductsFirstPage();
   }
 
   // ── Pitch District ────────────────────────────────────────────────────────
 
   void selectDistrict(String district) {
-    // Toggle: tap lại quận đang chọn → reset về "Tất cả"
     final next = state.selectedDistrict == district ? '' : district;
     emit(state.copyWith(selectedDistrict: next));
+    _loadPitchesFirstPage();
   }
 
   void updatePitchFilters({String? type, String? sort}) {
@@ -163,6 +301,7 @@ class HomeCubit extends Cubit<HomeState> {
       selectedPitchType: type ?? state.selectedPitchType,
       pitchSortOrder: sort ?? state.pitchSortOrder,
     ));
+    _loadPitchesFirstPage();
   }
 
   void reset() => emit(const HomeState());

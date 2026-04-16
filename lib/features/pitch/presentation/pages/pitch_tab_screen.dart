@@ -28,6 +28,7 @@ class _PitchTabBodyState extends State<_PitchTabBody>
     with SingleTickerProviderStateMixin {
   final TextEditingController _controller = TextEditingController();
   late AnimationController _animController;
+  late final ScrollController _scrollController;
   String _query = '';
 
   @override
@@ -37,12 +38,21 @@ class _PitchTabBodyState extends State<_PitchTabBody>
       vsync: this,
       duration: const Duration(milliseconds: 250),
     );
+    _scrollController = ScrollController()..addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      context.read<HomeCubit>().loadNextPagePitches();
+    }
   }
 
   @override
   void dispose() {
     _controller.dispose();
     _animController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -87,9 +97,10 @@ class _PitchTabBodyState extends State<_PitchTabBody>
               children: [
                 _buildHeader(state),
                 Expanded(
-                  child: pitches.isEmpty
+                  child: pitches.isEmpty &&
+                          state.pitchesStatus != LoadStatus.loading
                       ? _buildEmptyState()
-                      : _buildPitchList(pitches),
+                      : _buildPitchList(pitches, state),
                 ),
               ],
             ),
@@ -101,7 +112,9 @@ class _PitchTabBodyState extends State<_PitchTabBody>
 
   List<PitchEntity> _getFilteredPitches(HomeState state) {
     final normalizedQuery = StringUtils.removeDiacritics(_query.toLowerCase());
-    return state.filteredPitches.where((p) {
+    // Since we now have server-side filtering for district and type, 
+    // we only do client-side filtering for the search query here.
+    return state.pitches.where((p) {
       if (_query.isEmpty) return true;
       final name = StringUtils.removeDiacritics(p.name.toLowerCase());
       final type = StringUtils.removeDiacritics(p.displayType.toLowerCase());
@@ -168,15 +181,13 @@ class _PitchTabBodyState extends State<_PitchTabBody>
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color:
-                        (state.selectedPitchType.isNotEmpty ||
+                    color: (state.selectedPitchType.isNotEmpty ||
                             state.pitchSortOrder != 'none')
                         ? AppColors.primaryRed.withValues(alpha: 0.1)
                         : const Color(0xFFF6F6F6),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color:
-                          (state.selectedPitchType.isNotEmpty ||
+                      color: (state.selectedPitchType.isNotEmpty ||
                               state.pitchSortOrder != 'none')
                           ? AppColors.primaryRed.withValues(alpha: 0.3)
                           : Colors.transparent,
@@ -184,8 +195,7 @@ class _PitchTabBodyState extends State<_PitchTabBody>
                   ),
                   child: Icon(
                     Icons.tune,
-                    color:
-                        (state.selectedPitchType.isNotEmpty ||
+                    color: (state.selectedPitchType.isNotEmpty ||
                             state.pitchSortOrder != 'none')
                         ? AppColors.primaryRed
                         : AppColors.textGrey,
@@ -203,6 +213,8 @@ class _PitchTabBodyState extends State<_PitchTabBody>
   }
 
   Widget _buildDistrictBar(HomeState state) {
+    // Note: getActiveDistricts should now probably pull from all loaded data or a separate list.
+    // For now, keep it as is if it's still useful.
     final activeDistricts = state.getActiveDistricts(_query);
     final districts = ['Tất cả', ...activeDistricts];
 
@@ -214,14 +226,13 @@ class _PitchTabBodyState extends State<_PitchTabBody>
         separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, i) {
           final d = districts[i];
-          final isSel =
-              (d == 'Tất cả' && state.selectedDistrict.isEmpty) ||
+          final isSel = (d == 'Tất cả' && state.selectedDistrict.isEmpty) ||
               (d == state.selectedDistrict);
 
           return GestureDetector(
             onTap: () => context.read<HomeCubit>().selectDistrict(
-              d == 'Tất cả' ? '' : d,
-            ),
+                  d == 'Tất cả' ? '' : d,
+                ),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               alignment: Alignment.center,
@@ -247,11 +258,26 @@ class _PitchTabBodyState extends State<_PitchTabBody>
     );
   }
 
-  Widget _buildPitchList(List<PitchEntity> pitches) {
+  Widget _buildPitchList(List<PitchEntity> pitches, HomeState state) {
     return ListView.builder(
+      controller: _scrollController,
       padding: const EdgeInsets.all(20),
-      itemCount: pitches.length,
-      itemBuilder: (context, index) => _PitchCard(pitch: pitches[index]),
+      itemCount: pitches.length + (state.pitchesHasMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index < pitches.length) {
+          return _PitchCard(pitch: pitches[index]);
+        } else {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Center(
+              child: CircularProgressIndicator(
+                color: AppColors.primaryRed,
+                strokeWidth: 2,
+              ),
+            ),
+          );
+        }
+      },
     );
   }
 

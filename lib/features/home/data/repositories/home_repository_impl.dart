@@ -12,9 +12,27 @@ class HomeRepositoryImpl implements HomeRepository {
   HomeRepositoryImpl(this._datasource);
 
   @override
-  Future<List<ProductEntity>> fetchProducts() async {
+  Future<Map<String, dynamic>> fetchProducts({
+    int page = 0,
+    int size = 10,
+    int? categoryId,
+    Set<String>? genders,
+    String? brand,
+    String? sort,
+  }) async {
     try {
-      return await _datasource.fetchProducts();
+      final result = await _datasource.fetchProducts(
+        page: page,
+        size: size,
+        categoryId: categoryId,
+        genders: genders,
+        brand: brand,
+        sort: sort,
+      );
+      return {
+        'content': (result['content'] as List).cast<ProductEntity>(),
+        'last': result['last'] as bool,
+      };
     } on DioException catch (e) {
       throw _mapDioError(e);
     }
@@ -30,9 +48,25 @@ class HomeRepositoryImpl implements HomeRepository {
   }
 
   @override
-  Future<List<PitchEntity>> fetchPitches() async {
+  Future<Map<String, dynamic>> fetchPitches({
+    int page = 0,
+    int size = 10,
+    String? district,
+    String? type,
+    String? sort,
+  }) async {
     try {
-      return await _datasource.fetchPitches();
+      final result = await _datasource.fetchPitches(
+        page: page,
+        size: size,
+        district: district,
+        type: type,
+        sort: sort,
+      );
+      return {
+        'content': (result['content'] as List).cast<PitchEntity>(),
+        'last': result['last'] as bool,
+      };
     } on DioException catch (e) {
       throw _mapDioError(e);
     }

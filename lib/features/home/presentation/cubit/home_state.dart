@@ -42,14 +42,26 @@ class HomeState {
   final List<CategoryEntity> categories;
   final List<DiscountEntity> discounts;
 
+  // Pagination for Pitches (Tab Sân)
+  final int pitchesPage;
+  final bool pitchesHasMore;
+  final bool isLoadingMorePitches;
+
+  // Pagination for Products (All Products section)
+  final int productsPage;
+  final bool productsHasMore;
+  final bool isLoadingMoreProducts;
+
   final String selectedCategoryName;
   final Set<String> selectedSubCategoryNames;
 
   final SortOption sortOption;
   final Set<String> selectedGenders; // 'Men', 'Women', 'Unisex'
+  final String selectedBrand;
 
   final int visibleProductCount;
-  final bool hasLoadedMore; // true sau khi nhấn "Xem thêm" ít nhất 1 lần
+  final bool isProductsExpanded;
+  final bool hasLoadedMore;
 
   final String selectedDistrict; // '' = Tất cả
   final String selectedPitchType; // 'Sân 5', 'Sân 7', 'Sân 11'
@@ -68,11 +80,19 @@ class HomeState {
     this.pitches = const [],
     this.categories = const [],
     this.discounts = const [],
+    this.pitchesPage = 0,
+    this.pitchesHasMore = true,
+    this.isLoadingMorePitches = false,
+    this.productsPage = 0,
+    this.productsHasMore = true,
+    this.isLoadingMoreProducts = false,
     this.selectedCategoryName = '',
     this.selectedSubCategoryNames = const {},
     this.sortOption = SortOption.none,
     this.selectedGenders = const {},
-    this.visibleProductCount = kProductPageSize,
+    this.selectedBrand = '',
+    this.visibleProductCount = 4,
+    this.isProductsExpanded = false,
     this.hasLoadedMore = false,
     this.selectedDistrict = '',
     this.selectedPitchType = '',
@@ -81,10 +101,10 @@ class HomeState {
   });
 
   // ── Derived ─────────────────────────────────────────────────────────────
+  // ── Derived (Simplified) ──────────────────────────────────────────
 
   List<CategoryEntity> get rootCategories => categories
-      .where((c) =>
-          c.parentName == null || c.parentName!.isEmpty)
+      .where((c) => c.parentName == null || c.parentName!.isEmpty)
       .toList();
 
   List<CategoryEntity> get subCategories => selectedCategoryName.isEmpty
@@ -93,110 +113,24 @@ class HomeState {
           .where((c) => c.parentName == selectedCategoryName)
           .toList();
 
-  // ── Filter → Gender → Sort ───────────────────────────────────────────────
+  // ── No longer doing heavy client-side filtering ─────────────────────────
 
-  List<ProductEntity> get _categoryFiltered {
-    if (selectedCategoryName.isEmpty) return products;
-    if (selectedCategoryName == 'Bestseller') return topProducts;
+  List<ProductEntity> get visibleProducts => products;
 
-    final Set<String> targetNames = getDescendantNames(categories, selectedCategoryName);
-
-    return products.where((p) {
-      // If brand matches, it's always a match (kept from previous logic)
-      if (targetNames.contains(p.brand)) return true;
-
-      if (selectedSubCategoryNames.isNotEmpty) {
-        return selectedSubCategoryNames.any((sub) {
-          final descendants = getDescendantNames(categories, sub);
-          return CategoryUtils.doesProductMatchCategory(
-            product: p,
-            targetCategoryName: sub,
-            descendantTargetNames: descendants,
-          );
-        });
-      }
-
-      return CategoryUtils.doesProductMatchCategory(
-        product: p,
-        targetCategoryName: selectedCategoryName,
-        descendantTargetNames: targetNames,
-      );
-    }).toList();
-  }
-
-  List<ProductEntity> get _processed {
-    var result = _categoryFiltered;
-
-    // Gender filter
-    if (selectedGenders.isNotEmpty) {
-      final targets = Set<String>.from(selectedGenders);
-      // Nếu chọn Men hoặc Women thì Unisex cũng pass
-      if (targets.contains('Men') || targets.contains('Women')) {
-        targets.add('Unisex');
-      }
-      result = result.where((p) => targets.contains(p.sex)).toList();
-    }
-
-    // Sort
-    switch (sortOption) {
-      case SortOption.priceAsc:
-        result = [...result]
-          ..sort((a, b) =>
-              (a.salePrice ?? a.price).compareTo(b.salePrice ?? b.price));
-      case SortOption.priceDesc:
-        result = [...result]
-          ..sort((a, b) =>
-              (b.salePrice ?? b.price).compareTo(a.salePrice ?? a.price));
-      case SortOption.none:
-        break;
-    }
-
-    return result;
-  }
-
-  List<ProductEntity> get visibleProducts =>
-      _processed.take(visibleProductCount).toList();
-
-  bool get hasMoreProducts => visibleProductCount < _processed.length;
+  bool get hasMoreProducts => productsHasMore;
 
   List<DiscountEntity> get activeDiscounts =>
       discounts.where((d) => d.isActive).toList();
 
-  /// Sân đã lọc theo khu vực, loại sân và sắp xếp đang chọn (Dùng cho tab Sân)
-  List<PitchEntity> get filteredPitches {
-    var result = pitches;
-    
-    if (selectedDistrict.isNotEmpty) {
-      result = result.where((p) => p.district == selectedDistrict).toList();
-    }
-    
-    if (selectedPitchType.isNotEmpty) {
-      result = result.where((p) => p.displayType == selectedPitchType).toList();
-    }
-    
-    if (pitchSortOrder == 'asc') {
-      result = [...result]..sort((a, b) => a.price.compareTo(b.price));
-    } else if (pitchSortOrder == 'desc') {
-      result = [...result]..sort((a, b) => b.price.compareTo(a.price));
-    }
-    
-    return result;
-  }
+  /// Sân hiện tại đã được server lọc (district, type, sort).
+  List<PitchEntity> get filteredPitches => pitches;
 
-  /// Sân đã lọc theo Loại và Sắp xếp giá, nhưng bỏ qua Quận (Dùng cho Tìm kiếm toàn cục)
+  /// Sân đã lọc cho Tìm kiếm toàn cục (Vẫn giữ client-side đơn giản nếu cần)
   List<PitchEntity> get searchFilteredPitches {
     var result = pitches;
-
     if (selectedPitchType.isNotEmpty) {
       result = result.where((p) => p.displayType == selectedPitchType).toList();
     }
-
-    if (pitchSortOrder == 'asc') {
-      result = [...result]..sort((a, b) => a.price.compareTo(b.price));
-    } else if (pitchSortOrder == 'desc') {
-      result = [...result]..sort((a, b) => b.price.compareTo(a.price));
-    }
-
     return result;
   }
 
@@ -246,11 +180,19 @@ class HomeState {
     List<PitchEntity>? pitches,
     List<CategoryEntity>? categories,
     List<DiscountEntity>? discounts,
+    int? pitchesPage,
+    bool? pitchesHasMore,
+    bool? isLoadingMorePitches,
+    int? productsPage,
+    bool? productsHasMore,
+    bool? isLoadingMoreProducts,
     String? selectedCategoryName,
     Set<String>? selectedSubCategoryNames,
     SortOption? sortOption,
     Set<String>? selectedGenders,
+    String? selectedBrand,
     int? visibleProductCount,
+    bool? isProductsExpanded,
     bool? hasLoadedMore,
     String? selectedDistrict,
     String? selectedPitchType,
@@ -268,12 +210,21 @@ class HomeState {
       pitches: pitches ?? this.pitches,
       categories: categories ?? this.categories,
       discounts: discounts ?? this.discounts,
+      pitchesPage: pitchesPage ?? this.pitchesPage,
+      pitchesHasMore: pitchesHasMore ?? this.pitchesHasMore,
+      isLoadingMorePitches: isLoadingMorePitches ?? this.isLoadingMorePitches,
+      productsPage: productsPage ?? this.productsPage,
+      productsHasMore: productsHasMore ?? this.productsHasMore,
+      isLoadingMoreProducts:
+          isLoadingMoreProducts ?? this.isLoadingMoreProducts,
       selectedCategoryName: selectedCategoryName ?? this.selectedCategoryName,
       selectedSubCategoryNames:
           selectedSubCategoryNames ?? this.selectedSubCategoryNames,
       sortOption: sortOption ?? this.sortOption,
       selectedGenders: selectedGenders ?? this.selectedGenders,
+      selectedBrand: selectedBrand ?? this.selectedBrand,
       visibleProductCount: visibleProductCount ?? this.visibleProductCount,
+      isProductsExpanded: isProductsExpanded ?? this.isProductsExpanded,
       hasLoadedMore: hasLoadedMore ?? this.hasLoadedMore,
       selectedDistrict: selectedDistrict ?? this.selectedDistrict,
       selectedPitchType: selectedPitchType ?? this.selectedPitchType,

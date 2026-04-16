@@ -12,7 +12,17 @@ class ProductCubit extends Cubit<ProductState> {
       : _repository = repository,
         super(const ProductState());
 
-  Future<void> loadProducts() async {
+  int? _getCategoryIdFromName(String name) {
+    if (name.isEmpty) return null;
+    try {
+      final category = state.categories.firstWhere((c) => c.name == name);
+      return int.tryParse(category.id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> loadProducts({int? categoryId}) async {
     emit(state.copyWith(
       status: LoadStatus.loading,
       currentPage: 0,
@@ -20,10 +30,10 @@ class ProductCubit extends Cubit<ProductState> {
       products: [],
     ));
     try {
-      final result = await _repository.getAllProducts(page: 0, size: 10);
+      final result = await _repository.getAllProducts(page: 0, size: 10, categoryId: categoryId);
       final List<ProductEntity> products = result['products'] as List<ProductEntity>;
       final bool last = result['last'] as bool;
-      
+
       // Calculate max price to set the initial range correctly
       double maxPrice = 1000;
       if (products.isNotEmpty) {
@@ -36,7 +46,7 @@ class ProductCubit extends Cubit<ProductState> {
         hasMore: !last,
         priceRange: RangeValues(0, maxPrice),
       ));
-      
+
       // Loading categories as well
       await _loadCategories();
     } catch (e) {
@@ -53,7 +63,8 @@ class ProductCubit extends Cubit<ProductState> {
     emit(state.copyWith(isLoadingMore: true));
     try {
       final nextPage = state.currentPage + 1;
-      final result = await _repository.getAllProducts(page: nextPage, size: 10);
+      final categoryId = _getCategoryIdFromName(state.selectedCategory);
+      final result = await _repository.getAllProducts(page: nextPage, size: 10, categoryId: categoryId);
       final List<ProductEntity> newProducts = result['products'] as List<ProductEntity>;
       final bool last = result['last'] as bool;
 
@@ -86,21 +97,31 @@ class ProductCubit extends Cubit<ProductState> {
   }
 
   void selectCategory(String categoryName) {
-    // Reset sub-categories when parent changes
+    final newCategory = state.selectedCategory == categoryName ? '' : categoryName;
     emit(state.copyWith(
-      selectedCategory: state.selectedCategory == categoryName ? '' : categoryName,
+      selectedCategory: newCategory,
       selectedSubCategoryNames: {},
     ));
+    final categoryId = _getCategoryIdFromName(newCategory);
+    loadProducts(categoryId: categoryId);
   }
 
   void toggleSubCategory(String subCategoryName) {
-    final current = Set<String>.from(state.selectedSubCategoryNames);
-    if (current.contains(subCategoryName)) {
-      current.remove(subCategoryName);
+    // Toggle: deselect if already selected → reload parent; select → reload for this subcategory
+    final isAlreadySelected = state.selectedSubCategoryNames.contains(subCategoryName);
+    final newSub = isAlreadySelected ? <String>{} : <String>{subCategoryName};
+
+    emit(state.copyWith(selectedSubCategoryNames: newSub));
+
+    if (isAlreadySelected) {
+      // Back to parent category
+      final parentCategoryId = _getCategoryIdFromName(state.selectedCategory);
+      loadProducts(categoryId: parentCategoryId);
     } else {
-      current.add(subCategoryName);
+      // Load specifically for this subcategory
+      final subCategoryId = _getCategoryIdFromName(subCategoryName);
+      loadProducts(categoryId: subCategoryId);
     }
-    emit(state.copyWith(selectedSubCategoryNames: current));
   }
 
   void toggleBrand(String brand) {
@@ -130,6 +151,15 @@ class ProductCubit extends Cubit<ProductState> {
       sortOption: SortOption.none,
       priceRange: RangeValues(0, state.maxPriceInList),
     ));
+  }
+
+  Future<void> reload() async {
+    // If a subcategory is active, reload with it; otherwise reload parent category
+    final activeCategory = state.selectedSubCategoryNames.isNotEmpty
+        ? state.selectedSubCategoryNames.first
+        : state.selectedCategory;
+    final categoryId = _getCategoryIdFromName(activeCategory);
+    await loadProducts(categoryId: categoryId);
   }
 
   void reset() {

@@ -60,29 +60,7 @@ class ProductState {
   List<ProductEntity> get filteredProducts {
     var result = products;
 
-    // Filter by Category (Hierarchical + Semantic)
-    if (selectedCategory.isNotEmpty) {
-      result = result.where((p) {
-        if (selectedSubCategoryNames.isNotEmpty) {
-          return selectedSubCategoryNames.any((sub) {
-            final descendants = _getDescendantNames(categories, sub);
-            return CategoryUtils.doesProductMatchCategory(
-              product: p,
-              targetCategoryName: sub,
-              descendantTargetNames: descendants,
-            );
-          });
-        }
-
-        final descendants = _getDescendantNames(categories, selectedCategory);
-        return CategoryUtils.doesProductMatchCategory(
-          product: p,
-          targetCategoryName: selectedCategory,
-          descendantTargetNames: descendants,
-        );
-      }).toList();
-    }
-
+    // Category and subcategory filtering are handled entirely server-side.
     // Apply Other Filters (Search, Brand, Price)
     result = _applyOtherFilters(result);
 
