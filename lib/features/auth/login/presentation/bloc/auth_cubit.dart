@@ -45,13 +45,10 @@ class AuthCubit extends Cubit<AuthState> {
       }
 
       final authToken = await _authRepository.loginWithGoogle(idToken);
-      await _tokenStorage.saveTokens(
-        accessToken: authToken.accessToken,
-        refreshToken: authToken.refreshToken,
-        userId: authToken.user.userId,
-        role: authToken.user.role,
-      );
-      emit(AuthSuccess(authToken));
+      
+      // Chế độ bảo mật cao: Gửi OTP ngay cả sau khi đăng nhập Social
+      await _authRepository.sendOtp(authToken.user.email);
+      emit(AuthOtpSent(pendingToken: authToken, email: authToken.user.email));
     } catch (e) {
       emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
     }
@@ -74,13 +71,10 @@ class AuthCubit extends Cubit<AuthState> {
 
       final accessToken = result.accessToken!.tokenString;
       final authToken = await _authRepository.loginWithFacebook(accessToken);
-      await _tokenStorage.saveTokens(
-        accessToken: authToken.accessToken,
-        refreshToken: authToken.refreshToken,
-        userId: authToken.user.userId,
-        role: authToken.user.role,
-      );
-      emit(AuthSuccess(authToken));
+      
+      // Chế độ bảo mật cao: Gửi OTP ngay cả sau khi đăng nhập Social
+      await _authRepository.sendOtp(authToken.user.email);
+      emit(AuthOtpSent(pendingToken: authToken, email: authToken.user.email));
     } catch (e) {
       emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
     }
