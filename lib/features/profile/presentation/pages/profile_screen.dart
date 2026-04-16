@@ -9,6 +9,9 @@ import '../../../../features/auth/login/presentation/pages/login_screen.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../pitch/presentation/pages/booking_history_screen.dart';
 import '../../../order/presentation/pages/order_history_screen.dart';
+import '../../../home/presentation/cubit/home_cubit.dart';
+import '../../../product/presentation/cubit/product_cubit.dart';
+import '../../../cart/presentation/cubit/cart_cubit.dart';
 
 class ProfileScreen extends StatelessWidget {
   final UserEntity user;
@@ -33,6 +36,11 @@ class _ProfileBody extends StatelessWidget {
       child: BlocListener<AuthCubit, AuthState>(
         listener: (context, state) {
           if (state is AuthInitial) {
+            // Reset all feature-specific states for clean account switching
+            context.read<HomeCubit>().reset();
+            context.read<ProductCubit>().reset();
+            context.read<CartCubit>().reset();
+
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(builder: (_) => const LoginScreen()),
               (route) => false,

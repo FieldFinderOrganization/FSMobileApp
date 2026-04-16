@@ -32,6 +32,9 @@ class ProductState {
   final Set<String> selectedSubCategoryNames;
   final RangeValues priceRange;
   final SortOption sortOption;
+  final int currentPage;
+  final bool hasMore;
+  final bool isLoadingMore;
   final String? errorMessage;
 
   const ProductState({
@@ -45,6 +48,9 @@ class ProductState {
     this.selectedSubCategoryNames = const {},
     this.priceRange = const RangeValues(0, 1000),
     this.sortOption = SortOption.none,
+    this.currentPage = 0,
+    this.hasMore = true,
+    this.isLoadingMore = false,
     this.errorMessage,
   });
 
@@ -191,6 +197,9 @@ class ProductState {
     Set<String>? selectedSubCategoryNames,
     RangeValues? priceRange,
     SortOption? sortOption,
+    int? currentPage,
+    bool? hasMore,
+    bool? isLoadingMore,
     String? errorMessage,
   }) {
     return ProductState(
@@ -204,6 +213,9 @@ class ProductState {
       selectedSubCategoryNames: selectedSubCategoryNames ?? this.selectedSubCategoryNames,
       priceRange: priceRange ?? this.priceRange,
       sortOption: sortOption ?? this.sortOption,
+      currentPage: currentPage ?? this.currentPage,
+      hasMore: hasMore ?? this.hasMore,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }

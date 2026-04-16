@@ -9,7 +9,7 @@ enum LoadStatus { initial, loading, success, failure }
 
 enum SortOption { none, priceAsc, priceDesc }
 
-const int kProductPageSize = 6;
+const int kProductPageSize = 5;
 
 
 Set<String> getDescendantNames(

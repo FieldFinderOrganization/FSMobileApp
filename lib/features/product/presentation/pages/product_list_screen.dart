@@ -285,11 +285,35 @@ class _SubCategoryRow extends StatelessWidget {
   }
 }
 
-class _ProductContent extends StatelessWidget {
+class _ProductContent extends StatefulWidget {
   const _ProductContent();
 
+  @override
+  State<_ProductContent> createState() => _ProductContentState();
+}
+
+class _ProductContentState extends State<_ProductContent> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController()..addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      context.read<ProductCubit>().loadNextPage();
+    }
+  }
+
   // Pattern số cột xen kẽ: 2 → 1 (hero) → 3 → lặp lại
-  // Mỗi chu kỳ 6 sản phẩm, nhịp điệu không đoán được
   static const _colPattern = [2, 1, 3];
 
   List<_RowData> _buildRows(List<dynamic> products) {
@@ -340,6 +364,7 @@ class _ProductContent extends StatelessWidget {
           color: AppColors.primaryRed,
           onRefresh: () => context.read<ProductCubit>().loadProducts(),
           child: ListView.builder(
+            controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.only(
               top: paddingTop,
@@ -347,15 +372,28 @@ class _ProductContent extends StatelessWidget {
               right: 16,
               bottom: 24,
             ),
-            itemCount: rows.length,
-            itemBuilder: (context, i) => _buildRow(rows[i]),
+            itemCount: rows.length + (state.isLoadingMore ? 1 : 0),
+            itemBuilder: (context, i) {
+              if (i < rows.length) {
+                return _getRowWidget(rows[i]);
+              }
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.primaryRed,
+                    strokeWidth: 2,
+                  ),
+                ),
+              );
+            },
           ),
         );
       },
     );
   }
 
-  Widget _buildRow(_RowData row) {
+  Widget _getRowWidget(_RowData row) {
     // Hero full-width
     if (row.cols == 1) {
       return Padding(

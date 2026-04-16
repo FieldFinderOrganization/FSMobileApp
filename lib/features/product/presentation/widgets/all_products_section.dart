@@ -277,7 +277,7 @@ class _PaginationButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canCollapse = state.hasLoadedMore;
+    final canCollapse = state.visibleProductCount > kProductPageSize;
     final canLoadMore = state.hasMoreProducts;
 
     if (!canCollapse && !canLoadMore) return const SizedBox.shrink();
@@ -287,14 +287,10 @@ class _PaginationButtons extends StatelessWidget {
       child: Row(
         children: [
           // ── Nút Ẩn bớt ────────────────────────────────────────────────
-          Expanded(
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 250),
-              opacity: canCollapse ? 1.0 : 0.35,
+          if (canCollapse)
+            Expanded(
               child: OutlinedButton.icon(
-                onPressed: canCollapse
-                    ? () => context.read<HomeCubit>().collapseProducts()
-                    : null,
+                onPressed: () => context.read<HomeCubit>().collapseProducts(),
                 icon: const Icon(Icons.keyboard_arrow_up_rounded, size: 16),
                 label: Text(
                   'Ẩn bớt',
@@ -305,12 +301,7 @@ class _PaginationButtons extends StatelessWidget {
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.textDark,
-                  disabledForegroundColor: AppColors.textGrey,
-                  side: BorderSide(
-                    color: canCollapse
-                        ? const Color(0xFFCCCCCC)
-                        : const Color(0xFFDDDDDD),
-                  ),
+                  side: const BorderSide(color: Color(0xFFCCCCCC)),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -318,16 +309,17 @@ class _PaginationButtons extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-          if (canLoadMore) ...[
-            const SizedBox(width: 10),
-            // ── Nút Xem thêm ──────────────────────────────────────────────
+
+          if (canCollapse && canLoadMore) const SizedBox(width: 10),
+
+          // ── Nút Xem thêm ──────────────────────────────────────────────
+          if (canLoadMore)
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: () => context.read<HomeCubit>().loadMoreProducts(),
                 icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 16),
                 label: Text(
-                  'Xem thêm',
+                   'Xem thêm',
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -343,7 +335,6 @@ class _PaginationButtons extends StatelessWidget {
                 ),
               ),
             ),
-          ],
         ],
       ),
     );

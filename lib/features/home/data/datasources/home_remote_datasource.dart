@@ -11,8 +11,12 @@ class HomeRemoteDatasource {
   HomeRemoteDatasource(this._dio);
 
   Future<List<ProductModel>> fetchProducts() async {
-    final response = await _dio.get(ApiConstants.products);
-    return (response.data as List<dynamic>)
+    final response = await _dio.get(
+      ApiConstants.products,
+      queryParameters: {'page': 0, 'size': 25},
+    );
+    final List<dynamic> content = response.data['content'] as List<dynamic>;
+    return content
         .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }

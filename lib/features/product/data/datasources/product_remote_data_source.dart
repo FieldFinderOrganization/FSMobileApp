@@ -7,11 +7,12 @@ class ProductRemoteDataSource {
 
   ProductRemoteDataSource(this._dio);
 
-  Future<List<ProductModel>> getAllProducts() async {
-    final response = await _dio.get(ApiConstants.products);
-    return (response.data as List<dynamic>)
-        .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+  Future<Map<String, dynamic>> getAllProducts({int page = 0, int size = 10}) async {
+    final response = await _dio.get(
+      ApiConstants.products,
+      queryParameters: {'page': page, 'size': size},
+    );
+    return response.data as Map<String, dynamic>;
   }
 
   Future<ProductModel> getProductById(String id) async {

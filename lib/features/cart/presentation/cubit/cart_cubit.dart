@@ -195,4 +195,11 @@ class CartCubit extends Cubit<CartState> {
       emit(state.copyWith(status: CartStatus.failure, errorMessage: msg));
     }
   }
+  void clearMessages() {
+    emit(state.copyWith(successMessage: null, errorMessage: null));
+  }
+
+  void reset() {
+    emit(const CartState());
+  }
 }

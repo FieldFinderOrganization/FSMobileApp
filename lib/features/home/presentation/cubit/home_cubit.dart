@@ -114,10 +114,13 @@ class HomeCubit extends Cubit<HomeState> {
 
   /// Ẩn bớt: trở về số sản phẩm ban đầu
   void collapseProducts() {
-    emit(state.copyWith(
-      visibleProductCount: kProductPageSize,
-      hasLoadedMore: false,
-    ));
+    final newCount = state.visibleProductCount - kProductPageSize;
+    if (newCount >= kProductPageSize) {
+      emit(state.copyWith(
+        visibleProductCount: newCount,
+        hasLoadedMore: newCount > kProductPageSize,
+      ));
+    }
   }
 
   // ── Filters ───────────────────────────────────────────────────────────────
@@ -161,6 +164,8 @@ class HomeCubit extends Cubit<HomeState> {
       pitchSortOrder: sort ?? state.pitchSortOrder,
     ));
   }
+
+  void reset() => emit(const HomeState());
 
   Future<void> refresh() => loadAll();
 }

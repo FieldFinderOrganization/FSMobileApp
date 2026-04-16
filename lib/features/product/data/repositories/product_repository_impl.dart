@@ -4,6 +4,7 @@ import '../../../home/domain/entities/category_entity.dart';
 import '../../domain/entities/product_entity.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../datasources/product_remote_data_source.dart';
+import '../models/product_model.dart';
 
 class ProductRepositoryImpl implements ProductRepository {
   final ProductRemoteDataSource _remoteDataSource;
@@ -11,9 +12,20 @@ class ProductRepositoryImpl implements ProductRepository {
   ProductRepositoryImpl(this._remoteDataSource);
 
   @override
-  Future<List<ProductEntity>> getAllProducts() async {
+  Future<Map<String, dynamic>> getAllProducts({int page = 0, int size = 10}) async {
     try {
-      return await _remoteDataSource.getAllProducts();
+      final data = await _remoteDataSource.getAllProducts(page: page, size: size);
+      final products = (data['content'] as List)
+          .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+      
+      return {
+        'products': products,
+        'totalElements': data['totalElements'] ?? 0,
+        'totalPages': data['totalPages'] ?? 0,
+        'last': data['last'] ?? true,
+        'number': data['number'] ?? 0,
+      };
     } on DioException catch (e) {
       throw _mapDioError(e);
     }

@@ -55,6 +55,7 @@ class _ProductDetailView extends StatelessWidget {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
             ));
+          context.read<CartCubit>().clearMessages();
         } else if (cartState.successMessage != null) {
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
@@ -77,6 +78,7 @@ class _ProductDetailView extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const CartScreen())),
               ),
             ));
+          context.read<CartCubit>().clearMessages();
         }
       },
       child: Scaffold(

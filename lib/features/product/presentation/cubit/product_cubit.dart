@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../domain/entities/product_entity.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../../../home/presentation/cubit/home_state.dart';
 import 'product_state.dart';
@@ -12,9 +13,16 @@ class ProductCubit extends Cubit<ProductState> {
         super(const ProductState());
 
   Future<void> loadProducts() async {
-    emit(state.copyWith(status: LoadStatus.loading));
+    emit(state.copyWith(
+      status: LoadStatus.loading,
+      currentPage: 0,
+      hasMore: true,
+      products: [],
+    ));
     try {
-      final products = await _repository.getAllProducts();
+      final result = await _repository.getAllProducts(page: 0, size: 10);
+      final List<ProductEntity> products = result['products'] as List<ProductEntity>;
+      final bool last = result['last'] as bool;
       
       // Calculate max price to set the initial range correctly
       double maxPrice = 1000;
@@ -25,6 +33,7 @@ class ProductCubit extends Cubit<ProductState> {
       emit(state.copyWith(
         status: LoadStatus.success,
         products: products,
+        hasMore: !last,
         priceRange: RangeValues(0, maxPrice),
       ));
       
@@ -35,6 +44,27 @@ class ProductCubit extends Cubit<ProductState> {
         status: LoadStatus.failure,
         errorMessage: e.toString(),
       ));
+    }
+  }
+
+  Future<void> loadNextPage() async {
+    if (state.isLoadingMore || !state.hasMore) return;
+
+    emit(state.copyWith(isLoadingMore: true));
+    try {
+      final nextPage = state.currentPage + 1;
+      final result = await _repository.getAllProducts(page: nextPage, size: 10);
+      final List<ProductEntity> newProducts = result['products'] as List<ProductEntity>;
+      final bool last = result['last'] as bool;
+
+      emit(state.copyWith(
+        isLoadingMore: false,
+        products: [...state.products, ...newProducts],
+        currentPage: nextPage,
+        hasMore: !last,
+      ));
+    } catch (e) {
+      emit(state.copyWith(isLoadingMore: false));
     }
   }
 
@@ -100,5 +130,9 @@ class ProductCubit extends Cubit<ProductState> {
       sortOption: SortOption.none,
       priceRange: RangeValues(0, state.maxPriceInList),
     ));
+  }
+
+  void reset() {
+    emit(const ProductState());
   }
 }

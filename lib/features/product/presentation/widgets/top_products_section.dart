@@ -6,6 +6,7 @@ import '../../../home/presentation/widgets/fade_in_section.dart';
 import '../../../home/presentation/widgets/section_header.dart';
 import '../../../home/presentation/widgets/shimmer_card.dart';
 import '../../domain/entities/product_entity.dart';
+import '../pages/product_detail_screen.dart';
 
 class TopProductsSection extends StatelessWidget {
   final HomeState state;
@@ -174,89 +175,91 @@ class _PodiumBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final rankColor = _rankColors[rank] ?? Colors.grey;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Bubble container
-        Stack(
-          alignment: Alignment.bottomCenter,
-          clipBehavior: Clip.none,
-          children: [
-            // Bubble with image
-            Container(
-              width: bubbleSize,
-              height: bubbleSize,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
-                border: Border.all(color: rankColor, width: isCenter ? 3 : 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: rankColor.withValues(alpha: 0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ClipOval(child: _buildImage()),
-            ),
-
-            // Rank Badge Overlay
-            Positioned(
-              bottom: -10,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: rankColor,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                ),
-                child: Text(
-                  rank.toString(),
-                  style: GoogleFonts.inter(
-                    fontSize: isCenter ? 12 : 10,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-
-        // Product Info (Compact)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2),
-          child: Column(
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProductDetailScreen(productId: product.id),
+          ),
+        );
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Bubble container
+          Stack(
+            alignment: Alignment.bottomCenter,
+            clipBehavior: Clip.none,
             children: [
-              Text(
-                product.name,
-                textAlign: TextAlign.center,
-                maxLines: isCenter ? 2 : 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(
-                  fontSize: isCenter ? 11 : 9,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textDark,
-                  height: 1.1,
+              // Bubble with image
+              Container(
+                width: bubbleSize,
+                height: bubbleSize,
+                padding: const EdgeInsets.all(6), // Gap to prevent image bleeding into border
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  border: Border.all(color: rankColor, width: isCenter ? 3 : 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: rankColor.withValues(alpha: 0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
+                child: ClipOval(child: _buildImage()),
               ),
-              const SizedBox(height: 2),
-              Text(
-                '${product.salePrice?.toStringAsFixed(0) ?? product.price.toStringAsFixed(0)}k',
-                style: GoogleFonts.inter(
-                  fontSize: isCenter ? 12 : 10,
-                  fontWeight: FontWeight.w800,
-                  color: rank == 1 ? AppColors.primaryRed : rankColor,
+
+              // Rank Badge Overlay
+              Positioned(
+                bottom: -10,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: rankColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: Text(
+                    rank.toString(),
+                    style: GoogleFonts.inter(
+                      fontSize: isCenter ? 12 : 10,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 8),
+          const SizedBox(height: 20),
 
-        // Podium Column
+          // Product Info (Compact)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Column(
+              children: [
+                Text(
+                  product.name,
+                  textAlign: TextAlign.center,
+                  maxLines: isCenter ? 2 : 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontSize: isCenter ? 11 : 9,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textDark,
+                    height: 1.1,
+                  ),
+                ),
+                // Price removed as requested
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Podium Column
         Container(
           width: double.infinity,
           height: columnHeight,
@@ -273,6 +276,7 @@ class _PodiumBubble extends StatelessWidget {
           ),
         ),
       ],
+      ),
     );
   }
 
@@ -283,15 +287,17 @@ class _PodiumBubble extends StatelessWidget {
         child: Icon(Icons.image, size: bubbleSize * 0.5, color: Colors.grey),
       );
     }
-    return Image.network(
-      product.imageUrl,
-      width: double.infinity,
-      height: double.infinity,
-      fit: BoxFit.contain,
-      alignment: Alignment.center,
-      errorBuilder: (_, _, _) => Container(
-        color: const Color(0xFFF0F0F0),
-        child: Icon(Icons.image_not_supported, color: Colors.grey),
+    return Center(
+      child: Image.network(
+        product.imageUrl,
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.contain,
+        alignment: Alignment.center,
+        errorBuilder: (_, _, _) => Container(
+          color: const Color(0xFFF0F0F0),
+          child: Icon(Icons.image_not_supported, color: Colors.grey),
+        ),
       ),
     );
   }
