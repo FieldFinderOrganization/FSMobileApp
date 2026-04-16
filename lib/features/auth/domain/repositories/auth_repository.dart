@@ -1,4 +1,5 @@
 import '../entities/auth_token_entity.dart';
+import '../entities/user_entity.dart';
 
 abstract class AuthRepository {
   Future<AuthTokenEntity> loginWithGoogle(String idToken);
@@ -16,4 +17,14 @@ abstract class AuthRepository {
   Future<void> sendActivationEmail(String email);
   Future<void> resetPasswordWithOtp(String email, String newPassword);
   Future<void> sendResetPassword(String email);
+  Future<UserEntity> updateProfile({
+    required String userId,
+    String? name,
+    String? email,
+    String? phone,
+    String? status,
+    String? imageUrl,
+  });
+  Future<String> uploadImage(String filePath);
 }
+

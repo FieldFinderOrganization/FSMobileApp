@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../domain/entities/auth_token_entity.dart';
+import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_datasource.dart';
 
@@ -99,6 +100,47 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  @override
+  Future<void> sendResetPassword(String email) async {
+    try {
+      await _datasource.sendResetPassword(email);
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
+  @override
+  Future<UserEntity> updateProfile({
+    required String userId,
+    String? name,
+    String? email,
+    String? phone,
+    String? status,
+    String? imageUrl,
+  }) async {
+    try {
+      return await _datasource.updateProfile(
+        userId: userId,
+        name: name,
+        email: email,
+        phone: phone,
+        status: status,
+        imageUrl: imageUrl,
+      );
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
+  @override
+  Future<String> uploadImage(String filePath) async {
+    try {
+      return await _datasource.uploadToCloudinary(filePath);
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
   Exception _mapDioError(DioException e) {
     final statusCode = e.response?.statusCode;
     if (statusCode == 401) {
@@ -116,15 +158,6 @@ class AuthRepositoryImpl implements AuthRepository {
       return Exception('Không thể kết nối máy chủ. Vui lòng kiểm tra mạng.');
     }
     final message = e.response?.data?['message'] as String?;
-    return Exception(message ?? 'Đăng nhập thất bại. Vui lòng thử lại.');
-  }
-
-  @override
-  Future<void> sendResetPassword(String email) async {
-    try {
-      await _datasource.sendResetPassword(email);
-    } on DioException catch (e) {
-      throw _mapDioError(e);
-    }
+    return Exception(message ?? 'Thao tác thất bại. Vui lòng thử lại.');
   }
 }

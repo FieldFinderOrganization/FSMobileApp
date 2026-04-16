@@ -162,4 +162,45 @@ class AuthCubit extends Cubit<AuthState> {
     await _tokenStorage.clearAll();
     emit(const AuthInitial());
   }
+
+  Future<void> updateProfile({
+    String? name,
+    String? phone,
+    String? imagePath,
+  }) async {
+    final currentState = state;
+    AuthTokenEntity? currentToken;
+
+    if (currentState is AuthSuccess) {
+      currentToken = currentState.authToken;
+    } else if (currentState is AuthOtpVerified) {
+      currentToken = currentState.authToken;
+    }
+
+    if (currentToken == null) return;
+
+    emit(const AuthLoading());
+    try {
+      String? imageUrl;
+      if (imagePath != null) {
+        imageUrl = await _authRepository.uploadImage(imagePath);
+      }
+
+      final updatedUser = await _authRepository.updateProfile(
+        userId: currentToken.user.userId,
+        name: name,
+        email: currentToken.user.email,
+        phone: phone,
+        status: currentToken.user.status,
+        imageUrl: imageUrl,
+      );
+
+      final newToken = currentToken.copyWith(user: updatedUser);
+      emit(AuthSuccess(newToken));
+    } catch (e) {
+      emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
+      // Quay lại state cũ sau khi báo lỗi để user thấy data cũ
+      emit(AuthSuccess(currentToken));
+    }
+  }
 }

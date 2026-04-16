@@ -14,4 +14,17 @@ class AuthTokenEntity extends Equatable {
 
   @override
   List<Object?> get props => [accessToken, refreshToken, user];
+
+  AuthTokenEntity copyWith({
+    String? accessToken,
+    String? refreshToken,
+    UserEntity? user,
+  }) {
+    return AuthTokenEntity(
+      accessToken: accessToken ?? this.accessToken,
+      refreshToken: refreshToken ?? this.refreshToken,
+      user: user ?? this.user,
+    );
+  }
 }
+
