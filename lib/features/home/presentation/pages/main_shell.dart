@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../auth/login/presentation/bloc/auth_cubit.dart';
+import '../../../auth/login/presentation/bloc/auth_state.dart';
 
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
@@ -73,31 +75,42 @@ class _MainShellState extends State<MainShell>
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      // IndexedStack giữ state từng tab — không rebuild khi chuyển tab
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [
-          // 0 — Trang chủ
-          HomeScreen(),
-          // 1 — Sân (danh sách và tìm kiếm sân)
-          const PitchTabScreen(),
-          // 2 — Shop
-          const ProductListScreen(),
-          // 3 — Chat
-          const ChatScreen(),
-          // 4 — Tôi
-          ProfileScreen(user: widget.user),
-        ],
-      ),
-      // Bottom Navigation Bar
-      bottomNavigationBar: _AppBottomBar(
-        currentIndex: _currentIndex,
-        tabs: _tabs,
-        bottomPadding: bottomPadding,
-        onTap: _onTabTapped,
-      ),
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, state) {
+        UserEntity currentUser = widget.user;
+        if (state is AuthSuccess) {
+          currentUser = state.authToken.user;
+        } else if (state is AuthOtpVerified) {
+          currentUser = state.authToken.user;
+        }
+
+        return Scaffold(
+          backgroundColor: Colors.white,
+          // IndexedStack giữ state từng tab — không rebuild khi chuyển tab
+          body: IndexedStack(
+            index: _currentIndex,
+            children: [
+              // 0 — Trang chủ
+              HomeScreen(),
+              // 1 — Sân (danh sách và tìm kiếm sân)
+              const PitchTabScreen(),
+              // 2 — Shop
+              const ProductListScreen(),
+              // 3 — Chat
+              const ChatScreen(),
+              // 4 — Tôi
+              ProfileScreen(user: currentUser),
+            ],
+          ),
+          // Bottom Navigation Bar
+          bottomNavigationBar: _AppBottomBar(
+            currentIndex: _currentIndex,
+            tabs: _tabs,
+            bottomPadding: bottomPadding,
+            onTap: _onTabTapped,
+          ),
+        );
+      },
     );
   }
 }

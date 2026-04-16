@@ -1,3 +1,5 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class ApiConstants {
   // Đổi thành IP thực khi test trên thiết bị thật
   static const String baseUrl = 'http://192.168.1.5:8080/api';
@@ -40,4 +42,16 @@ class ApiConstants {
   static const String cartUpdate = '/cart/update';
   static const String cartRemove = '/cart/remove';
   static const String cartClear = '/cart/clear';
+
+  // User endpoints
+  static const String users = '/users';
+  static String userUpdate(String userId) => '/users/$userId';
+  static const String verifyCurrentPassword = '/users/verify-current-password';
+  static const String changePasswordOtp = '/users/change-password-otp';
+
+  // Cloudinary
+  static String get cloudinaryUrl {
+    final cloudName = dotenv.env['NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME'] ?? 'dxgy8ilqu';
+    return 'https://api.cloudinary.com/v1_1/$cloudName/image/upload';
+  }
 }

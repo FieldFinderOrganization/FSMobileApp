@@ -45,13 +45,10 @@ class AuthCubit extends Cubit<AuthState> {
       }
 
       final authToken = await _authRepository.loginWithGoogle(idToken);
-      await _tokenStorage.saveTokens(
-        accessToken: authToken.accessToken,
-        refreshToken: authToken.refreshToken,
-        userId: authToken.user.userId,
-        role: authToken.user.role,
-      );
-      emit(AuthSuccess(authToken));
+      
+      // Chế độ bảo mật cao: Gửi OTP ngay cả sau khi đăng nhập Social
+      await _authRepository.sendOtp(authToken.user.email);
+      emit(AuthOtpSent(pendingToken: authToken, email: authToken.user.email));
     } catch (e) {
       emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
     }
@@ -74,13 +71,10 @@ class AuthCubit extends Cubit<AuthState> {
 
       final accessToken = result.accessToken!.tokenString;
       final authToken = await _authRepository.loginWithFacebook(accessToken);
-      await _tokenStorage.saveTokens(
-        accessToken: authToken.accessToken,
-        refreshToken: authToken.refreshToken,
-        userId: authToken.user.userId,
-        role: authToken.user.role,
-      );
-      emit(AuthSuccess(authToken));
+      
+      // Chế độ bảo mật cao: Gửi OTP ngay cả sau khi đăng nhập Social
+      await _authRepository.sendOtp(authToken.user.email);
+      emit(AuthOtpSent(pendingToken: authToken, email: authToken.user.email));
     } catch (e) {
       emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
     }
@@ -161,5 +155,108 @@ class AuthCubit extends Cubit<AuthState> {
     }
     await _tokenStorage.clearAll();
     emit(const AuthInitial());
+  }
+
+  Future<void> updateProfile({
+    String? name,
+    String? phone,
+    String? imagePath,
+  }) async {
+    final currentState = state;
+    AuthTokenEntity? currentToken;
+
+    if (currentState is AuthSuccess) {
+      currentToken = currentState.authToken;
+    } else if (currentState is AuthOtpVerified) {
+      currentToken = currentState.authToken;
+    }
+
+    if (currentToken == null) return;
+
+    emit(const AuthLoading());
+    try {
+      String? imageUrl;
+      if (imagePath != null) {
+        imageUrl = await _authRepository.uploadImage(imagePath);
+      }
+
+      final updatedUser = await _authRepository.updateProfile(
+        userId: currentToken.user.userId,
+        name: name,
+        email: currentToken.user.email,
+        phone: phone,
+        status: currentToken.user.status,
+        imageUrl: imageUrl,
+      );
+
+      final newToken = currentToken.copyWith(user: updatedUser);
+      emit(AuthSuccess(newToken));
+    } catch (e) {
+      emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
+      // Quay lại state cũ sau khi báo lỗi để user thấy data cũ
+      emit(AuthSuccess(currentToken));
+    }
+  }
+
+  Future<void> verifyCurrentPassword(String currentPassword) async {
+    final currentState = state;
+    if (currentState is! AuthSuccess) return;
+
+    emit(const AuthLoading());
+    try {
+      await _authRepository.verifyCurrentPassword(
+        currentState.authToken.user.userId,
+        currentPassword,
+      );
+      emit(const AuthChangePasswordVerifySuccess());
+      emit(AuthSuccess(currentState.authToken));
+    } catch (e) {
+      emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
+      emit(AuthSuccess(currentState.authToken));
+    }
+  }
+
+  Future<void> verifyChangePasswordOtp(String email, String code) async {
+    final currentState = state;
+    if (currentState is! AuthSuccess) return;
+
+    emit(const AuthLoading());
+    try {
+      await _authRepository.verifyOtp(email, code);
+      emit(const AuthChangePasswordOtpVerified());
+      emit(AuthSuccess(currentState.authToken));
+    } catch (e) {
+      emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
+      emit(AuthSuccess(currentState.authToken));
+    }
+  }
+
+  Future<void> changePassword(String email, String newPassword) async {
+    final currentState = state;
+    if (currentState is! AuthSuccess) return;
+
+    emit(const AuthLoading());
+    try {
+      await _authRepository.changePassword(email, newPassword);
+      emit(const AuthChangePasswordSuccess());
+      emit(AuthSuccess(currentState.authToken));
+    } catch (e) {
+      emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
+      emit(AuthSuccess(currentState.authToken));
+    }
+  }
+
+  Future<void> sendChangePasswordOtp(String email) async {
+    final currentState = state;
+    if (currentState is! AuthSuccess) return;
+
+    emit(const AuthLoading());
+    try {
+      await _authRepository.sendChangePasswordOtp(email);
+      emit(AuthSuccess(currentState.authToken));
+    } catch (e) {
+      emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
+      emit(AuthSuccess(currentState.authToken));
+    }
   }
 }

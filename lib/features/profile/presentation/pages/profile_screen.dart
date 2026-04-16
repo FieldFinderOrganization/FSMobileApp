@@ -12,6 +12,8 @@ import '../../../order/presentation/pages/order_history_screen.dart';
 import '../../../home/presentation/cubit/home_cubit.dart';
 import '../../../product/presentation/cubit/product_cubit.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
+import 'edit_profile_screen.dart';
+import 'change_password_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final UserEntity user;
@@ -53,7 +55,7 @@ class _ProfileBody extends StatelessWidget {
             child: Column(
               children: [
                 // ── App Bar ───────────────────────────────────────────────
-                _buildAppBar(),
+                _buildAppBar(context),
                 // ── Scrollable body ───────────────────────────────────────
                 Expanded(
                   child: SingleChildScrollView(
@@ -105,7 +107,7 @@ class _ProfileBody extends StatelessWidget {
   // App Bar
   // ─────────────────────────────────────────────────────────────────────────
 
-  Widget _buildAppBar() {
+  Widget _buildAppBar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: BoxDecoration(
@@ -125,17 +127,28 @@ class _ProfileBody extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F5),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              Icons.edit_outlined,
-              size: 18,
-              color: AppColors.textGrey,
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.mediumImpact();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => EditProfileScreen(user: user),
+                ),
+              );
+            },
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.edit_outlined,
+                size: 18,
+                color: AppColors.textGrey,
+              ),
             ),
           ),
         ],
@@ -392,14 +405,19 @@ class _ProfileBody extends StatelessWidget {
             onTap: () {},
           ),
           _ActionRow(
-            icon: Icons.lock_outline_rounded,
-            label: 'Đổi mật khẩu',
-            onTap: () {},
-          ),
-          _ActionRow(
             icon: Icons.help_outline_rounded,
             label: 'Trợ giúp & Hỗ trợ',
             onTap: () {},
+          ),
+          _ActionRow(
+            icon: Icons.vpn_key_outlined,
+            label: 'Đổi mật khẩu',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+              );
+            },
             isLast: true,
           ),
         ],

@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../models/auth_token_model.dart';
+import '../models/user_model.dart';
 
 class AuthRemoteDatasource {
   final Dio _dio;
@@ -82,6 +84,73 @@ class AuthRemoteDatasource {
     await _dio.post(
       ApiConstants.sendResetOtp,
       queryParameters: {'email': email},
+    );
+  }
+
+  Future<UserModel> updateProfile({
+    required String userId,
+    String? name,
+    String? email,
+    String? phone,
+    String? status,
+    String? imageUrl,
+  }) async {
+    final response = await _dio.put(
+      ApiConstants.userUpdate(userId),
+      data: {
+        if (name != null) 'name': name,
+        if (email != null) 'email': email,
+        if (phone != null) 'phone': phone,
+        if (status != null) 'status': status,
+        if (imageUrl != null) 'imageUrl': imageUrl,
+      },
+    );
+    return UserModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<String> uploadToCloudinary(String filePath) async {
+    final fileName = filePath.split('/').last;
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath, filename: fileName),
+      'upload_preset': dotenv.env['NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET'] ?? 'chat_preset',
+    });
+
+    // Sử dụng instance Dio mới để tránh bị can thiệp bởi interceptors (thêm Authorization header)
+    final cloudDio = Dio();
+    final response = await cloudDio.post(
+      ApiConstants.cloudinaryUrl,
+      data: formData,
+    );
+
+    return response.data['secure_url'] as String;
+  }
+
+  Future<void> verifyCurrentPassword(String userId, String currentPassword) async {
+    await _dio.post(
+      ApiConstants.verifyCurrentPassword,
+      queryParameters: {
+        'userId': userId,
+        'currentPassword': currentPassword,
+      },
+    );
+  }
+
+  Future<void> sendChangePasswordOtp(String email) async {
+    await _dio.post(
+      ApiConstants.changePasswordOtp,
+      queryParameters: {
+        'email': email,
+      },
+    );
+  }
+
+  Future<void> changePassword(String email, String newPassword) async {
+    await _dio.post(
+      ApiConstants.resetPasswordOtp,
+      queryParameters: {
+        'email': email,
+        'newPassword': newPassword,
+      },
     );
   }
 }

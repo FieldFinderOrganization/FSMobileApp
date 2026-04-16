@@ -16,6 +16,7 @@ class AuthTextField extends StatelessWidget {
   final bool isVisible;
   final VoidCallback? onToggleVisibility;
   final TextInputType keyboardType;
+  final bool enabled;
 
   const AuthTextField({
     super.key,
@@ -28,6 +29,7 @@ class AuthTextField extends StatelessWidget {
     this.isVisible = false,
     this.onToggleVisibility,
     this.keyboardType = TextInputType.text,
+    this.enabled = true,
   });
 
   @override
@@ -39,7 +41,11 @@ class AuthTextField extends StatelessWidget {
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            color: hasError ? const Color(0xFFFFEEEE) : const Color(0xFFF7F7F7),
+            color: !enabled
+                ? const Color(0xFFF0F0F0)
+                : hasError
+                    ? const Color(0xFFFFEEEE)
+                    : const Color(0xFFF7F7F7),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: hasError
@@ -53,9 +59,10 @@ class AuthTextField extends StatelessWidget {
             obscureText: isPassword && !isVisible,
             onChanged: onChanged,
             keyboardType: keyboardType,
+            enabled: enabled,
             style: GoogleFonts.inter(
               fontSize: 15,
-              color: const Color(0xFF1A1A1A),
+              color: enabled ? const Color(0xFF1A1A1A) : const Color(0xFF888888),
               fontWeight: FontWeight.w500,
             ),
             decoration: InputDecoration(
@@ -69,7 +76,7 @@ class AuthTextField extends StatelessWidget {
                 color: hasError ? Colors.redAccent : const Color(0xFFAAAAAA),
                 size: 20,
               ),
-              suffixIcon: isPassword
+              suffixIcon: isPassword && enabled
                   ? IconButton(
                       icon: Icon(
                         isVisible
