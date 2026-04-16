@@ -15,6 +15,7 @@ import '../cubit/order_history_state.dart';
 import '../../../checkout/presentation/pages/shop_payment_screen.dart';
 import '../../../checkout/domain/entities/checkout_item_entity.dart';
 import '../../../pitch/data/datasources/payment_remote_datasource.dart';
+import 'order_detail_screen.dart';
 
 class OrderHistoryScreen extends StatelessWidget {
   final String userId;
@@ -356,21 +357,28 @@ class _OrderItemCardState extends State<_OrderItemCard> {
         _expanded ? items : items.take(_previewLimit).toList();
     final hiddenCount = items.length - _previewLimit;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => OrderDetailScreen(order: widget.order),
+        ),
       ),
-      child: Column(
-        children: [
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
           // Header
           Padding(
             padding: const EdgeInsets.all(16),
@@ -635,6 +643,7 @@ class _OrderItemCardState extends State<_OrderItemCard> {
           ),
         ],
       ),
+    ),
     );
   }
 

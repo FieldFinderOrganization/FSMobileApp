@@ -63,6 +63,26 @@ class BookingDetailScreen extends StatelessWidget {
   }
 
   Widget _buildStatusCard(bool isPaid, bool isConfirmed) {
+    final bool isCanceled = booking.status == 'CANCELED';
+    
+    Color statusColor = Colors.orange;
+    IconData statusIcon = Icons.pending_rounded;
+    String statusText = 'Chờ thanh toán';
+
+    if (isPaid) {
+      statusColor = Colors.green;
+      statusIcon = Icons.check_circle_rounded;
+      statusText = 'Thanh toán thành công';
+    } else if (isCanceled) {
+      statusColor = AppColors.primaryRed;
+      statusIcon = Icons.cancel_rounded;
+      statusText = 'Đã hủy đơn';
+    } else if (isConfirmed) {
+      statusColor = Colors.green;
+      statusIcon = Icons.verified_rounded;
+      statusText = 'Đã xác nhận';
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       decoration: BoxDecoration(
@@ -81,20 +101,18 @@ class BookingDetailScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isPaid
-                  ? Colors.green.withValues(alpha: 0.1)
-                  : Colors.orange.withValues(alpha: 0.1),
+              color: statusColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
-              isPaid ? Icons.check_circle_rounded : Icons.pending_rounded,
-              color: isPaid ? Colors.green : Colors.orange,
+              statusIcon,
+              color: statusColor,
               size: 32,
             ),
           ),
           const SizedBox(height: 12),
           Text(
-            isPaid ? 'Thanh toán thành công' : 'Chờ thanh toán',
+            statusText,
             style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.bold,

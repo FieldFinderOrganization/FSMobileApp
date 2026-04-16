@@ -795,7 +795,12 @@ class _BookingItemCardState extends State<_BookingItemCard> {
                       )
                     else
                       OutlinedButton(
-                        onPressed: () {},
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                BookingDetailScreen(booking: widget.booking),
+                          ),
+                        ),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
