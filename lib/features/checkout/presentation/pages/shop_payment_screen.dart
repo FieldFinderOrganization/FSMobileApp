@@ -72,14 +72,38 @@ class _ShopPaymentScreenState extends State<ShopPaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (_) => OrderHistoryScreen(userId: widget.userId),
+            ),
+            (route) => route.isFirst,
+          );
+        }
+      },
+      child: Scaffold(
       backgroundColor: const Color(0xFFFBFBFB),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.close, color: AppColors.textDark),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            // Navigate to order history instead of popping back to
+            // checkout/product detail to prevent double-ordering when
+            // stock data hasn't refreshed yet.
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (_) => OrderHistoryScreen(userId: widget.userId),
+              ),
+              (route) => route.isFirst,
+            );
+          },
         ),
         title: Text(
           'THANH TOÁN CHUYỂN KHOẢN',
@@ -107,6 +131,7 @@ class _ShopPaymentScreenState extends State<ShopPaymentScreen> {
             const SizedBox(height: 40),
           ],
         ),
+      ),
       ),
     );
   }

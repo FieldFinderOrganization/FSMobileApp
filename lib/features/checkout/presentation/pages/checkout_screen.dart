@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -139,16 +140,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         );
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Đặt hàng thất bại: ${e.toString()}',
-              style: GoogleFonts.inter(color: Colors.white),
-            ),
-            backgroundColor: AppColors.primaryRed,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        _showOrderError(e);
       } finally {
         if (mounted) setState(() => _isPlacingOrder = false);
       }
@@ -187,20 +179,72 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         );
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Đặt hàng thất bại: ${e.toString()}',
-              style: GoogleFonts.inter(color: Colors.white),
-            ),
-            backgroundColor: AppColors.primaryRed,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        _showOrderError(e);
       } finally {
         if (mounted) setState(() => _isPlacingOrder = false);
       }
     }
+  }
+
+  /// Extract a user-friendly message from a backend error.
+  String _extractErrorMessage(Object error) {
+    if (error is DioException) {
+      final data = error.response?.data;
+      if (data is Map<String, dynamic>) {
+        // Spring Boot default error format: { "message": "..." }
+        return data['message'] as String? ??
+            data['error'] as String? ??
+            'Đã xảy ra lỗi không xác định.';
+      }
+      if (data is String && data.isNotEmpty) return data;
+      return error.message ?? 'Lỗi kết nối đến máy chủ.';
+    }
+    return error.toString();
+  }
+
+  /// Show an error dialog when order creation fails (e.g. stock exceeded).
+  void _showOrderError(Object error) {
+    final message = _extractErrorMessage(error);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.error_outline_rounded,
+                color: AppColors.primaryRed, size: 24),
+            const SizedBox(width: 8),
+            Text(
+              'Đặt hàng thất bại',
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textDark,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          message,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            color: AppColors.textDark,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Đã hiểu',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                color: AppColors.primaryRed,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
