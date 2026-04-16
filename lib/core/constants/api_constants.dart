@@ -38,6 +38,10 @@ class ApiConstants {
   // Order endpoints
   static const String orders = '/orders';
 
+  // AI Chat endpoints
+  static const String aiChat = '/ai/chat';
+  static const String aiImage = '/ai/image';
+
   // Cart endpoints
   static const String cart = '/cart';
   static const String cartAdd = '/cart/add';

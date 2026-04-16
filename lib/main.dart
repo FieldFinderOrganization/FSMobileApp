@@ -27,6 +27,9 @@ import 'features/pitch/domain/repositories/pitch_repository.dart';
 import 'features/profile/data/datasources/provider_remote_datasource.dart';
 import 'features/profile/data/repositories/provider_repository_impl.dart';
 import 'features/profile/domain/repositories/provider_repository.dart';
+import 'features/chat/data/datasources/ai_chat_remote_datasource.dart';
+import 'features/chat/data/datasources/chat_local_datasource.dart';
+import 'features/chat/presentation/cubit/chat_cubit.dart';
 import 'features/welcome/presentation/pages/welcome_screen.dart';
 
 
@@ -59,6 +62,8 @@ void main() async {
     reviewRemoteDatasource: reviewDatasource,
   );
 
+  final aiChatDatasource = AIChatRemoteDatasource(dioClient);
+
   runApp(
     MultiRepositoryProvider(
       providers: [
@@ -86,6 +91,12 @@ void main() async {
           ),
           BlocProvider<CartCubit>(
             create: (context) => CartCubit(cartRepository),
+          ),
+          BlocProvider<ChatCubit>(
+            create: (context) => ChatCubit(
+              remoteDatasource: aiChatDatasource,
+              localDatasource: ChatLocalDatasource(),
+            )..loadSessions(),
           ),
         ],
         child: const MyApp(),
