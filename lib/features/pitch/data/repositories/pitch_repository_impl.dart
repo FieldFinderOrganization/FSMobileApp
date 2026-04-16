@@ -22,4 +22,24 @@ class PitchRepositoryImpl implements PitchRepository {
   Future<List<ReviewEntity>> getReviewsByPitch(String id) async {
     return await reviewRemoteDatasource.fetchReviewsByPitch(id);
   }
+
+  @override
+  Future<List<PitchEntity>> getPitchesByProviderAddressId(String providerAddressId) async {
+    return await pitchRemoteDatasource.fetchPitchesByProviderAddressId(providerAddressId);
+  }
+
+  @override
+  Future<PitchEntity> createPitch(Map<String, dynamic> data) async {
+    return await pitchRemoteDatasource.createPitch(data);
+  }
+
+  @override
+  Future<PitchEntity> updatePitch(String pitchId, Map<String, dynamic> data) async {
+    return await pitchRemoteDatasource.updatePitch(pitchId, data);
+  }
+
+  @override
+  Future<void> deletePitch(String pitchId) async {
+    await pitchRemoteDatasource.deletePitch(pitchId);
+  }
 }

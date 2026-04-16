@@ -47,47 +47,61 @@ class _BookingHistoryBody extends StatelessWidget {
       backgroundColor: const Color(0xFFF8F9FA),
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.dark,
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildAppBar(context),
-              _buildFilterBar(context),
-              Expanded(
-                child: BlocBuilder<BookingHistoryCubit, BookingHistoryState>(
-                  builder: (context, state) {
-                    if (state is BookingHistoryLoading) {
-                      return const Center(
-                        child: CircularProgressIndicator(
+        child: BlocListener<BookingHistoryCubit, BookingHistoryState>(
+          listener: (context, state) {
+            if (state is BookingHistoryError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(state.message), backgroundColor: Colors.redAccent),
+              );
+            } else if (state is BookingHistorySuccess && state.message != null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(state.message!), backgroundColor: Colors.green),
+              );
+              context.read<BookingHistoryCubit>().clearMessage();
+            }
+          },
+          child: SafeArea(
+            child: Column(
+              children: [
+                _buildAppBar(context),
+                _buildFilterBar(context),
+                Expanded(
+                  child: BlocBuilder<BookingHistoryCubit, BookingHistoryState>(
+                    builder: (context, state) {
+                      if (state is BookingHistoryLoading) {
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.primaryRed,
+                          ),
+                        );
+                      } else if (state is BookingHistoryError) {
+                        return _buildErrorState(context, state.message);
+                      } else if (state is BookingHistorySuccess) {
+                        if (state.filteredBookings.isEmpty) {
+                          return _buildEmptyState();
+                        }
+                        return RefreshIndicator(
+                          onRefresh: () =>
+                              context.read<BookingHistoryCubit>().loadBookings(),
                           color: AppColors.primaryRed,
-                        ),
-                      );
-                    } else if (state is BookingHistoryError) {
-                      return _buildErrorState(context, state.message);
-                    } else if (state is BookingHistorySuccess) {
-                      if (state.filteredBookings.isEmpty) {
-                        return _buildEmptyState();
+                          child: ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+                            physics: const BouncingScrollPhysics(),
+                            itemCount: state.filteredBookings.length,
+                            itemBuilder: (context, index) {
+                              return _BookingItemCard(
+                                booking: state.filteredBookings[index],
+                              );
+                            },
+                          ),
+                        );
                       }
-                      return RefreshIndicator(
-                        onRefresh: () =>
-                            context.read<BookingHistoryCubit>().loadBookings(),
-                        color: AppColors.primaryRed,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-                          physics: const BouncingScrollPhysics(),
-                          itemCount: state.filteredBookings.length,
-                          itemBuilder: (context, index) {
-                            return _BookingItemCard(
-                              booking: state.filteredBookings[index],
-                            );
-                          },
-                        ),
-                      );
-                    }
-                    return const SizedBox();
-                  },
+                      return const SizedBox();
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -97,91 +111,144 @@ class _BookingHistoryBody extends StatelessWidget {
   Widget _buildAppBar(BuildContext context) {
     return BlocBuilder<BookingHistoryCubit, BookingHistoryState>(
       buildWhen: (prev, curr) {
-        final prevAsc = prev is BookingHistorySuccess ? prev.sortAscending : false;
-        final currAsc = curr is BookingHistorySuccess ? curr.sortAscending : false;
-        return prevAsc != currAsc;
+        if (prev is! BookingHistorySuccess || curr is! BookingHistorySuccess) return true;
+        return prev.sortAscending != curr.sortAscending || prev.sortMode != curr.sortMode;
       },
       builder: (context, state) {
-        final sortAscending = state is BookingHistorySuccess
-            ? state.sortAscending
-            : false;
+        final sortAscending = state is BookingHistorySuccess ? state.sortAscending : false;
+        final sortMode = state is BookingHistorySuccess ? state.sortMode : BookingSortMode.schedule;
 
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+          padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
           decoration: const BoxDecoration(
             color: Colors.white,
             border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE))),
           ),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-                onPressed: () => Navigator.pop(context),
-              ),
-              Expanded(
-                child: Text(
-                  'Lịch sử đặt sân',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.textDark,
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                    onPressed: () => Navigator.pop(context),
                   ),
-                ),
-              ),
-              // Sort toggle button
-              GestureDetector(
-                onTap: () => context.read<BookingHistoryCubit>().toggleSortOrder(),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: sortAscending
-                          ? [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9)]
-                          : [const Color(0xFFFCE4EC), const Color(0xFFF8BBD0)],
+                  Expanded(
+                    child: Text(
+                      'Lịch sử đặt sân',
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.textDark,
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (sortAscending ? Colors.green : AppColors.primaryRed)
-                            .withValues(alpha: 0.15),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        sortAscending
-                            ? Icons.trending_up_rounded
-                            : Icons.trending_down_rounded,
-                        size: 15,
-                        color: sortAscending
-                            ? const Color(0xFF2E7D32)
-                            : AppColors.primaryRed,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        sortAscending ? 'Cũ nhất' : 'Mới nhất',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: sortAscending
-                              ? const Color(0xFF2E7D32)
-                              : AppColors.primaryRed,
+                  // Sort toggle button
+                  GestureDetector(
+                    onTap: () => context.read<BookingHistoryCubit>().toggleSortOrder(),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: sortAscending
+                              ? [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9)]
+                              : [const Color(0xFFFCE4EC), const Color(0xFFF8BBD0)],
                         ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (sortAscending ? Colors.green : AppColors.primaryRed)
+                                .withValues(alpha: 0.15),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                    ],
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            sortAscending
+                                ? Icons.trending_up_rounded
+                                : Icons.trending_down_rounded,
+                            size: 15,
+                            color: sortAscending
+                                ? const Color(0xFF2E7D32)
+                                : AppColors.primaryRed,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            sortAscending ? 'Cũ nhất' : 'Mới nhất',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: sortAscending
+                                  ? const Color(0xFF2E7D32)
+                                  : AppColors.primaryRed,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
+                  const SizedBox(width: 6),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // Sort Mode Switcher
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(
+                  children: [
+                    _sortModeItem(
+                      context,
+                      'Lịch trình',
+                      BookingSortMode.schedule,
+                      sortMode == BookingSortMode.schedule,
+                    ),
+                    const SizedBox(width: 12),
+                    _sortModeItem(
+                      context,
+                      'Thời gian tạo',
+                      BookingSortMode.creationTime,
+                      sortMode == BookingSortMode.creationTime,
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 6),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _sortModeItem(BuildContext context, String title, BookingSortMode mode, bool isSelected) {
+    return GestureDetector(
+      onTap: () => context.read<BookingHistoryCubit>().setSortMode(mode),
+      child: Column(
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected ? AppColors.primaryRed : AppColors.textGrey,
+            ),
+          ),
+          const SizedBox(height: 4),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            height: 3,
+            width: 24,
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.primaryRed : Colors.transparent,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -69,11 +69,7 @@ class _BookingView extends StatelessWidget {
           _showSuccessDialog(context);
         } else if (state is BookingPaymentRequired) {
           final authState = context.read<AuthCubit>().state;
-          final userId = (authState is AuthSuccess)
-              ? authState.authToken.user.userId
-              : (authState is AuthOtpVerified)
-              ? authState.authToken.user.userId
-              : '';
+          final userId = authState.currentUser?.userId ?? '';
 
           Navigator.push(
             context,
@@ -513,11 +509,7 @@ class _BookingView extends StatelessWidget {
   Widget _buildUserInfo(BuildContext context) {
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, authState) {
-        final user = (authState is AuthSuccess)
-            ? authState.authToken.user
-            : (authState is AuthOtpVerified)
-            ? authState.authToken.user
-            : null;
+        final user = authState.currentUser;
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -668,11 +660,7 @@ class _BookingView extends StatelessWidget {
           ? null
           : () {
               final authState = context.read<AuthCubit>().state;
-              final user = (authState is AuthSuccess)
-                  ? authState.authToken.user
-                  : (authState is AuthOtpVerified)
-                  ? authState.authToken.user
-                  : null;
+              final user = authState.currentUser;
               if (user != null) {
                 context.read<BookingCubit>().confirmBooking(user.userId);
               } else {

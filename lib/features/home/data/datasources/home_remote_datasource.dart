@@ -18,13 +18,11 @@ class HomeRemoteDatasource {
     String? brand,
     String? sort, // format: "field,asc" or "field,desc"
   }) async {
-    final Map<String, dynamic> params = {
-      'page': page,
-      'size': size,
-    };
+    final Map<String, dynamic> params = {'page': page, 'size': size};
     if (categoryId != null) params['categoryId'] = categoryId;
-    if (genders != null && genders.isNotEmpty)
+    if (genders != null && genders.isNotEmpty) {
       params['genders'] = genders.join(',');
+    }
     if (brand != null && brand.isNotEmpty) params['brand'] = brand;
     if (sort != null && sort.isNotEmpty) params['sort'] = sort;
 
@@ -58,10 +56,7 @@ class HomeRemoteDatasource {
     String? type,
     String? sort, // format: "field,asc" or "field,desc"
   }) async {
-    final Map<String, dynamic> params = {
-      'page': page,
-      'size': size,
-    };
+    final Map<String, dynamic> params = {'page': page, 'size': size};
     if (district != null && district.isNotEmpty) params['district'] = district;
     if (type != null && type.isNotEmpty) params['type'] = type;
     if (sort != null && sort.isNotEmpty) params['sort'] = sort;

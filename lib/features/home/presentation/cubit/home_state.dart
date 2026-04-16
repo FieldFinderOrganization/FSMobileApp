@@ -3,14 +3,12 @@ import '../../../pitch/domain/entities/pitch_entity.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/entities/discount_entity.dart';
 import '../../../../core/utils/string_utils.dart';
-import '../../../../core/utils/category_utils.dart';
 
 enum LoadStatus { initial, loading, success, failure }
 
 enum SortOption { none, priceAsc, priceDesc }
 
 const int kProductPageSize = 5;
-
 
 Set<String> getDescendantNames(
   List<CategoryEntity> categories,
@@ -25,6 +23,7 @@ Set<String> getDescendantNames(
       }
     }
   }
+
   walk(parentName);
   return result;
 }
@@ -109,9 +108,7 @@ class HomeState {
 
   List<CategoryEntity> get subCategories => selectedCategoryName.isEmpty
       ? []
-      : categories
-          .where((c) => c.parentName == selectedCategoryName)
-          .toList();
+      : categories.where((c) => c.parentName == selectedCategoryName).toList();
 
   // ── No longer doing heavy client-side filtering ─────────────────────────
 
@@ -152,17 +149,23 @@ class HomeState {
     final normalizedQuery = StringUtils.removeDiacritics(query.toLowerCase());
     final matches = pitches.where((p) {
       // 1. Phải khớp với Loại sân đang lọc
-      final matchesType = selectedPitchType.isEmpty || p.displayType == selectedPitchType;
+      final matchesType =
+          selectedPitchType.isEmpty || p.displayType == selectedPitchType;
       if (!matchesType) return false;
 
       // 2. Nếu có search query, phải khớp tên hoặc loại
       if (query.isEmpty) return true;
       final nameStr = StringUtils.removeDiacritics(p.name.toLowerCase());
       final typeStr = StringUtils.removeDiacritics(p.displayType.toLowerCase());
-      return nameStr.contains(normalizedQuery) || typeStr.contains(normalizedQuery);
+      return nameStr.contains(normalizedQuery) ||
+          typeStr.contains(normalizedQuery);
     });
 
-    final districts = matches.map((p) => p.district).where((d) => d.isNotEmpty).toSet().toList();
+    final districts = matches
+        .map((p) => p.district)
+        .where((d) => d.isNotEmpty)
+        .toSet()
+        .toList();
     districts.sort();
     return districts;
   }

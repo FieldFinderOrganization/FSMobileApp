@@ -75,12 +75,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
 
     final authState = context.read<AuthCubit>().state;
-    final user = authState is AuthSuccess ? authState.authToken.user : null;
+    final user = authState.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Vui lòng đăng nhập để đặt hàng.',
-              style: GoogleFonts.inter(color: Colors.white)),
+          content: Text(
+            'Vui lòng đăng nhập để đặt hàng.',
+            style: GoogleFonts.inter(color: Colors.white),
+          ),
           backgroundColor: AppColors.primaryRed,
           behavior: SnackBarBehavior.floating,
         ),
@@ -99,11 +101,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           'userId': user.userId,
           'paymentMethod': 'BANK',
           'items': widget.items
-              .map((i) => {
-                    'productId': i.productId,
-                    'size': i.size,
-                    'quantity': i.quantity,
-                  })
+              .map(
+                (i) => {
+                  'productId': i.productId,
+                  'size': i.size,
+                  'quantity': i.quantity,
+                },
+              )
               .toList(),
           'discountCodes': <String>[],
         });
@@ -154,11 +158,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           'userId': user.userId,
           'paymentMethod': 'CASH',
           'items': widget.items
-              .map((i) => {
-                    'productId': i.productId,
-                    'size': i.size,
-                    'quantity': i.quantity,
-                  })
+              .map(
+                (i) => {
+                  'productId': i.productId,
+                  'size': i.size,
+                  'quantity': i.quantity,
+                },
+              )
               .toList(),
           'discountCodes': <String>[],
         });
@@ -176,7 +182,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
-            builder: (_) => OrderHistoryScreen(userId: user!.userId),
+            builder: (_) => OrderHistoryScreen(userId: user.userId),
           ),
           (route) => route.isFirst,
         );
@@ -214,8 +220,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            const Icon(Icons.error_outline_rounded,
-                color: AppColors.primaryRed, size: 24),
+            const Icon(
+              Icons.error_outline_rounded,
+              color: AppColors.primaryRed,
+              size: 24,
+            ),
             const SizedBox(width: 8),
             Text(
               'Đặt hàng thất bại',
@@ -229,10 +238,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
         content: Text(
           message,
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            color: AppColors.textDark,
-          ),
+          style: GoogleFonts.inter(fontSize: 14, color: AppColors.textDark),
         ),
         actions: [
           TextButton(
@@ -285,10 +291,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             Text(
               'Cảm ơn bạn đã tin tưởng lựa chọn sản phẩm của chúng tôi.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: AppColors.textGrey,
-              ),
+              style: GoogleFonts.inter(fontSize: 14, color: AppColors.textGrey),
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -321,7 +324,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = context.read<AuthCubit>().state;
-    final user = authState is AuthSuccess ? authState.authToken.user : null;
+    final user = authState.currentUser;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),

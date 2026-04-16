@@ -98,11 +98,11 @@ class AuthRemoteDatasource {
     final response = await _dio.put(
       ApiConstants.userUpdate(userId),
       data: {
-        if (name != null) 'name': name,
-        if (email != null) 'email': email,
-        if (phone != null) 'phone': phone,
-        if (status != null) 'status': status,
-        if (imageUrl != null) 'imageUrl': imageUrl,
+        'name': ?name,
+        'email': ?email,
+        'phone': ?phone,
+        'status': ?status,
+        'imageUrl': ?imageUrl,
       },
     );
     return UserModel.fromJson(response.data as Map<String, dynamic>);
@@ -112,7 +112,8 @@ class AuthRemoteDatasource {
     final fileName = filePath.split('/').last;
     final formData = FormData.fromMap({
       'file': await MultipartFile.fromFile(filePath, filename: fileName),
-      'upload_preset': dotenv.env['NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET'] ?? 'chat_preset',
+      'upload_preset':
+          dotenv.env['NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET'] ?? 'chat_preset',
     });
 
     // Sử dụng instance Dio mới để tránh bị can thiệp bởi interceptors (thêm Authorization header)
@@ -125,32 +126,27 @@ class AuthRemoteDatasource {
     return response.data['secure_url'] as String;
   }
 
-  Future<void> verifyCurrentPassword(String userId, String currentPassword) async {
+  Future<void> verifyCurrentPassword(
+    String userId,
+    String currentPassword,
+  ) async {
     await _dio.post(
       ApiConstants.verifyCurrentPassword,
-      queryParameters: {
-        'userId': userId,
-        'currentPassword': currentPassword,
-      },
+      queryParameters: {'userId': userId, 'currentPassword': currentPassword},
     );
   }
 
   Future<void> sendChangePasswordOtp(String email) async {
     await _dio.post(
       ApiConstants.changePasswordOtp,
-      queryParameters: {
-        'email': email,
-      },
+      queryParameters: {'email': email},
     );
   }
 
   Future<void> changePassword(String email, String newPassword) async {
     await _dio.post(
       ApiConstants.resetPasswordOtp,
-      queryParameters: {
-        'email': email,
-        'newPassword': newPassword,
-      },
+      queryParameters: {'email': email, 'newPassword': newPassword},
     );
   }
 }

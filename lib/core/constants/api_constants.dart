@@ -20,6 +20,8 @@ class ApiConstants {
   static const String products = '/products';
   static const String topProducts = '/products/top-selling';
   static const String pitches = '/pitches';
+  static const String providers = '/providers';
+  static const String providerAddresses = '/provider-addresses';
   static const String categories = '/categories';
   static const String discounts = '/discounts';
   static const String reviews = '/reviews';
@@ -51,7 +53,8 @@ class ApiConstants {
 
   // Cloudinary
   static String get cloudinaryUrl {
-    final cloudName = dotenv.env['NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME'] ?? 'dxgy8ilqu';
+    final cloudName =
+        dotenv.env['NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME'] ?? 'dxgy8ilqu';
     return 'https://api.cloudinary.com/v1_1/$cloudName/image/upload';
   }
 }

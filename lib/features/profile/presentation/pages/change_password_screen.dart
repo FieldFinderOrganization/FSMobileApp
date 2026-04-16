@@ -126,7 +126,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
         },
         builder: (context, state) {
           final isLoading = state is AuthLoading;
-          final user = (state is AuthSuccess) ? state.authToken.user : null;
+          final user = state.currentUser;
           final userEmail = user?.email ?? '';
 
           if (user != null && !_hasCheckedPasswordStatus) {
@@ -160,9 +160,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
                               const SizedBox(height: 16),
                               _buildHeader(_currentStep, _mustSetPasswordFirst),
                               const SizedBox(height: 36),
-                              if (_currentStep == 1) _buildStep1(isLoading, _mustSetPasswordFirst),
+                              if (_currentStep == 1) _buildStep1(isLoading, _mustSetPasswordFirst, state),
                               if (_currentStep == 2) _buildStep2(isLoading, userEmail),
-                              if (_currentStep == 3) _buildStep3(isLoading, userEmail),
+                              if (_currentStep == 3) _buildStep3(isLoading, userEmail, state),
                             ],
                           ),
                         ),
@@ -235,7 +235,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
     );
   }
 
-  Widget _buildStep1(bool isLoading, bool mustSetPasswordFirst) {
+  Widget _buildStep1(bool isLoading, bool mustSetPasswordFirst, AuthState state) {
     if (mustSetPasswordFirst) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -246,16 +246,16 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
             isLoading: isLoading,
             enabled: !isLoading,
             onTap: () {
-              final state = context.read<AuthCubit>().state;
-              if (state is AuthSuccess) {
+              final user = state.currentUser;
+              if (user != null) {
                 // Trigger OTP right away for social users
-                context.read<AuthCubit>().sendChangePasswordOtp(state.authToken.user.email);
+                context.read<AuthCubit>().sendChangePasswordOtp(user.email);
                 // After calling send, we automatically transition to step 2 via listener handle verifySuccess
                 // Wait, verifyCurrentPassword handles OTP sending too. 
                 // I should add a specific method for social OTP sending or just call verify with empty pw?
                 // Let's use verifyCurrentPassword but backend should handle empty if user has no PW.
                 // Actually, I'll use sendChangePasswordOtp.
-                context.read<AuthCubit>().sendChangePasswordOtp(state.authToken.user.email);
+                context.read<AuthCubit>().sendChangePasswordOtp(user.email);
                 // Since I don't have a listener for sendOtpSuccess in AuthCubit yet, I'll add it or manually switch.
                 setState(() => _currentStep = 2);
               }
@@ -361,7 +361,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
     );
   }
 
-  Widget _buildStep3(bool isLoading, String email) {
+  Widget _buildStep3(bool isLoading, String email, AuthState state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -395,10 +395,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
             _validateNewPassword(_newPasswordController.text);
             _validateConfirmPassword(_confirmPasswordController.text);
             if (_newError == null && _confirmError == null) {
-              final state = context.read<AuthCubit>().state;
-              if (state is AuthSuccess) {
+              final user = state.currentUser;
+              if (user != null) {
                 context.read<AuthCubit>().changePassword(
-                  state.authToken.user.email,
+                  user.email,
                   _newPasswordController.text,
                 );
               }

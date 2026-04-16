@@ -26,6 +26,7 @@ abstract class AuthRepository {
     String? imageUrl,
   });
   Future<String> uploadImage(String filePath);
+  Future<List<String>> uploadMultipleImages(List<String> filePaths);
   Future<void> verifyCurrentPassword(String userId, String currentPassword);
   Future<void> sendChangePasswordOtp(String email);
   Future<void> changePassword(String email, String newPassword);

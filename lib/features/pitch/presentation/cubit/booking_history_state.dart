@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../../data/models/booking_response_model.dart';
+enum BookingSortMode { schedule, creationTime }
 
 abstract class BookingHistoryState extends Equatable {
   const BookingHistoryState();
@@ -18,6 +19,8 @@ class BookingHistorySuccess extends BookingHistoryState {
   final String? selectedStatus;
   final DateTimeRange? selectedDateRange;
   final bool sortAscending;
+  final BookingSortMode sortMode;
+  final String? message;
 
   const BookingHistorySuccess({
     required this.allBookings,
@@ -25,6 +28,8 @@ class BookingHistorySuccess extends BookingHistoryState {
     this.selectedStatus,
     this.selectedDateRange,
     this.sortAscending = false,
+    this.sortMode = BookingSortMode.schedule,
+    this.message,
   });
 
   BookingHistorySuccess copyWith({
@@ -33,8 +38,11 @@ class BookingHistorySuccess extends BookingHistoryState {
     String? selectedStatus,
     DateTimeRange? selectedDateRange,
     bool? sortAscending,
+    BookingSortMode? sortMode,
+    String? message,
     bool clearStatus = false,
     bool clearDateRange = false,
+    bool clearMessage = false,
   }) {
     return BookingHistorySuccess(
       allBookings: allBookings ?? this.allBookings,
@@ -42,6 +50,8 @@ class BookingHistorySuccess extends BookingHistoryState {
       selectedStatus: clearStatus ? null : (selectedStatus ?? this.selectedStatus),
       selectedDateRange: clearDateRange ? null : (selectedDateRange ?? this.selectedDateRange),
       sortAscending: sortAscending ?? this.sortAscending,
+      sortMode: sortMode ?? this.sortMode,
+      message: clearMessage ? null : (message ?? this.message),
     );
   }
 
@@ -52,6 +62,8 @@ class BookingHistorySuccess extends BookingHistoryState {
         selectedStatus,
         selectedDateRange,
         sortAscending,
+        sortMode,
+        message,
       ];
 }
 

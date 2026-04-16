@@ -14,6 +14,7 @@ import '../../../product/presentation/cubit/product_cubit.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
 import 'edit_profile_screen.dart';
 import 'change_password_screen.dart';
+import 'provider_management_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final UserEntity user;
@@ -281,7 +282,8 @@ class _ProfileBody extends StatelessWidget {
       case 'ADMIN':
         return 'Quản trị viên';
       case 'OWNER':
-        return 'Chủ sân';
+      case 'PROVIDER':
+        return 'Đối tác';
       case 'CUSTOMER':
         return 'Người dùng';
       default:
@@ -399,6 +401,19 @@ class _ProfileBody extends StatelessWidget {
               );
             },
           ),
+          if (user.role == 'OWNER' || user.role == 'PROVIDER')
+            _ActionRow(
+              icon: Icons.business_center_rounded,
+              label: 'Quản lý kinh doanh',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProviderManagementScreen(user: user),
+                  ),
+                );
+              },
+            ),
           _ActionRow(
             icon: Icons.favorite_border_rounded,
             label: 'Sân yêu thích',

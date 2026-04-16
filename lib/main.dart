@@ -20,6 +20,13 @@ import 'features/cart/data/datasources/cart_remote_data_source.dart';
 import 'features/cart/data/repositories/cart_repository_impl.dart';
 import 'features/cart/domain/repositories/cart_repository.dart';
 import 'features/cart/presentation/cubit/cart_cubit.dart';
+import 'features/pitch/data/datasources/pitch_remote_datasource.dart';
+import 'features/pitch/data/datasources/review_remote_datasource.dart';
+import 'features/pitch/data/repositories/pitch_repository_impl.dart';
+import 'features/pitch/domain/repositories/pitch_repository.dart';
+import 'features/profile/data/datasources/provider_remote_datasource.dart';
+import 'features/profile/data/repositories/provider_repository_impl.dart';
+import 'features/profile/domain/repositories/provider_repository.dart';
 import 'features/welcome/presentation/pages/welcome_screen.dart';
 
 
@@ -42,6 +49,16 @@ void main() async {
   final cartDatasource = CartRemoteDataSource(dioClient.dio);
   final cartRepository = CartRepositoryImpl(cartDatasource);
 
+  final providerDatasource = ProviderRemoteDatasource(dioClient.dio);
+  final providerRepository = ProviderRepositoryImpl(providerDatasource);
+
+  final pitchDatasource = PitchRemoteDatasource(dioClient.dio);
+  final reviewDatasource = ReviewRemoteDatasource(dioClient.dio);
+  final pitchRepository = PitchRepositoryImpl(
+    pitchRemoteDatasource: pitchDatasource,
+    reviewRemoteDatasource: reviewDatasource,
+  );
+
   runApp(
     MultiRepositoryProvider(
       providers: [
@@ -50,6 +67,8 @@ void main() async {
         RepositoryProvider<AuthRepository>.value(value: authRepository),
         RepositoryProvider<ProductRepository>.value(value: productRepository),
         RepositoryProvider<CartRepository>.value(value: cartRepository),
+        RepositoryProvider<ProviderRepository>.value(value: providerRepository),
+        RepositoryProvider<PitchRepository>.value(value: pitchRepository),
       ],
       child: MultiBlocProvider(
         providers: [

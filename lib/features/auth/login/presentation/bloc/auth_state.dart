@@ -1,8 +1,16 @@
 import 'package:equatable/equatable.dart';
-import 'package:fsmobileapp/features/auth/domain/entities/auth_token_entity.dart';
+import '../../../domain/entities/auth_token_entity.dart';
+import '../../../domain/entities/user_entity.dart';
 
 abstract class AuthState extends Equatable {
   const AuthState();
+
+  UserEntity? get currentUser {
+    final state = this;
+    if (state is AuthSuccess) return state.authToken.user;
+    if (state is AuthOtpVerified) return state.authToken.user;
+    return null;
+  }
 
   @override
   List<Object?> get props => [];

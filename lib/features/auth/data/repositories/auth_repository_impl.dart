@@ -142,6 +142,18 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<List<String>> uploadMultipleImages(List<String> filePaths) async {
+    try {
+      final futures = filePaths.map((path) => _datasource.uploadToCloudinary(path));
+      return await Future.wait(futures);
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    } catch (e) {
+      throw Exception('Lỗi khi tải ảnh lên: $e');
+    }
+  }
+
+  @override
   Future<void> verifyCurrentPassword(String userId, String currentPassword) async {
     try {
       await _datasource.verifyCurrentPassword(userId, currentPassword);
@@ -185,6 +197,23 @@ class AuthRepositoryImpl implements AuthRepository {
       return Exception('Không thể kết nối máy chủ. Vui lòng kiểm tra mạng.');
     }
     final message = e.response?.data?['message'] as String?;
-    return Exception(message ?? 'Thao tác thất bại. Vui lòng thử lại.');
+    return Exception(_cleanMessage(message ?? 'Thao tác thất bại. Vui lòng thử lại.'));
+  }
+
+  String _cleanMessage(String raw) {
+    // Remove "400 BAD_REQUEST", "500 INTERNAL_SERVER_ERROR", etc pattern
+    String cleaned = raw.replaceAll(RegExp(r'^\d{3}\s+[A-Z_]+\s+'), '');
+    
+    // Remove wrapping double quotes if they exist
+    if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
+      cleaned = cleaned.substring(1, cleaned.length - 1);
+    }
+    
+    // If double quotes are escaped \"...\"
+    if (cleaned.startsWith('\"') && cleaned.endsWith('\"')) {
+      cleaned = cleaned.substring(1, cleaned.length - 1);
+    }
+
+    return cleaned.trim();
   }
 }

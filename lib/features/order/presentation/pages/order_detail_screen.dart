@@ -97,11 +97,7 @@ class OrderDetailScreen extends StatelessWidget {
               color: statusColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              statusIcon,
-              color: statusColor,
-              size: 32,
-            ),
+            child: Icon(statusIcon, color: statusColor, size: 32),
           ),
           const SizedBox(height: 12),
           Text(
@@ -228,7 +224,7 @@ class OrderDetailScreen extends StatelessWidget {
                     width: 50,
                     height: 50,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _imagePlaceholder(),
+                    errorBuilder: (_, _, _) => _imagePlaceholder(),
                   )
                 : _imagePlaceholder(),
           ),
@@ -339,13 +335,16 @@ class OrderDetailScreen extends StatelessWidget {
   }
 
   Widget _imagePlaceholder() => Container(
-        width: 50,
-        height: 50,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF5F5F5),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Icon(Icons.shopping_bag_outlined,
-            color: Colors.grey, size: 20),
-      );
+    width: 50,
+    height: 50,
+    decoration: BoxDecoration(
+      color: const Color(0xFFF5F5F5),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: const Icon(
+      Icons.shopping_bag_outlined,
+      color: Colors.grey,
+      size: 20,
+    ),
+  );
 }
