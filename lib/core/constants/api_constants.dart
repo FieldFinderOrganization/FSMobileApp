@@ -1,8 +1,8 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConstants {
-  // Đổi thành IP thực khi test trên thiết bị thật
-  static const String baseUrl = 'http://192.168.1.5:8080/api';
+  static String get baseUrl =>
+      dotenv.env['BASE_URL'] ?? 'http://192.168.1.5:8080/api';
 
   static const String googleLogin = '/auth/google';
   static const String facebookLogin = '/auth/facebook';
