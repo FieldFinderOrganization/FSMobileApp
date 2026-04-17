@@ -844,10 +844,12 @@ class _PeakHourChartState extends State<_PeakHourChart> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.data.every((v) => v == 0)) return _emptyState();
+    // Only display 5:00 to 23:00 (indices 5 to 23)
+    final relevantData = widget.data.sublist(5, 24);
+    if (relevantData.every((v) => v == 0)) return _emptyState();
 
-    final maxVal = widget.data.reduce((a, b) => a > b ? a : b);
-    final peakHour = widget.data.indexOf(maxVal);
+    final maxVal = relevantData.reduce((a, b) => a > b ? a : b);
+    final peakHour = relevantData.indexOf(maxVal) + 5;
     final chartMax = maxVal == 0 ? 10.0 : maxVal * 1.3;
 
     return SizedBox(
@@ -918,7 +920,8 @@ class _PeakHourChartState extends State<_PeakHourChart> {
               ),
             ),
           ),
-          barGroups: List.generate(widget.data.length, (i) {
+          barGroups: List.generate(19, (index) {
+            final i = index + 5;
             final isPeak = i == peakHour;
             return BarChartGroupData(
               x: i,
@@ -945,8 +948,8 @@ class _PeakHourChartState extends State<_PeakHourChart> {
                   ),
                 ),
               ],
-              // badge for peak hour dynamically responds to touches
-              showingTooltipIndicators: (_touchedIndex == null && isPeak) || _touchedIndex == i ? [0] : [],
+              // _touchedIndex corresponds to the index of this group in the 0..18 list
+              showingTooltipIndicators: (_touchedIndex == null && isPeak) || _touchedIndex == index ? [0] : [],
             );
           }),
         ),
