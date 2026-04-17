@@ -16,26 +16,32 @@ class UserChatMessageModel {
   });
 
   factory UserChatMessageModel.fromJson(Map<String, dynamic> json) {
+    // Backend field: messageId (UUID), timestamp (Date), isRead (Boolean)
+    final rawTime = json['timestamp'] ?? json['sentAt'];
+    DateTime sentAt;
+    if (rawTime is int) {
+      sentAt = DateTime.fromMillisecondsSinceEpoch(rawTime);
+    } else if (rawTime != null) {
+      sentAt = DateTime.tryParse(rawTime.toString()) ?? DateTime.now();
+    } else {
+      sentAt = DateTime.now();
+    }
+
     return UserChatMessageModel(
-      id: json['id']?.toString() ?? '',
-      senderId: json['senderId'] ?? '',
-      receiverId: json['receiverId'] ?? '',
+      id: (json['messageId'] ?? json['id'])?.toString() ?? '',
+      senderId: json['senderId']?.toString() ?? '',
+      receiverId: json['receiverId']?.toString() ?? '',
       content: json['content'] ?? '',
-      sentAt: json['sentAt'] != null
-          ? DateTime.tryParse(json['sentAt'].toString()) ?? DateTime.now()
-          : DateTime.now(),
-      isRead: json['read'] == true || json['isRead'] == true,
+      sentAt: sentAt,
+      isRead: json['isRead'] == true || json['read'] == true,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'senderId': senderId,
       'receiverId': receiverId,
       'content': content,
-      'sentAt': sentAt.toIso8601String(),
-      'read': isRead,
     };
   }
 }

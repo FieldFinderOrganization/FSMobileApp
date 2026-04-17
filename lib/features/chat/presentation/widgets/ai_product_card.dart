@@ -67,7 +67,7 @@ class AiProductCard extends StatelessWidget {
                     height: imageHeight,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _placeholder(imageHeight),
+                    errorBuilder: (_, _, _) => _placeholder(imageHeight),
                   )
                 : _placeholder(imageHeight),
           ),

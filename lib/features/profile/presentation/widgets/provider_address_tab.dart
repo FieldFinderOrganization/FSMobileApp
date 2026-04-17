@@ -147,7 +147,7 @@ class ProviderAddressTab extends StatelessWidget {
                         )
                       : ListView.separated(
                           itemCount: state.addresses.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 12),
+                          separatorBuilder: (_, _) => const SizedBox(height: 12),
                           itemBuilder: (context, index) {
                             final addr = state.addresses[index];
                             return Container(

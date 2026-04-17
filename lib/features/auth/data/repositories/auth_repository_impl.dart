@@ -210,7 +210,7 @@ class AuthRepositoryImpl implements AuthRepository {
     }
     
     // If double quotes are escaped \"...\"
-    if (cleaned.startsWith('\"') && cleaned.endsWith('\"')) {
+    if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
       cleaned = cleaned.substring(1, cleaned.length - 1);
     }
 

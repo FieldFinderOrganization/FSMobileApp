@@ -70,7 +70,7 @@ class _ProviderBookingBody extends StatelessWidget {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: _statuses.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemBuilder: (context, i) {
               final s = _statuses[i];
               final isSelected = s == selected;
@@ -148,7 +148,7 @@ class _ProviderBookingBody extends StatelessWidget {
             child: ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: state.filteredBookings.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              separatorBuilder: (_, _) => const SizedBox(height: 10),
               itemBuilder: (context, i) => _BookingCard(
                 booking: state.filteredBookings[i],
                 providerUserId: providerUserId,
@@ -196,7 +196,7 @@ class _BookingCard extends StatelessWidget {
                 height: 120,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (_, _, _) => Container(
                   height: 120,
                   color: const Color(0xFFF0F0F0),
                   child: const Icon(Icons.sports_soccer, color: AppColors.textGrey, size: 40),

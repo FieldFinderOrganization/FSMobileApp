@@ -112,7 +112,7 @@ class _ProviderPitchTabState extends State<ProviderPitchTab> {
                           }
                           return ListView.separated(
                             itemCount: pitchState.pitches.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 12),
+                            separatorBuilder: (_, _) => const SizedBox(height: 12),
                             itemBuilder: (context, index) {
                               final pitch = pitchState.pitches[index];
                               return _buildPitchCard(context, pitch);
@@ -188,7 +188,7 @@ class _ProviderPitchTabState extends State<ProviderPitchTab> {
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: pitch.imageUrls.isNotEmpty
-                ? Image.network(pitch.imageUrls.first, width: 80, height: 80, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _buildPlaceholder())
+                ? Image.network(pitch.imageUrls.first, width: 80, height: 80, fit: BoxFit.cover, errorBuilder: (_, _, _) => _buildPlaceholder())
                 : _buildPlaceholder(),
           ),
           const SizedBox(width: 12),
@@ -255,7 +255,7 @@ class _ProviderPitchTabState extends State<ProviderPitchTab> {
               children: [
                 TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Tên sân')),
                 DropdownButtonFormField<String>(
-                  value: type,
+                  initialValue: type,
                   decoration: const InputDecoration(labelText: 'Loại sân'),
                   items: const [
                     DropdownMenuItem(value: 'FIVE_A_SIDE', child: Text('Sân 5')),
@@ -266,7 +266,7 @@ class _ProviderPitchTabState extends State<ProviderPitchTab> {
                 ),
                 TextField(controller: priceController, decoration: const InputDecoration(labelText: 'Giá (VNĐ)'), keyboardType: TextInputType.number),
                 DropdownButtonFormField<String>(
-                  value: environment,
+                  initialValue: environment,
                   decoration: const InputDecoration(labelText: 'Môi trường'),
                   items: const [
                     DropdownMenuItem(value: 'OUTDOOR', child: Text('Ngoài trời')),

@@ -54,6 +54,9 @@ class UserChatCubit extends Cubit<UserChatState> {
   final String currentUserId;
   final String otherUserId;
 
+  // Queue for messages sent before WS is connected
+  final List<String> _pendingMessages = [];
+
   UserChatCubit({
     required this.remoteDatasource,
     required this.wsService,
@@ -70,10 +73,11 @@ class UserChatCubit extends Cubit<UserChatState> {
       );
       history.sort((a, b) => a.sentAt.compareTo(b.sentAt));
 
-      await remoteDatasource.markRead(
+      // Mark read in background — don't let failure block chat
+      remoteDatasource.markRead(
         senderId: otherUserId,
         receiverId: currentUserId,
-      );
+      ).catchError((_) {});
 
       emit(UserChatLoaded(messages: history, isConnected: false));
 
@@ -84,6 +88,15 @@ class UserChatCubit extends Cubit<UserChatState> {
           if (state is UserChatLoaded) {
             emit((state as UserChatLoaded).copyWith(isConnected: true));
           }
+          // Flush pending messages queued before connection was ready
+          for (final content in List<String>.from(_pendingMessages)) {
+            wsService.sendMessage(
+              senderId: currentUserId,
+              receiverId: otherUserId,
+              content: content,
+            );
+          }
+          _pendingMessages.clear();
         },
         onError: (err) {
           if (state is UserChatLoaded) {
@@ -98,6 +111,7 @@ class UserChatCubit extends Cubit<UserChatState> {
 
   void _onIncomingMessage(UserChatMessageModel msg) {
     if (state is! UserChatLoaded) return;
+    // Ignore messages not in this conversation
     if (msg.senderId != otherUserId && msg.senderId != currentUserId) return;
     final s = state as UserChatLoaded;
     emit(s.copyWith(messages: [...s.messages, msg]));
@@ -105,36 +119,37 @@ class UserChatCubit extends Cubit<UserChatState> {
       remoteDatasource.markRead(
         senderId: otherUserId,
         receiverId: currentUserId,
-      );
+      ).catchError((_) {});
     }
   }
 
-  Future<void> sendMessage(String content) async {
+  void sendMessage(String content) {
     if (content.trim().isEmpty) return;
     if (state is! UserChatLoaded) return;
     final s = state as UserChatLoaded;
+    final trimmed = content.trim();
 
-    emit(s.copyWith(isSending: true));
-
+    // Optimistic update
     final optimistic = UserChatMessageModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       senderId: currentUserId,
       receiverId: otherUserId,
-      content: content.trim(),
+      content: trimmed,
       sentAt: DateTime.now(),
       isRead: false,
     );
+    emit(s.copyWith(messages: [...s.messages, optimistic]));
 
-    emit(s.copyWith(
-      messages: [...s.messages, optimistic],
-      isSending: false,
-    ));
-
-    wsService.sendMessage(
-      senderId: currentUserId,
-      receiverId: otherUserId,
-      content: content.trim(),
-    );
+    if (wsService.isConnected) {
+      wsService.sendMessage(
+        senderId: currentUserId,
+        receiverId: otherUserId,
+        content: trimmed,
+      );
+    } else {
+      // Queue and retry when connection is ready
+      _pendingMessages.add(trimmed);
+    }
   }
 
   void closeChat() {

@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../auth/login/presentation/bloc/auth_cubit.dart';
-import '../../../auth/login/presentation/bloc/auth_state.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
 import '../../../home/presentation/cubit/home_cubit.dart';
 import '../../../product/presentation/cubit/product_cubit.dart';

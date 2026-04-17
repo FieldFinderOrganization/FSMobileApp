@@ -48,7 +48,7 @@ class ChatBubble extends StatelessWidget {
           File(message.imagePath!),
           width: 200,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => const Padding(
+          errorBuilder: (_, _, _) => const Padding(
             padding: EdgeInsets.all(12),
             child: Icon(Icons.broken_image_outlined, color: Colors.grey),
           ),
