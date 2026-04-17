@@ -18,7 +18,9 @@ class ProviderRevenueTab extends StatelessWidget {
     return BlocBuilder<ProviderCubit, ProviderState>(
       builder: (context, providerState) {
         if (providerState is! ProviderLoaded) {
-          return const Center(child: CircularProgressIndicator(color: AppColors.primaryRed));
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.primaryRed),
+          );
         }
         return BlocProvider(
           create: (_) => ProviderRevenueCubit(
@@ -40,20 +42,33 @@ class _ProviderRevenueBody extends StatelessWidget {
     return BlocBuilder<ProviderRevenueCubit, ProviderRevenueState>(
       builder: (context, state) {
         if (state is ProviderRevenueLoading) {
-          return const Center(child: CircularProgressIndicator(color: AppColors.primaryRed));
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.primaryRed),
+          );
         }
         if (state is ProviderRevenueError) {
           return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.error_outline, color: AppColors.textGrey, size: 40),
+                const Icon(
+                  Icons.error_outline,
+                  color: AppColors.textGrey,
+                  size: 40,
+                ),
                 const SizedBox(height: 8),
-                Text(state.message, style: GoogleFonts.inter(color: AppColors.textGrey)),
+                Text(
+                  state.message,
+                  style: GoogleFonts.inter(color: AppColors.textGrey),
+                ),
                 const SizedBox(height: 8),
                 TextButton(
-                  onPressed: () => context.read<ProviderRevenueCubit>().loadRevenue(),
-                  child: const Text('Thử lại', style: TextStyle(color: AppColors.primaryRed)),
+                  onPressed: () =>
+                      context.read<ProviderRevenueCubit>().loadRevenue(),
+                  child: const Text(
+                    'Thử lại',
+                    style: TextStyle(color: AppColors.primaryRed),
+                  ),
                 ),
               ],
             ),
@@ -66,9 +81,15 @@ class _ProviderRevenueBody extends StatelessWidget {
               Expanded(
                 child: RefreshIndicator(
                   color: AppColors.primaryRed,
-                  onRefresh: () => context.read<ProviderRevenueCubit>().loadRevenue(),
+                  onRefresh: () =>
+                      context.read<ProviderRevenueCubit>().loadRevenue(),
                   child: ListView(
-                    padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(context).padding.bottom),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      16,
+                      16,
+                      16 + MediaQuery.of(context).padding.bottom,
+                    ),
                     children: [
                       _buildSummaryHeader(state),
                       const SizedBox(height: 12),
@@ -129,7 +150,8 @@ class _ProviderRevenueBody extends StatelessWidget {
                           iconColor: AppColors.primaryRed,
                           label: 'Sân được đặt nhiều nhất',
                           value: state.stats.mostBookedPitch,
-                          subtitle: '${state.stats.mostBookedPitchCount} lần đặt. Bấm để xem chi tiết',
+                          subtitle:
+                              '${state.stats.mostBookedPitchCount} lần đặt. Bấm để xem chi tiết',
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -148,7 +170,8 @@ class _ProviderRevenueBody extends StatelessWidget {
                           iconColor: Colors.orange,
                           label: 'Khách hàng hàng đầu',
                           value: state.stats.topCustomer,
-                          subtitle: '${state.stats.topCustomerCount} đơn đặt. Bấm để xem bảng xếp hạng',
+                          subtitle:
+                              '${state.stats.topCustomerCount} đơn đặt. Bấm để xem bảng xếp hạng',
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -209,7 +232,7 @@ class _ProviderRevenueBody extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Thống kê doanh thu',
+                  'Thống kê doanh th',
                   style: GoogleFonts.inter(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
@@ -262,12 +285,16 @@ class _TimeRangeSelector extends StatelessWidget {
           final isSelected = entry.$1 == selectedRange;
           return Expanded(
             child: GestureDetector(
-              onTap: () => context.read<ProviderRevenueCubit>().changeTimeRange(entry.$1),
+              onTap: () => context.read<ProviderRevenueCubit>().changeTimeRange(
+                entry.$1,
+              ),
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 3),
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primaryRed : const Color(0xFFF5F5F5),
+                  color: isSelected
+                      ? AppColors.primaryRed
+                      : const Color(0xFFF5F5F5),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 alignment: Alignment.center,
@@ -336,7 +363,10 @@ class _StatCard extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textGrey),
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: AppColors.textGrey,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -351,7 +381,10 @@ class _StatCard extends StatelessWidget {
                 if (subtitle.isNotEmpty)
                   Text(
                     subtitle,
-                    style: GoogleFonts.inter(fontSize: 11, color: AppColors.textGrey),
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: AppColors.textGrey,
+                    ),
                   ),
               ],
             ),
@@ -376,19 +409,27 @@ class _ExportButton extends StatelessWidget {
               backgroundColor: AppColors.primaryRed,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               elevation: 0,
             ),
             icon: isExporting
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
                   )
                 : const Icon(Icons.picture_as_pdf_outlined),
             label: Text(
               isExporting ? 'Đang chuẩn bị PDF...' : 'Xuất báo cáo PDF',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15),
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
             ),
             onPressed: isExporting
                 ? null
