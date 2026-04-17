@@ -137,7 +137,7 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen> with Sing
     final avgRevenue = _paidBookings.isEmpty ? 0.0 : totalRevenue / _paidBookings.length;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(context).padding.bottom),
       child: Column(
         children: [
           _buildSummaryCards(
@@ -169,7 +169,7 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen> with Sing
     final confirmed = _statusDistribution['CONFIRMED'] ?? 0;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(context).padding.bottom),
       child: Column(
         children: [
           _buildSummaryCards(
@@ -203,7 +203,7 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen> with Sing
 
   Widget _buildPitchesTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(context).padding.bottom),
       child: Column(
         children: [
           _buildChartContainer(
@@ -256,7 +256,7 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen> with Sing
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(context).padding.bottom),
       itemCount: sortedCustomers.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {

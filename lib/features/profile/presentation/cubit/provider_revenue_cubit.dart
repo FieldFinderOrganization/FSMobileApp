@@ -1,12 +1,14 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:flutter/services.dart';
 import '../../../pitch/data/models/booking_response_model.dart';
 import '../../../pitch/data/repositories/booking_repository_impl.dart';
 
@@ -57,29 +59,33 @@ class ProviderRevenueLoaded extends ProviderRevenueState {
   final List<BookingResponseModel> filteredBookings;
   final RevenueStats stats;
   final RevenueTimeRange selectedRange;
+  final bool isExporting;
 
   const ProviderRevenueLoaded({
     required this.allBookings,
     required this.filteredBookings,
     required this.stats,
     required this.selectedRange,
+    this.isExporting = false,
   });
 
   ProviderRevenueLoaded copyWith({
     List<BookingResponseModel>? filteredBookings,
     RevenueStats? stats,
     RevenueTimeRange? selectedRange,
+    bool? isExporting,
   }) {
     return ProviderRevenueLoaded(
       allBookings: allBookings,
       filteredBookings: filteredBookings ?? this.filteredBookings,
       stats: stats ?? this.stats,
       selectedRange: selectedRange ?? this.selectedRange,
+      isExporting: isExporting ?? this.isExporting,
     );
   }
 
   @override
-  List<Object?> get props => [allBookings, filteredBookings, stats, selectedRange];
+  List<Object?> get props => [allBookings, filteredBookings, stats, selectedRange, isExporting];
 }
 
 class ProviderRevenueError extends ProviderRevenueState {
@@ -128,81 +134,117 @@ class ProviderRevenueCubit extends Cubit<ProviderRevenueState> {
   Future<void> exportPdf(BuildContext context) async {
     if (state is! ProviderRevenueLoaded) return;
     final s = state as ProviderRevenueLoaded;
+    if (s.isExporting) return;
 
-    final fontData = await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
-    final boldFontData = await rootBundle.load('assets/fonts/Roboto-Bold.ttf');
-    final font = pw.Font.ttf(fontData);
-    final boldFont = pw.Font.ttf(boldFontData);
+    emit(s.copyWith(isExporting: true));
 
-    final currencyFmt = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
-    final dateFmt = DateFormat('dd/MM/yyyy');
-    final now = DateTime.now();
+    try {
+      final font = await PdfGoogleFonts.notoSansRegular();
+      final boldFont = await PdfGoogleFonts.notoSansBold();
 
-    final pdf = pw.Document();
-    final rangeLabel = _rangeLabel(s.selectedRange);
+      final currencyFmt = NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
+      final dateFmt = DateFormat('dd/MM/yyyy');
+      final now = DateTime.now();
 
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        theme: pw.ThemeData.withFont(base: font, bold: boldFont),
-        build: (pw.Context ctx) => [
-          pw.Header(
-            level: 0,
-            child: pw.Text(
-              'Báo cáo Doanh thu',
-              style: pw.TextStyle(font: boldFont, fontSize: 22),
+      final pdf = pw.Document();
+      final rangeLabel = _rangeLabel(s.selectedRange);
+
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          theme: pw.ThemeData.withFont(base: font, bold: boldFont),
+          build: (pw.Context ctx) => [
+            pw.Header(
+              level: 0,
+              child: pw.Text(
+                'Báo cáo Doanh thu',
+                style: pw.TextStyle(font: boldFont, fontSize: 22),
+              ),
             ),
-          ),
-          pw.Text('Xuất ngày: ${dateFmt.format(now)}', style: pw.TextStyle(font: font)),
-          pw.Text('Khoảng thời gian: $rangeLabel', style: pw.TextStyle(font: font)),
-          pw.SizedBox(height: 16),
-          pw.Header(level: 1, text: 'Tổng quan'),
-          pw.Bullet(
-            text: 'Tổng doanh thu: ${currencyFmt.format(s.stats.totalRevenue)}',
-            style: pw.TextStyle(font: font),
-          ),
-          pw.Bullet(
-            text: 'Tổng số đơn: ${s.stats.totalBookings}',
-            style: pw.TextStyle(font: font),
-          ),
-          pw.Bullet(
-            text: 'Sân được đặt nhiều nhất: ${s.stats.mostBookedPitch} (${s.stats.mostBookedPitchCount} lần)',
-            style: pw.TextStyle(font: font),
-          ),
-          pw.Bullet(
-            text: 'Khách hàng hàng đầu: ${s.stats.topCustomer} (${s.stats.topCustomerCount} đơn)',
-            style: pw.TextStyle(font: font),
-          ),
-          pw.Bullet(
-            text: 'Sân doanh thu cao nhất: ${s.stats.highestRevenuePitch} (${currencyFmt.format(s.stats.highestRevenuePitchAmount)})',
-            style: pw.TextStyle(font: font),
-          ),
-          pw.SizedBox(height: 16),
-          if (s.filteredBookings.isNotEmpty) ...[
-            pw.Header(level: 1, text: 'Chi tiết đặt sân'),
-            pw.Table.fromTextArray(
-              headers: ['Sân', 'Khách hàng', 'Ngày', 'Giá', 'Trạng thái'],
-              data: s.filteredBookings.map((b) => [
-                b.pitchName,
-                b.userName,
-                b.bookingDate,
-                currencyFmt.format(b.totalPrice),
-                _statusLabel(b.status),
-              ]).toList(),
-              headerStyle: pw.TextStyle(font: boldFont, fontSize: 10),
-              cellStyle: pw.TextStyle(font: font, fontSize: 9),
-              cellAlignment: pw.Alignment.centerLeft,
-              headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
+            pw.Text('Xuất ngày: ${dateFmt.format(now)}', style: pw.TextStyle(font: font)),
+            pw.Text('Khoảng thời gian: $rangeLabel', style: pw.TextStyle(font: font)),
+            pw.SizedBox(height: 16),
+            pw.Header(level: 1, text: 'Tổng quan'),
+            pw.Bullet(
+              text: 'Tổng doanh thu: ${currencyFmt.format(s.stats.totalRevenue)}',
+              style: pw.TextStyle(font: font),
             ),
+            pw.Bullet(
+              text: 'Tổng số đơn: ${s.stats.totalBookings}',
+              style: pw.TextStyle(font: font),
+            ),
+            pw.Bullet(
+              text: 'Sân được đặt nhiều nhất: ${s.stats.mostBookedPitch} (${s.stats.mostBookedPitchCount} lần)',
+              style: pw.TextStyle(font: font),
+            ),
+            pw.Bullet(
+              text: 'Khách hàng hàng đầu: ${s.stats.topCustomer} (${s.stats.topCustomerCount} đơn)',
+              style: pw.TextStyle(font: font),
+            ),
+            pw.Bullet(
+              text: 'Sân doanh thu cao nhất: ${s.stats.highestRevenuePitch} (${currencyFmt.format(s.stats.highestRevenuePitchAmount)})',
+              style: pw.TextStyle(font: font),
+            ),
+            pw.SizedBox(height: 16),
+            if (s.filteredBookings.isNotEmpty) ...[
+              pw.Header(level: 1, text: 'Chi tiết đặt sân'),
+              pw.Table.fromTextArray(
+                headers: ['Sân', 'Khách hàng', 'Ngày', 'Giá', 'Trạng thái'],
+                data: s.filteredBookings.map((b) => [
+                  b.pitchName,
+                  b.userName,
+                  b.bookingDate,
+                  currencyFmt.format(b.totalPrice),
+                  _statusLabel(b.status),
+                ]).toList(),
+                headerStyle: pw.TextStyle(font: boldFont, fontSize: 10),
+                cellStyle: pw.TextStyle(font: font, fontSize: 9),
+                cellAlignment: pw.Alignment.centerLeft,
+                headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
+              ),
+            ],
           ],
-        ],
-      ),
-    );
+        ),
+      );
 
-    await Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async => pdf.save(),
-      name: 'doanh_thu_${DateFormat('yyyyMMdd').format(now)}.pdf',
-    );
+      final pdfBytes = await pdf.save();
+      final fileName = 'doanh_thu_${DateFormat('yyyyMMdd').format(now)}.pdf';
+      final dir = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/$fileName');
+      await file.writeAsBytes(pdfBytes);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đã lưu vào Tải xuống: $fileName'),
+            backgroundColor: Colors.green.shade700,
+            duration: const Duration(seconds: 8),
+            action: SnackBarAction(
+              label: 'Mở file',
+              textColor: Colors.white,
+              onPressed: () => OpenFile.open(file.path),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error exporting PDF: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi xuất PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (!isClosed) {
+        final currentState = state;
+        if (currentState is ProviderRevenueLoaded) {
+          emit(currentState.copyWith(isExporting: false));
+        }
+      }
+    }
   }
 
   RevenueStats _computeStats(List<BookingResponseModel> bookings) {

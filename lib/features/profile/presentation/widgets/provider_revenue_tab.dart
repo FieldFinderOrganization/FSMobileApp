@@ -68,7 +68,7 @@ class _ProviderRevenueBody extends StatelessWidget {
                   color: AppColors.primaryRed,
                   onRefresh: () => context.read<ProviderRevenueCubit>().loadRevenue(),
                   child: ListView(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(context).padding.bottom),
                     children: [
                       _buildSummaryHeader(state),
                       const SizedBox(height: 12),
@@ -365,23 +365,37 @@ class _StatCard extends StatelessWidget {
 class _ExportButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primaryRed,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          elevation: 0,
-        ),
-        icon: const Icon(Icons.picture_as_pdf_outlined),
-        label: Text(
-          'Xuất báo cáo PDF',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15),
-        ),
-        onPressed: () => context.read<ProviderRevenueCubit>().exportPdf(context),
-      ),
+    return BlocBuilder<ProviderRevenueCubit, ProviderRevenueState>(
+      builder: (context, state) {
+        final isExporting = state is ProviderRevenueLoaded && state.isExporting;
+
+        return SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryRed,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            icon: isExporting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  )
+                : const Icon(Icons.picture_as_pdf_outlined),
+            label: Text(
+              isExporting ? 'Đang chuẩn bị PDF...' : 'Xuất báo cáo PDF',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15),
+            ),
+            onPressed: isExporting
+                ? null
+                : () => context.read<ProviderRevenueCubit>().exportPdf(context),
+          ),
+        );
+      },
     );
   }
 }
