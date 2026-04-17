@@ -55,6 +55,15 @@ class ApiConstants {
   static const String verifyCurrentPassword = '/users/verify-current-password';
   static const String changePasswordOtp = '/users/change-password-otp';
 
+  // Admin Detail endpoints
+  static const String adminUsers = '/admin/users';
+  static const String adminUserStats = '/admin/users/stats';
+  static const String adminBookingsList = '/admin/bookings';
+  static const String adminOrdersList = '/admin/orders';
+  static const String adminOrderStats = '/admin/orders/stats';
+  static const String adminPitchesList = '/admin/pitches';
+  static const String adminReviewStats = '/admin/reviews/stats';
+
   // Admin Statistics endpoints
   static const String adminStatisticsOverview = '/admin/statistics/overview';
   static const String adminStatisticsRevenue = '/admin/statistics/revenue';

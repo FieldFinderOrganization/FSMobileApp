@@ -17,6 +17,12 @@ import '../../data/models/recent_booking_model.dart';
 import '../../data/models/revenue_point_model.dart';
 import '../cubit/admin_dashboard_cubit.dart';
 import '../cubit/admin_dashboard_state.dart';
+import 'admin_bookings_screen.dart';
+import 'admin_orders_screen.dart';
+import 'admin_pitches_screen.dart';
+import 'admin_rating_screen.dart';
+import 'admin_revenue_screen.dart';
+import 'admin_users_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   final UserEntity user;
@@ -150,7 +156,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 24),
-                _buildKpiGrid(state.overview, state.revenueData),
+                _buildKpiGrid(state.overview, state.revenueData, state.pitchesByType),
                 const SizedBox(height: 24),
                 _buildRevenueChart(
                     state.revenueData, state.overview, state.selectedTimeRange),
@@ -316,8 +322,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   // ─── KPI GRID ─────────────────────────────────────────────────────────────
 
-  Widget _buildKpiGrid(
-      AdminOverviewModel overview, List<RevenuePointModel> revenueData) {
+  Widget _buildKpiGrid(AdminOverviewModel overview,
+      List<RevenuePointModel> revenueData, List<PitchTypeModel> pitchTypes) {
     final sparkSpots = _revenueToSpots(revenueData);
 
     String pct(double v) => '${v > 0 ? '+' : ''}${v.toStringAsFixed(1)}%';
@@ -325,43 +331,56 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         v > 0 ? _kTealMint : v < 0 ? _kCoralPink : Colors.grey.shade400;
     bool isPos(double v) => v > 0;
 
+    final ds = context.read<AdminDashboardCubit>().datasource;
+    void push(Widget screen) =>
+        Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+
     return Column(
       children: [
-        _buildLargeKpiCard(
-          title: 'Tổng doanh thu',
-          value: _formatRevenue(overview.totalRevenue),
-          change: pct(overview.revenueChangePercent),
-          changeColor: changeColor(overview.revenueChangePercent),
-          isPositive: isPos(overview.revenueChangePercent),
-          icon: Icons.account_balance_wallet_outlined,
-          accentColor: _kDeepIndigo,
-          sparklineSpots: sparkSpots,
-          bookingRevenue: overview.bookingRevenue,
-          productRevenue: overview.productRevenue,
+        GestureDetector(
+          onTap: () => push(AdminRevenueScreen(overview: overview, revenueData: revenueData)),
+          child: _buildLargeKpiCard(
+            title: 'Tổng doanh thu',
+            value: _formatRevenue(overview.totalRevenue),
+            change: pct(overview.revenueChangePercent),
+            changeColor: changeColor(overview.revenueChangePercent),
+            isPositive: isPos(overview.revenueChangePercent),
+            icon: Icons.account_balance_wallet_outlined,
+            accentColor: _kDeepIndigo,
+            sparklineSpots: sparkSpots,
+            bookingRevenue: overview.bookingRevenue,
+            productRevenue: overview.productRevenue,
+          ),
         ),
         const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
-              child: _buildCompactKpiCard(
-                title: 'Người dùng',
-                value: _formatNumber(overview.totalUsers),
-                change: pct(overview.usersChangePercent),
-                changeColor: changeColor(overview.usersChangePercent),
-                icon: Icons.people_outline,
-                accentColor: _kMidViolet,
-                sparklineSpots: const [],
+              child: GestureDetector(
+                onTap: () => push(AdminUsersScreen(datasource: ds)),
+                child: _buildCompactKpiCard(
+                  title: 'Người dùng',
+                  value: _formatNumber(overview.totalUsers),
+                  change: pct(overview.usersChangePercent),
+                  changeColor: changeColor(overview.usersChangePercent),
+                  icon: Icons.people_outline,
+                  accentColor: _kMidViolet,
+                  sparklineSpots: const [],
+                ),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildRingKpiCard(
-                title: 'Sân hoạt động',
-                value: _formatNumber(overview.totalPitches),
-                change: pct(overview.pitchesChangePercent),
-                changeColor: changeColor(overview.pitchesChangePercent),
-                accentColor: _kDeepIndigo,
-                progress: (overview.totalPitches / 200).clamp(0.0, 1.0),
+              child: GestureDetector(
+                onTap: () => push(AdminPitchesScreen(datasource: ds, pitchTypeData: pitchTypes)),
+                child: _buildRingKpiCard(
+                  title: 'Sân hoạt động',
+                  value: _formatNumber(overview.totalPitches),
+                  change: pct(overview.pitchesChangePercent),
+                  changeColor: changeColor(overview.pitchesChangePercent),
+                  accentColor: _kDeepIndigo,
+                  progress: (overview.totalPitches / 200).clamp(0.0, 1.0),
+                ),
               ),
             ),
           ],
@@ -370,33 +389,42 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         Row(
           children: [
             Expanded(
-              child: _buildCompactKpiCard(
-                title: 'Đặt sân hôm nay',
-                value: _formatNumber(overview.bookingsTodayCount),
-                change: pct(overview.bookingsTodayChangePercent),
-                changeColor: changeColor(overview.bookingsTodayChangePercent),
-                icon: Icons.calendar_today_outlined,
-                accentColor: _kTealMint,
-                sparklineSpots: const [],
+              child: GestureDetector(
+                onTap: () => push(AdminBookingsScreen(datasource: ds)),
+                child: _buildCompactKpiCard(
+                  title: 'Đặt sân hôm nay',
+                  value: _formatNumber(overview.bookingsTodayCount),
+                  change: pct(overview.bookingsTodayChangePercent),
+                  changeColor: changeColor(overview.bookingsTodayChangePercent),
+                  icon: Icons.calendar_today_outlined,
+                  accentColor: _kTealMint,
+                  sparklineSpots: const [],
+                ),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildRingKpiCard(
-                title: 'Đánh giá TB',
-                value: overview.averageRating.toStringAsFixed(1),
-                change: '/ 5.0 ★',
-                changeColor: Colors.grey.shade400,
-                accentColor: _kMidViolet,
-                progress: (overview.averageRating / 5.0).clamp(0.0, 1.0),
+              child: GestureDetector(
+                onTap: () => push(AdminRatingScreen(datasource: ds)),
+                child: _buildRingKpiCard(
+                  title: 'Đánh giá TB',
+                  value: overview.averageRating.toStringAsFixed(1),
+                  change: '/ 5.0 ★',
+                  changeColor: Colors.grey.shade400,
+                  accentColor: _kMidViolet,
+                  progress: (overview.averageRating / 5.0).clamp(0.0, 1.0),
+                ),
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        _buildPendingKpiCard(
-          value: _formatNumber(overview.pendingOrdersCount),
-          accentColor: _kWarning,
+        GestureDetector(
+          onTap: () => push(AdminOrdersScreen(datasource: ds)),
+          child: _buildPendingKpiCard(
+            value: _formatNumber(overview.pendingOrdersCount),
+            accentColor: _kWarning,
+          ),
         ),
       ],
     );
