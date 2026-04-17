@@ -61,7 +61,10 @@ class ApiConstants {
   static const String chatUnreadCount = '/chat/unread-count';
 
   // SockJS requires HTTP URL (not ws://), the library handles the upgrade internally
-  static String get wsBaseUrl => '${baseUrl.replaceFirst('/api', '')}/ws';
+  static String get wsBaseUrl {
+    final base = baseUrl.replaceFirst('/api', '');
+    return '$base/ws';
+  }
 
   // Cloudinary
   static String get cloudinaryUrl {

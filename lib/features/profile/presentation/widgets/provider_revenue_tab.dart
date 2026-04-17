@@ -7,6 +7,7 @@ import '../../../auth/domain/entities/user_entity.dart';
 import '../../../pitch/data/repositories/booking_repository_impl.dart';
 import '../cubit/provider_cubit.dart';
 import '../cubit/provider_revenue_cubit.dart';
+import '../pages/revenue_statistics_screen.dart';
 
 class ProviderRevenueTab extends StatelessWidget {
   final UserEntity user;
@@ -71,16 +72,27 @@ class _ProviderRevenueBody extends StatelessWidget {
                     children: [
                       _buildSummaryHeader(state),
                       const SizedBox(height: 12),
-                      _StatCard(
-                        icon: Icons.attach_money_rounded,
-                        iconColor: Colors.green,
-                        label: 'Tổng doanh thu',
-                        value: NumberFormat.currency(
-                          locale: 'vi_VN',
-                          symbol: '₫',
-                          decimalDigits: 0,
-                        ).format(state.stats.totalRevenue),
-                        subtitle: 'Từ các đơn đã thanh toán',
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => RevenueStatisticsScreen(
+                              bookings: state.allBookings,
+                              initialRange: state.selectedRange,
+                            ),
+                          ),
+                        ),
+                        child: _StatCard(
+                          icon: Icons.attach_money_rounded,
+                          iconColor: Colors.green,
+                          label: 'Tổng doanh thu',
+                          value: NumberFormat.currency(
+                            locale: 'vi_VN',
+                            symbol: '₫',
+                            decimalDigits: 0,
+                          ).format(state.stats.totalRevenue),
+                          subtitle: 'Bấm để xem chi tiết',
+                        ),
                       ),
                       const SizedBox(height: 10),
                       _StatCard(

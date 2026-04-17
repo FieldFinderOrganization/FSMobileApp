@@ -51,6 +51,7 @@ dependencies:
   stomp_dart_client: ^3.0.1
   pdf: ^3.11.1
   printing: ^5.13.2
+  fl_chart: ^0.70.2
 
 dev_dependencies:
   flutter_test:
