@@ -101,7 +101,7 @@ class _MainShellState extends State<MainShell>
                 // 2 — Shop
                 const ProductListScreen(),
                 // 3 — Chat
-                const ChatScreen(),
+                ChatScreen(currentUserId: currentUser.userId),
                 // 4 — Tôi
                 ProfileScreen(user: currentUser),
               ],

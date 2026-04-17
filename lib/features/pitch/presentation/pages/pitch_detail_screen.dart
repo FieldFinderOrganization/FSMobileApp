@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/network/dio_client.dart';
-// import '../../../../core/storage/token_storage.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../auth/login/presentation/bloc/auth_cubit.dart';
+import '../../../auth/login/presentation/bloc/auth_state.dart';
+import '../../../chat/presentation/pages/user_chat_screen.dart';
 import '../cubit/pitch_detail_cubit.dart';
 import '../cubit/pitch_detail_state.dart';
 import '../../data/datasources/pitch_remote_datasource.dart';
@@ -1000,6 +1002,44 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Row(
             children: [
+              // Chat button
+              Builder(builder: (context) {
+                final authState = context.watch<AuthCubit>().state;
+                final currentUserId = authState.currentUser?.userId ?? '';
+                final providerUserId = widget.pitch.providerUserId ?? '';
+                if (providerUserId.isEmpty || providerUserId == currentUserId) {
+                  return const SizedBox.shrink();
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => UserChatScreen(
+                            currentUserId: currentUserId,
+                            otherUserId: providerUserId,
+                            otherUserName:
+                                widget.pitch.providerName ?? 'Chủ sân',
+                          ),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                            color: AppColors.primaryRed, width: 1.5),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(Icons.chat_bubble_outline_rounded,
+                          color: AppColors.primaryRed, size: 22),
+                    ),
+                  ),
+                );
+              }),
               // Price display
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

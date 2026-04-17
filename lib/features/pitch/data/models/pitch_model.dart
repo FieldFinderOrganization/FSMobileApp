@@ -10,6 +10,8 @@ class PitchModel extends PitchEntity {
     required super.description,
     required super.imageUrls,
     super.address,
+    super.providerUserId,
+    super.providerName,
   });
 
   factory PitchModel.fromJson(Map<String, dynamic> json) {
@@ -25,6 +27,8 @@ class PitchModel extends PitchEntity {
               .toList() ??
           [],
       address: json['address'] as String? ?? '',
+      providerUserId: json['providerUserId'] as String?,
+      providerName: json['providerName'] as String?,
     );
   }
 }

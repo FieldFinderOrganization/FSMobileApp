@@ -20,9 +20,14 @@ class UserChatMessageModel {
     final rawTime = json['timestamp'] ?? json['sentAt'];
     DateTime sentAt;
     if (rawTime is int) {
-      sentAt = DateTime.fromMillisecondsSinceEpoch(rawTime);
+      sentAt = DateTime.fromMillisecondsSinceEpoch(rawTime).toLocal();
     } else if (rawTime != null) {
-      sentAt = DateTime.tryParse(rawTime.toString()) ?? DateTime.now();
+      final str = rawTime.toString();
+      // Nếu không có timezone suffix → coi là UTC rồi convert sang local
+      final normalized = (str.endsWith('Z') || str.contains('+') || str.contains('-', 10))
+          ? str
+          : '${str}Z';
+      sentAt = (DateTime.tryParse(normalized) ?? DateTime.now()).toLocal();
     } else {
       sentAt = DateTime.now();
     }

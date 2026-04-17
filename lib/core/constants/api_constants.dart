@@ -59,6 +59,8 @@ class ApiConstants {
   static const String chatHistory = '/chat/history';
   static const String chatMarkRead = '/chat/mark-read';
   static const String chatUnreadCount = '/chat/unread-count';
+  static const String chatConversations = '/chat/conversations';
+  static String userById(String userId) => '/users/$userId';
 
   // SockJS requires HTTP URL (not ws://), the library handles the upgrade internally
   static String get wsBaseUrl {

@@ -2,14 +2,71 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/network/dio_client.dart';
+import '../../data/datasources/user_chat_remote_datasource.dart';
 import '../cubit/chat_cubit.dart';
 import '../cubit/chat_state.dart';
+import '../cubit/conversation_list_cubit.dart';
 import '../widgets/chat_session_tile.dart';
 import 'chat_detail_screen.dart';
+import 'conversation_list_screen.dart';
 
 class ChatScreen extends StatelessWidget {
-  const ChatScreen({super.key});
+  final String currentUserId;
 
+  const ChatScreen({super.key, required this.currentUserId});
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          centerTitle: false,
+          title: Text(
+            'Chat',
+            style: GoogleFonts.inter(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1F2937),
+            ),
+          ),
+          bottom: TabBar(
+            labelColor: AppColors.primaryRed,
+            unselectedLabelColor: AppColors.textGrey,
+            indicatorColor: AppColors.primaryRed,
+            indicatorSize: TabBarIndicatorSize.label,
+            labelStyle:
+                GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14),
+            unselectedLabelStyle:
+                GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 14),
+            tabs: const [
+              Tab(text: 'AI Chat'),
+              Tab(text: 'Tin nhắn'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            _AiChatTab(),
+            BlocProvider(
+              create: (context) => ConversationListCubit(
+                datasource: UserChatRemoteDatasource(
+                    dioClient: context.read<DioClient>()),
+              ),
+              child: ConversationListScreen(currentUserId: currentUserId),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AiChatTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocListener<ChatCubit, ChatState>(
@@ -32,27 +89,10 @@ class ChatScreen extends StatelessWidget {
       },
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          centerTitle: false,
-          title: Text(
-            'Chat AI',
-            style: GoogleFonts.inter(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF1F2937),
-            ),
-          ),
-          actions: [
-            IconButton(
-              onPressed: () => context.read<ChatCubit>().createSession(),
-              icon: const Icon(Icons.add_circle_outline_rounded,
-                  color: AppColors.primaryRed, size: 26),
-              tooltip: 'Tạo cuộc trò chuyện mới',
-            ),
-            const SizedBox(width: 4),
-          ],
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => context.read<ChatCubit>().createSession(),
+          backgroundColor: AppColors.primaryRed,
+          child: const Icon(Icons.add, color: Colors.white),
         ),
         body: BlocBuilder<ChatCubit, ChatState>(
           builder: (context, state) {

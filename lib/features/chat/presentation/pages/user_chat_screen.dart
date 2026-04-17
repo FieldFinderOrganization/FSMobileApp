@@ -9,6 +9,17 @@ import '../../data/datasources/user_chat_remote_datasource.dart';
 import '../../data/datasources/user_chat_websocket_service.dart';
 import '../cubit/user_chat_cubit.dart';
 
+String _formatLastLogin(DateTime? time) {
+  if (time == null) return '';
+  final now = DateTime.now();
+  final diff = now.difference(time);
+  if (diff.inMinutes < 5) return 'Vừa hoạt động';
+  if (diff.inHours < 1) return 'Hoạt động ${diff.inMinutes} phút trước';
+  if (diff.inDays == 0) return 'Hoạt động lúc ${DateFormat('HH:mm').format(time)}';
+  if (diff.inDays == 1) return 'Hoạt động hôm qua lúc ${DateFormat('HH:mm').format(time)}';
+  return 'Hoạt động ${DateFormat('dd/MM/yyyy').format(time)}';
+}
+
 class UserChatScreen extends StatefulWidget {
   final String currentUserId;
   final String otherUserId;
@@ -27,21 +38,30 @@ class UserChatScreen extends StatefulWidget {
 
 class _UserChatScreenState extends State<UserChatScreen> {
   late UserChatCubit _cubit;
+  late UserChatRemoteDatasource _datasource;
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
+  DateTime? _otherUserLastLogin;
 
   @override
   void initState() {
     super.initState();
     final dioClient = context.read<DioClient>();
     final tokenStorage = context.read<TokenStorage>();
+    _datasource = UserChatRemoteDatasource(dioClient: dioClient);
     _cubit = UserChatCubit(
-      remoteDatasource: UserChatRemoteDatasource(dioClient: dioClient),
+      remoteDatasource: _datasource,
       wsService: UserChatWebSocketService(tokenStorage: tokenStorage),
       currentUserId: widget.currentUserId,
       otherUserId: widget.otherUserId,
     );
     _cubit.initChat();
+    _fetchOtherUserInfo();
+  }
+
+  Future<void> _fetchOtherUserInfo() async {
+    final lastLogin = await _datasource.getUserLastLogin(widget.otherUserId);
+    if (mounted) setState(() => _otherUserLastLogin = lastLogin);
   }
 
   @override
@@ -92,12 +112,17 @@ class _UserChatScreenState extends State<UserChatScreen> {
               BlocBuilder<UserChatCubit, UserChatState>(
                 builder: (context, state) {
                   final connected = state is UserChatLoaded && state.isConnected;
+                  if (!connected) {
+                    return Text(
+                      'Đang kết nối...',
+                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.textGrey),
+                    );
+                  }
+                  final label = _formatLastLogin(_otherUserLastLogin);
+                  if (label.isEmpty) return const SizedBox.shrink();
                   return Text(
-                    connected ? 'Đang hoạt động' : 'Đang kết nối...',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: connected ? Colors.green : AppColors.textGrey,
-                    ),
+                    label,
+                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textGrey),
                   );
                 },
               ),
@@ -271,6 +296,6 @@ class _UserChatScreenState extends State<UserChatScreen> {
     final text = _textController.text;
     if (text.trim().isEmpty) return;
     _textController.clear();
-    context.read<UserChatCubit>().sendMessage(text);
+    _cubit.sendMessage(text);
   }
 }

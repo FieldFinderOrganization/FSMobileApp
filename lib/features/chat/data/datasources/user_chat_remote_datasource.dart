@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/dio_client.dart';
+import '../models/conversation_model.dart';
 import '../models/user_chat_message_model.dart';
 
 class UserChatRemoteDatasource {
@@ -57,6 +58,34 @@ class UserChatRemoteDatasource {
         queryParameters: {'userId': userId},
       );
       return (response.data as num?)?.toInt() ?? 0;
+    } on DioException {
+      rethrow;
+    }
+  }
+
+  Future<DateTime?> getUserLastLogin(String userId) async {
+    try {
+      final response = await dioClient.dio.get(ApiConstants.userById(userId));
+      final raw = response.data['lastLoginAt'];
+      if (raw == null) return null;
+      if (raw is int) return DateTime.fromMillisecondsSinceEpoch(raw).toLocal();
+      final normalized = raw.toString().endsWith('Z') || raw.toString().contains('+')
+          ? raw.toString()
+          : '${raw}Z';
+      return DateTime.tryParse(normalized)?.toLocal();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<List<ConversationModel>> getConversations(String userId) async {
+    try {
+      final response = await dioClient.dio.get(
+        ApiConstants.chatConversations,
+        queryParameters: {'userId': userId},
+      );
+      final List<dynamic> items = response.data is List ? response.data : [];
+      return items.map((e) => ConversationModel.fromJson(e)).toList();
     } on DioException {
       rethrow;
     }

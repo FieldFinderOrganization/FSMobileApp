@@ -7,6 +7,8 @@ class PitchEntity {
   final String description;
   final List<String> imageUrls;
   final String address;
+  final String? providerUserId;
+  final String? providerName;
 
   const PitchEntity({
     required this.pitchId,
@@ -17,6 +19,8 @@ class PitchEntity {
     required this.description,
     required this.imageUrls,
     this.address = '',
+    this.providerUserId,
+    this.providerName,
   });
 
   String get primaryImage => imageUrls.isNotEmpty ? imageUrls.first : '';
