@@ -1,0 +1,31 @@
+# 1. Phân loại theo cấu trúc thư mục (Layer)
+"layer: core ⚙️":
+  - changed-files:
+      - any-glob-to-any-file: "lib/core/**/*"
+
+"layer: feature 🚀":
+  - changed-files:
+      - any-glob-to-any-file: "lib/features/**/*"
+
+"layer: shared 🧩":
+  - changed-files:
+      - any-glob-to-any-file: "lib/shared/**/*"
+
+"layer: app-root 📱":
+  - changed-files:
+      - any-glob-to-any-file: ["lib/main.dart", "lib/app.dart"]
+
+# 2. Phân loại cấu hình & thư viện
+"dependencies 📦":
+  - changed-files:
+      - any-glob-to-any-file:
+          ["pubspec.yaml", "pubspec.lock", "android/app/build.gradle"]
+
+# 3. Phân loại hệ thống CI/CD & Docs
+"ci-cd 🤖":
+  - changed-files:
+      - any-glob-to-any-file: ".github/**/*"
+
+"documentation 📝":
+  - changed-files:
+      - any-glob-to-any-file: ["*.md", "docs/**/*"]
