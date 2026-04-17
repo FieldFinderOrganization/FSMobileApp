@@ -232,7 +232,7 @@ class _ProviderRevenueBody extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Thống kê doanh th',
+                  'Thống kê doanh thu',
                   style: GoogleFonts.inter(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
