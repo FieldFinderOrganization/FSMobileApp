@@ -8,6 +8,7 @@ import '../../../register/presentation/pages/register_screen.dart';
 import '../../../otp/presentation/pages/otp_screen.dart';
 import '../../../forgot_password/presentation/pages/forgot_password_screen.dart';
 import '../../../../home/presentation/pages/main_shell.dart';
+import '../../../../admin/presentation/pages/admin_shell.dart';
 import '../../../shared/auth_widgets.dart';
 import '../bloc/auth_cubit.dart';
 import '../bloc/auth_state.dart';
@@ -93,12 +94,21 @@ class _LoginScreenBodyState extends State<_LoginScreenBody>
   }
 
   void _navigateToHome(BuildContext context, AuthSuccess state) {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (_) => MainShell(user: state.authToken.user),
-      ),
-      (route) => false,
-    );
+    if (state.authToken.user.role == 'ADMIN') {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => AdminShell(user: state.authToken.user),
+        ),
+        (route) => false,
+      );
+    } else {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => MainShell(user: state.authToken.user),
+        ),
+        (route) => false,
+      );
+    }
   }
 
   @override
