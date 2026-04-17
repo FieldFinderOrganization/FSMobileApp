@@ -7,7 +7,7 @@ import '../../../auth/domain/entities/user_entity.dart';
 import '../../../pitch/data/repositories/booking_repository_impl.dart';
 import '../cubit/provider_cubit.dart';
 import '../cubit/provider_revenue_cubit.dart';
-import '../pages/revenue_statistics_screen.dart';
+import '../pages/partner_insights_screen.dart';
 
 class ProviderRevenueTab extends StatelessWidget {
   final UserEntity user;
@@ -76,9 +76,9 @@ class _ProviderRevenueBody extends StatelessWidget {
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => RevenueStatisticsScreen(
+                            builder: (_) => PartnerInsightsScreen(
                               bookings: state.allBookings,
-                              initialRange: state.selectedRange,
+                              initialTab: InsightsTab.revenue,
                             ),
                           ),
                         ),
@@ -95,40 +95,84 @@ class _ProviderRevenueBody extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      _StatCard(
-                        icon: Icons.receipt_long_outlined,
-                        iconColor: Colors.blue,
-                        label: 'Tổng số đơn',
-                        value: '${state.stats.totalBookings} đơn',
-                        subtitle: 'Trong khoảng thời gian đã chọn',
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PartnerInsightsScreen(
+                              bookings: state.allBookings,
+                              initialTab: InsightsTab.bookings,
+                            ),
+                          ),
+                        ),
+                        child: _StatCard(
+                          icon: Icons.receipt_long_outlined,
+                          iconColor: Colors.blue,
+                          label: 'Tổng số đơn',
+                          value: '${state.stats.totalBookings} đơn',
+                          subtitle: 'Bấm để phân tích lượng đặt',
+                        ),
                       ),
                       const SizedBox(height: 10),
-                      _StatCard(
-                        icon: Icons.sports_soccer,
-                        iconColor: AppColors.primaryRed,
-                        label: 'Sân được đặt nhiều nhất',
-                        value: state.stats.mostBookedPitch,
-                        subtitle: '${state.stats.mostBookedPitchCount} lần đặt',
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PartnerInsightsScreen(
+                              bookings: state.allBookings,
+                              initialTab: InsightsTab.pitches,
+                            ),
+                          ),
+                        ),
+                        child: _StatCard(
+                          icon: Icons.sports_soccer,
+                          iconColor: AppColors.primaryRed,
+                          label: 'Sân được đặt nhiều nhất',
+                          value: state.stats.mostBookedPitch,
+                          subtitle: '${state.stats.mostBookedPitchCount} lần đặt. Bấm để xem chi tiết',
+                        ),
                       ),
                       const SizedBox(height: 10),
-                      _StatCard(
-                        icon: Icons.person_outline,
-                        iconColor: Colors.orange,
-                        label: 'Khách hàng hàng đầu',
-                        value: state.stats.topCustomer,
-                        subtitle: '${state.stats.topCustomerCount} đơn đặt',
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PartnerInsightsScreen(
+                              bookings: state.allBookings,
+                              initialTab: InsightsTab.customers,
+                            ),
+                          ),
+                        ),
+                        child: _StatCard(
+                          icon: Icons.person_outline,
+                          iconColor: Colors.orange,
+                          label: 'Khách hàng hàng đầu',
+                          value: state.stats.topCustomer,
+                          subtitle: '${state.stats.topCustomerCount} đơn đặt. Bấm để xem bảng xếp hạng',
+                        ),
                       ),
                       const SizedBox(height: 10),
-                      _StatCard(
-                        icon: Icons.trending_up_rounded,
-                        iconColor: Colors.purple,
-                        label: 'Sân doanh thu cao nhất',
-                        value: state.stats.highestRevenuePitch,
-                        subtitle: NumberFormat.currency(
-                          locale: 'vi_VN',
-                          symbol: '₫',
-                          decimalDigits: 0,
-                        ).format(state.stats.highestRevenuePitchAmount),
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PartnerInsightsScreen(
+                              bookings: state.allBookings,
+                              initialTab: InsightsTab.revenue,
+                            ),
+                          ),
+                        ),
+                        child: _StatCard(
+                          icon: Icons.trending_up_rounded,
+                          iconColor: Colors.purple,
+                          label: 'Sân doanh thu cao nhất',
+                          value: state.stats.highestRevenuePitch,
+                          subtitle: NumberFormat.currency(
+                            locale: 'vi_VN',
+                            symbol: '₫',
+                            decimalDigits: 0,
+                          ).format(state.stats.highestRevenuePitchAmount),
+                        ),
                       ),
                       const SizedBox(height: 24),
                       _ExportButton(),
