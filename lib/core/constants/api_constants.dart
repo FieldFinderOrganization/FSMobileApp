@@ -55,6 +55,19 @@ class ApiConstants {
   static const String verifyCurrentPassword = '/users/verify-current-password';
   static const String changePasswordOtp = '/users/change-password-otp';
 
+  // User-to-user Chat endpoints
+  static const String chatHistory = '/chat/history';
+  static const String chatMarkRead = '/chat/mark-read';
+  static const String chatUnreadCount = '/chat/unread-count';
+
+  static String get wsBaseUrl {
+    final base = baseUrl
+        .replaceFirst('/api', '')
+        .replaceFirst('http://', 'ws://')
+        .replaceFirst('https://', 'wss://');
+    return '$base/ws';
+  }
+
   // Cloudinary
   static String get cloudinaryUrl {
     final cloudName =

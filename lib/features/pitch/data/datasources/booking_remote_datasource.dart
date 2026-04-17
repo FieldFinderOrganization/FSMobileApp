@@ -55,4 +55,17 @@ class BookingRemoteDataSource {
       rethrow;
     }
   }
+
+  Future<List<BookingResponseModel>> getBookingsByProvider(String providerId) async {
+    try {
+      final response = await dioClient.dio.get(
+        '${ApiConstants.providerBookings}/$providerId',
+      );
+      return (response.data as List)
+          .map((e) => BookingResponseModel.fromJson(e))
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
