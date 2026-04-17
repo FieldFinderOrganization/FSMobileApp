@@ -12,6 +12,23 @@ class ProductCubit extends Cubit<ProductState> {
       : _repository = repository,
         super(const ProductState());
 
+  String? _sortParam([SortOption? option]) {
+    final opt = option ?? state.sortOption;
+    switch (opt) {
+      case SortOption.priceAsc:
+        return 'price,asc';
+      case SortOption.priceDesc:
+        return 'price,desc';
+      case SortOption.none:
+        return null;
+    }
+  }
+
+  String? get _brandParam {
+    if (state.selectedBrands.length == 1) return state.selectedBrands.first;
+    return null;
+  }
+
   int? _getCategoryIdFromName(String name) {
     if (name.isEmpty) return null;
     try {
@@ -22,15 +39,16 @@ class ProductCubit extends Cubit<ProductState> {
     }
   }
 
-  Future<void> loadProducts({int? categoryId}) async {
+  Future<void> loadProducts({int? categoryId, String? brand, String? sort}) async {
     emit(state.copyWith(
       status: LoadStatus.loading,
       currentPage: 0,
       hasMore: true,
       products: [],
+      priceRange: const RangeValues(0, 1000),
     ));
     try {
-      final result = await _repository.getAllProducts(page: 0, size: 10, categoryId: categoryId);
+      final result = await _repository.getAllProducts(page: 0, size: 10, categoryId: categoryId, brand: brand, sort: sort);
       final List<ProductEntity> products = result['products'] as List<ProductEntity>;
       final bool last = result['last'] as bool;
 
@@ -64,7 +82,7 @@ class ProductCubit extends Cubit<ProductState> {
     try {
       final nextPage = state.currentPage + 1;
       final categoryId = _getCategoryIdFromName(state.selectedCategory);
-      final result = await _repository.getAllProducts(page: nextPage, size: 10, categoryId: categoryId);
+      final result = await _repository.getAllProducts(page: nextPage, size: 10, categoryId: categoryId, brand: _brandParam, sort: _sortParam());
       final List<ProductEntity> newProducts = result['products'] as List<ProductEntity>;
       final bool last = result['last'] as bool;
 
@@ -103,7 +121,7 @@ class ProductCubit extends Cubit<ProductState> {
       selectedSubCategoryNames: {},
     ));
     final categoryId = _getCategoryIdFromName(newCategory);
-    loadProducts(categoryId: categoryId);
+    loadProducts(categoryId: categoryId, brand: _brandParam, sort: _sortParam());
   }
 
   void toggleSubCategory(String subCategoryName) {
@@ -116,11 +134,11 @@ class ProductCubit extends Cubit<ProductState> {
     if (isAlreadySelected) {
       // Back to parent category
       final parentCategoryId = _getCategoryIdFromName(state.selectedCategory);
-      loadProducts(categoryId: parentCategoryId);
+      loadProducts(categoryId: parentCategoryId, brand: _brandParam, sort: _sortParam());
     } else {
       // Load specifically for this subcategory
       final subCategoryId = _getCategoryIdFromName(subCategoryName);
-      loadProducts(categoryId: subCategoryId);
+      loadProducts(categoryId: subCategoryId, brand: _brandParam, sort: _sortParam());
     }
   }
 
@@ -132,6 +150,13 @@ class ProductCubit extends Cubit<ProductState> {
       current.add(brand);
     }
     emit(state.copyWith(selectedBrands: current));
+    final categoryId = _getCategoryIdFromName(
+      state.selectedSubCategoryNames.isNotEmpty
+          ? state.selectedSubCategoryNames.first
+          : state.selectedCategory,
+    );
+    final brandParam = current.length == 1 ? current.first : null;
+    loadProducts(categoryId: categoryId, brand: brandParam, sort: _sortParam());
   }
 
   void updatePriceRange(RangeValues values) {
@@ -140,6 +165,12 @@ class ProductCubit extends Cubit<ProductState> {
 
   void setSortOption(SortOption option) {
     emit(state.copyWith(sortOption: option));
+    final categoryId = _getCategoryIdFromName(
+      state.selectedSubCategoryNames.isNotEmpty
+          ? state.selectedSubCategoryNames.first
+          : state.selectedCategory,
+    );
+    loadProducts(categoryId: categoryId, brand: _brandParam, sort: _sortParam(option));
   }
 
   void clearFilters() {
@@ -151,6 +182,7 @@ class ProductCubit extends Cubit<ProductState> {
       sortOption: SortOption.none,
       priceRange: RangeValues(0, state.maxPriceInList),
     ));
+    loadProducts();
   }
 
   Future<void> reload() async {
@@ -159,7 +191,7 @@ class ProductCubit extends Cubit<ProductState> {
         ? state.selectedSubCategoryNames.first
         : state.selectedCategory;
     final categoryId = _getCategoryIdFromName(activeCategory);
-    await loadProducts(categoryId: categoryId);
+    await loadProducts(categoryId: categoryId, brand: _brandParam, sort: _sortParam());
   }
 
   void reset() {

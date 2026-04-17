@@ -12,9 +12,9 @@ class ProductRepositoryImpl implements ProductRepository {
   ProductRepositoryImpl(this._remoteDataSource);
 
   @override
-  Future<Map<String, dynamic>> getAllProducts({int page = 0, int size = 10, int? categoryId}) async {
+  Future<Map<String, dynamic>> getAllProducts({int page = 0, int size = 10, int? categoryId, String? brand, String? sort}) async {
     try {
-      final data = await _remoteDataSource.getAllProducts(page: page, size: size, categoryId: categoryId);
+      final data = await _remoteDataSource.getAllProducts(page: page, size: size, categoryId: categoryId, brand: brand, sort: sort);
       final products = (data['content'] as List)
           .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
           .toList();

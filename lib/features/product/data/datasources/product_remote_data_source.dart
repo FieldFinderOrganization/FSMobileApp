@@ -7,9 +7,11 @@ class ProductRemoteDataSource {
 
   ProductRemoteDataSource(this._dio);
 
-  Future<Map<String, dynamic>> getAllProducts({int page = 0, int size = 10, int? categoryId}) async {
+  Future<Map<String, dynamic>> getAllProducts({int page = 0, int size = 10, int? categoryId, String? brand, String? sort}) async {
     final Map<String, dynamic> params = {'page': page, 'size': size};
     if (categoryId != null) params['categoryId'] = categoryId;
+    if (brand != null && brand.isNotEmpty) params['brand'] = brand;
+    if (sort != null && sort.isNotEmpty) params['sort'] = sort;
     final response = await _dio.get(
       ApiConstants.products,
       queryParameters: params,

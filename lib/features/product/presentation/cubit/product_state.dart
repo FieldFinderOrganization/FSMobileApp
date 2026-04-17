@@ -60,19 +60,9 @@ class ProductState {
   List<ProductEntity> get filteredProducts {
     var result = products;
 
-    // Category and subcategory filtering are handled entirely server-side.
-    // Apply Other Filters (Search, Brand, Price)
+    // Category, subcategory, brand, and sort are handled server-side.
+    // Only apply lightweight client-side filters (search query, price range).
     result = _applyOtherFilters(result);
-
-    // Sort
-    switch (sortOption) {
-      case SortOption.priceAsc:
-        result = [...result]..sort((a, b) => (a.salePrice ?? a.price).compareTo(b.salePrice ?? b.price));
-      case SortOption.priceDesc:
-        result = [...result]..sort((a, b) => (b.salePrice ?? b.price).compareTo(a.salePrice ?? a.price));
-      case SortOption.none:
-        break;
-    }
 
     return result;
   }
@@ -87,18 +77,13 @@ class ProductState {
 
   List<ProductEntity> _applyOtherFilters(List<ProductEntity> input) {
     var result = input;
-    // Filter by Search Query
+    // Filter by Search Query (client-side — instant feedback, no reload needed)
     if (searchQuery.isNotEmpty) {
       final query = searchQuery.toLowerCase();
       result = result.where((p) => p.name.toLowerCase().contains(query)).toList();
     }
 
-    // Filter by Brand
-    if (selectedBrands.isNotEmpty) {
-      result = result.where((p) => selectedBrands.contains(p.brand)).toList();
-    }
-
-    // Filter by Price
+    // Filter by Price Range (client-side slider)
     result = result.where((p) {
       final effectivePrice = p.salePrice ?? p.price;
       return effectivePrice >= priceRange.start && effectivePrice <= priceRange.end;
