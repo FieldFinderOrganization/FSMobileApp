@@ -108,7 +108,8 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen>
 
       if (status != 'CANCELED') {
         for (var slot in b.slots) {
-          if (slot >= 0 && slot < 24) _slotUsage[slot]++;
+          final hour = slot + 4;
+          if (hour >= 0 && hour < 24) _slotUsage[hour]++;
         }
       }
 
@@ -726,9 +727,17 @@ class _DonutChartState extends State<_DonutChart> {
                   centerSpaceRadius: 60,
                   sectionsSpace: 3,
                   pieTouchData: PieTouchData(
-                    touchCallback: (event, response) {
+                    touchCallback: (FlTouchEvent event, pieTouchResponse) {
                       setState(() {
-                        _touchedIndex = response?.touchedSection?.touchedSectionIndex ?? -1;
+                        if (event is FlTapDownEvent) {
+                          if (pieTouchResponse?.touchedSection != null &&
+                              pieTouchResponse!.touchedSection!.touchedSectionIndex != -1) {
+                            final index = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                            _touchedIndex = _touchedIndex == index ? -1 : index;
+                          } else {
+                            _touchedIndex = -1;
+                          }
+                        }
                       });
                     },
                   ),
@@ -747,10 +756,11 @@ class _DonutChartState extends State<_DonutChart> {
             ],
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 32),
         // Legend
         Column(
           children: List.generate(entries.length, (i) {
+            final isTouched = i == _touchedIndex;
             final pct = entries[i].value / total * 100;
             final color = widget.isStatus
                 ? _statusColor(entries[i].key)
@@ -762,34 +772,55 @@ class _DonutChartState extends State<_DonutChart> {
                 ? _formatCompact(entries[i].value)
                 : entries[i].value.toInt().toString();
 
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
-                children: [
-                  Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  _touchedIndex = _touchedIndex == i ? -1 : i;
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                margin: const EdgeInsets.only(bottom: 6),
+                decoration: BoxDecoration(
+                  color: isTouched ? color.withValues(alpha: 0.1) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isTouched ? color.withValues(alpha: 0.3) : Colors.transparent,
+                    width: 1,
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(label,
-                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark),
-                        overflow: TextOverflow.ellipsis),
-                  ),
-                  Text(valStr,
-                      style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textDark)),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
                     ),
-                    child: Text('${pct.toStringAsFixed(1)}%',
-                        style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
-                  ),
-                ],
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(label,
+                          style: GoogleFonts.inter(
+                            fontSize: 13, 
+                            fontWeight: isTouched ? FontWeight.w800 : FontWeight.w600, 
+                            color: isTouched ? AppColors.textDark : AppColors.textGrey
+                          ),
+                          overflow: TextOverflow.ellipsis),
+                    ),
+                    Text(valStr,
+                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text('${pct.toStringAsFixed(1)}%',
+                          style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+                    ),
+                  ],
+                ),
               ),
             );
           }),
@@ -800,16 +831,23 @@ class _DonutChartState extends State<_DonutChart> {
 }
 
 // ─── Peak hour bar chart ──────────────────────────────────────────────────────
-class _PeakHourChart extends StatelessWidget {
+class _PeakHourChart extends StatefulWidget {
   final List<int> data;
   const _PeakHourChart({required this.data});
 
   @override
-  Widget build(BuildContext context) {
-    if (data.every((v) => v == 0)) return _emptyState();
+  State<_PeakHourChart> createState() => _PeakHourChartState();
+}
 
-    final maxVal = data.reduce((a, b) => a > b ? a : b);
-    final peakHour = data.indexOf(maxVal);
+class _PeakHourChartState extends State<_PeakHourChart> {
+  int? _touchedIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.data.every((v) => v == 0)) return _emptyState();
+
+    final maxVal = widget.data.reduce((a, b) => a > b ? a : b);
+    final peakHour = widget.data.indexOf(maxVal);
     final chartMax = maxVal == 0 ? 10.0 : maxVal * 1.3;
 
     return SizedBox(
@@ -857,6 +895,19 @@ class _PeakHourChart extends StatelessWidget {
             ),
           ),
           barTouchData: BarTouchData(
+            touchCallback: (FlTouchEvent event, barTouchResponse) {
+              setState(() {
+                if (event is FlTapDownEvent) {
+                  if (barTouchResponse?.spot != null &&
+                      barTouchResponse!.spot!.touchedBarGroupIndex != -1) {
+                    final index = barTouchResponse.spot!.touchedBarGroupIndex;
+                    _touchedIndex = _touchedIndex == index ? null : index;
+                  } else {
+                    _touchedIndex = null;
+                  }
+                }
+              });
+            },
             touchTooltipData: BarTouchTooltipData(
               getTooltipColor: (_) => AppColors.textDark,
               tooltipRoundedRadius: 10,
@@ -867,13 +918,13 @@ class _PeakHourChart extends StatelessWidget {
               ),
             ),
           ),
-          barGroups: List.generate(data.length, (i) {
+          barGroups: List.generate(widget.data.length, (i) {
             final isPeak = i == peakHour;
             return BarChartGroupData(
               x: i,
               barRods: [
                 BarChartRodData(
-                  toY: data[i].toDouble(),
+                  toY: widget.data[i].toDouble(),
                   gradient: isPeak
                       ? const LinearGradient(
                           colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
@@ -894,8 +945,8 @@ class _PeakHourChart extends StatelessWidget {
                   ),
                 ),
               ],
-              // badge for peak hour
-              showingTooltipIndicators: isPeak ? [0] : [],
+              // badge for peak hour dynamically responds to touches
+              showingTooltipIndicators: (_touchedIndex == null && isPeak) || _touchedIndex == i ? [0] : [],
             );
           }),
         ),
