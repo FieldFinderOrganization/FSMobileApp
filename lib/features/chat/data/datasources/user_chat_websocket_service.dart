@@ -84,6 +84,8 @@ class UserChatWebSocketService {
     required String senderId,
     required String receiverId,
     required String content,
+    String type = 'TEXT',
+    String? imageUrl,
   }) {
     if (!isConnected) return;
     _client!.send(
@@ -92,6 +94,8 @@ class UserChatWebSocketService {
         'senderId': senderId,
         'receiverId': receiverId,
         'content': content,
+        'type': type,
+        if (imageUrl != null) 'imageUrl': imageUrl,
       }),
     );
   }

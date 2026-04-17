@@ -1,12 +1,16 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/storage/token_storage.dart';
 import '../../data/datasources/user_chat_remote_datasource.dart';
 import '../../data/datasources/user_chat_websocket_service.dart';
+import '../../data/models/user_chat_message_model.dart';
 import '../cubit/user_chat_cubit.dart';
 
 String _formatLastLogin(DateTime? time) {
@@ -41,7 +45,9 @@ class _UserChatScreenState extends State<UserChatScreen> {
   late UserChatRemoteDatasource _datasource;
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
+  final _imagePicker = ImagePicker();
   DateTime? _otherUserLastLogin;
+  Timer? _labelTimer;
 
   @override
   void initState() {
@@ -57,6 +63,9 @@ class _UserChatScreenState extends State<UserChatScreen> {
     );
     _cubit.initChat();
     _fetchOtherUserInfo();
+    _labelTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) setState(() {});
+    });
   }
 
   Future<void> _fetchOtherUserInfo() async {
@@ -66,6 +75,7 @@ class _UserChatScreenState extends State<UserChatScreen> {
 
   @override
   void dispose() {
+    _labelTimer?.cancel();
     _cubit.closeChat();
     _cubit.close();
     _textController.dispose();
@@ -83,6 +93,58 @@ class _UserChatScreenState extends State<UserChatScreen> {
         );
       }
     });
+  }
+
+  Future<void> _pickImage() async {
+    final picked = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+    if (picked != null) {
+      _cubit.sendImage(File(picked.path));
+    }
+  }
+
+  Future<void> _pickImageFromCamera() async {
+    final picked = await _imagePicker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 80,
+    );
+    if (picked != null) {
+      _cubit.sendImage(File(picked.path));
+    }
+  }
+
+  void _showImageSourceSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: Text('Thư viện ảnh', style: GoogleFonts.inter()),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: Text('Máy ảnh', style: GoogleFonts.inter()),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImageFromCamera();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -136,6 +198,102 @@ class _UserChatScreenState extends State<UserChatScreen> {
             _buildInputBar(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMessageBubble(UserChatMessageModel msg, bool isMe) {
+    if (msg.isImage) {
+      return _buildImageBubble(msg, isMe);
+    }
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width * 0.72,
+      ),
+      decoration: BoxDecoration(
+        color: isMe ? AppColors.primaryRed : const Color(0xFFF0F0F0),
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(16),
+          topRight: const Radius.circular(16),
+          bottomLeft: Radius.circular(isMe ? 16 : 4),
+          bottomRight: Radius.circular(isMe ? 4 : 16),
+        ),
+      ),
+      child: Text(
+        msg.content,
+        style: GoogleFonts.inter(
+          fontSize: 14,
+          color: isMe ? Colors.white : AppColors.textDark,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageBubble(UserChatMessageModel msg, bool isMe) {
+    // imageUrl có thể là URL Cloudinary (http) hoặc local path (optimistic)
+    final isLocalFile = msg.imageUrl != null && !msg.imageUrl!.startsWith('http');
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width * 0.65,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(16),
+          topRight: const Radius.circular(16),
+          bottomLeft: Radius.circular(isMe ? 16 : 4),
+          bottomRight: Radius.circular(isMe ? 4 : 16),
+        ),
+        child: isLocalFile
+            ? Stack(
+                children: [
+                  Image.file(
+                    File(msg.imageUrl!),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => _brokenImagePlaceholder(),
+                  ),
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.black26,
+                      child: const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            : Image.network(
+                msg.imageUrl!,
+                fit: BoxFit.cover,
+                loadingBuilder: (_, child, progress) {
+                  if (progress == null) return child;
+                  return Container(
+                    width: 200,
+                    height: 150,
+                    color: const Color(0xFFF0F0F0),
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primaryRed,
+                      ),
+                    ),
+                  );
+                },
+                errorBuilder: (_, _, _) => _brokenImagePlaceholder(),
+              ),
+      ),
+    );
+  }
+
+  Widget _brokenImagePlaceholder() {
+    return Container(
+      width: 200,
+      height: 150,
+      color: const Color(0xFFF0F0F0),
+      child: const Center(
+        child: Icon(Icons.broken_image_outlined, color: Colors.grey, size: 40),
       ),
     );
   }
@@ -198,29 +356,7 @@ class _UserChatScreenState extends State<UserChatScreen> {
                     ),
                   Align(
                     alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 4),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      constraints: BoxConstraints(
-                        maxWidth: MediaQuery.of(context).size.width * 0.72,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isMe ? AppColors.primaryRed : const Color(0xFFF0F0F0),
-                        borderRadius: BorderRadius.only(
-                          topLeft: const Radius.circular(16),
-                          topRight: const Radius.circular(16),
-                          bottomLeft: Radius.circular(isMe ? 16 : 4),
-                          bottomRight: Radius.circular(isMe ? 4 : 16),
-                        ),
-                      ),
-                      child: Text(
-                        msg.content,
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: isMe ? Colors.white : AppColors.textDark,
-                        ),
-                      ),
-                    ),
+                    child: _buildMessageBubble(msg, isMe),
                   ),
                 ],
               );
@@ -242,6 +378,22 @@ class _UserChatScreenState extends State<UserChatScreen> {
         ),
         child: Row(
           children: [
+            BlocBuilder<UserChatCubit, UserChatState>(
+              builder: (context, state) {
+                final sending = state is UserChatLoaded && state.isSending;
+                return GestureDetector(
+                  onTap: sending ? null : _showImageSourceSheet,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Icon(
+                      Icons.image_outlined,
+                      color: sending ? AppColors.textGrey : AppColors.primaryRed,
+                      size: 26,
+                    ),
+                  ),
+                );
+              },
+            ),
             Expanded(
               child: TextField(
                 controller: _textController,

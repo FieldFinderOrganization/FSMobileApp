@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/datasources/user_chat_remote_datasource.dart';
@@ -111,9 +112,17 @@ class UserChatCubit extends Cubit<UserChatState> {
 
   void _onIncomingMessage(UserChatMessageModel msg) {
     if (state is! UserChatLoaded) return;
-    // Ignore messages not in this conversation
     if (msg.senderId != otherUserId && msg.senderId != currentUserId) return;
     final s = state as UserChatLoaded;
+
+    // Bỏ qua nếu ảnh này đã được hiển thị qua optimistic update
+    if (msg.isImage && msg.imageUrl != null && msg.senderId == currentUserId) {
+      final alreadyShown = s.messages.any(
+        (m) => m.isImage && m.imageUrl == msg.imageUrl && !m.imageUrl!.startsWith(RegExp(r'/|[A-Z]:\\')),
+      );
+      if (alreadyShown) return;
+    }
+
     emit(s.copyWith(messages: [...s.messages, msg]));
     if (msg.senderId == otherUserId) {
       remoteDatasource.markRead(
@@ -149,6 +158,70 @@ class UserChatCubit extends Cubit<UserChatState> {
     } else {
       // Queue and retry when connection is ready
       _pendingMessages.add(trimmed);
+    }
+  }
+
+  Future<void> sendImage(File imageFile) async {
+    if (state is! UserChatLoaded) return;
+    final s = state as UserChatLoaded;
+
+    final optimisticId = DateTime.now().millisecondsSinceEpoch.toString();
+    final optimistic = UserChatMessageModel(
+      id: optimisticId,
+      senderId: currentUserId,
+      receiverId: otherUserId,
+      content: '',
+      imageUrl: imageFile.path,
+      type: 'IMAGE',
+      sentAt: DateTime.now(),
+      isRead: false,
+    );
+    emit(s.copyWith(messages: [...s.messages, optimistic], isSending: true));
+
+    try {
+      final imageUrl = await remoteDatasource.uploadChatImage(
+        file: imageFile,
+        senderId: currentUserId,
+      );
+
+      // Replace optimistic (local path) bằng Cloudinary URL để tắt spinner
+      if (state is UserChatLoaded) {
+        final current = state as UserChatLoaded;
+        final confirmed = UserChatMessageModel(
+          id: optimisticId,
+          senderId: currentUserId,
+          receiverId: otherUserId,
+          content: '',
+          imageUrl: imageUrl,
+          type: 'IMAGE',
+          sentAt: optimistic.sentAt,
+          isRead: false,
+        );
+        emit(current.copyWith(
+          messages: current.messages
+              .map((m) => m.id == optimisticId ? confirmed : m)
+              .toList(),
+          isSending: false,
+        ));
+      }
+
+      if (wsService.isConnected) {
+        wsService.sendMessage(
+          senderId: currentUserId,
+          receiverId: otherUserId,
+          content: '',
+          type: 'IMAGE',
+          imageUrl: imageUrl,
+        );
+      }
+    } catch (_) {
+      if (state is UserChatLoaded) {
+        final current = state as UserChatLoaded;
+        emit(current.copyWith(
+          messages: current.messages.where((m) => m.id != optimisticId).toList(),
+          isSending: false,
+        ));
+      }
     }
   }
 

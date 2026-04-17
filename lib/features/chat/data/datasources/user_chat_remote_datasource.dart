@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/dio_client.dart';
@@ -75,6 +76,25 @@ class UserChatRemoteDatasource {
       return DateTime.tryParse(normalized)?.toLocal();
     } catch (_) {
       return null;
+    }
+  }
+
+  Future<String> uploadChatImage({
+    required File file,
+    required String senderId,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(file.path),
+        'senderId': senderId,
+      });
+      final response = await dioClient.dio.post(
+        ApiConstants.chatUploadImage,
+        data: formData,
+      );
+      return response.data['imageUrl'] as String;
+    } on DioException {
+      rethrow;
     }
   }
 

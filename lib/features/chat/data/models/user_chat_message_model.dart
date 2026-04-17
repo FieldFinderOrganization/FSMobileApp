@@ -3,6 +3,8 @@ class UserChatMessageModel {
   final String senderId;
   final String receiverId;
   final String content;
+  final String? imageUrl;
+  final String type; // 'TEXT' | 'IMAGE'
   final DateTime sentAt;
   final bool isRead;
 
@@ -11,19 +13,21 @@ class UserChatMessageModel {
     required this.senderId,
     required this.receiverId,
     required this.content,
+    this.imageUrl,
+    this.type = 'TEXT',
     required this.sentAt,
     required this.isRead,
   });
 
+  bool get isImage => type == 'IMAGE' || imageUrl != null && imageUrl!.isNotEmpty;
+
   factory UserChatMessageModel.fromJson(Map<String, dynamic> json) {
-    // Backend field: messageId (UUID), timestamp (Date), isRead (Boolean)
     final rawTime = json['timestamp'] ?? json['sentAt'];
     DateTime sentAt;
     if (rawTime is int) {
       sentAt = DateTime.fromMillisecondsSinceEpoch(rawTime).toLocal();
     } else if (rawTime != null) {
       final str = rawTime.toString();
-      // Nếu không có timezone suffix → coi là UTC rồi convert sang local
       final normalized = (str.endsWith('Z') || str.contains('+') || str.contains('-', 10))
           ? str
           : '${str}Z';
@@ -37,6 +41,8 @@ class UserChatMessageModel {
       senderId: json['senderId']?.toString() ?? '',
       receiverId: json['receiverId']?.toString() ?? '',
       content: json['content'] ?? '',
+      imageUrl: json['imageUrl']?.toString(),
+      type: json['type']?.toString() ?? 'TEXT',
       sentAt: sentAt,
       isRead: json['isRead'] == true || json['read'] == true,
     );
@@ -47,6 +53,8 @@ class UserChatMessageModel {
       'senderId': senderId,
       'receiverId': receiverId,
       'content': content,
+      if (imageUrl != null) 'imageUrl': imageUrl,
+      'type': type,
     };
   }
 }
