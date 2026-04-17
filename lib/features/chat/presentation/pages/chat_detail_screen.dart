@@ -10,6 +10,8 @@ import '../cubit/chat_state.dart';
 import '../widgets/ai_product_card.dart';
 import '../../../checkout/domain/entities/checkout_item_entity.dart';
 import '../../../checkout/presentation/pages/checkout_screen.dart';
+import '../../../pitch/domain/entities/pitch_entity.dart';
+import '../../../pitch/presentation/pages/pitch_detail_screen.dart';
 import '../widgets/chat_bubble.dart';
 
 class ChatDetailScreen extends StatefulWidget {
@@ -151,6 +153,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                                 _CheckoutButton(aiData: msg.aiData!),
                               if (!msg.isUser &&
                                   msg.aiData != null &&
+                                  msg.aiData!['showBookingButton'] == true &&
+                                  msg.aiData!['suggestedPitch'] != null)
+                                _BookPitchButton(aiData: msg.aiData!),
+                              if (!msg.isUser &&
+                                  msg.aiData != null &&
                                   msg.aiData!['products'] != null)
                                 _ProductList(
                                     products: (msg.aiData!['products']
@@ -220,7 +227,7 @@ class _ProductList extends StatelessWidget {
   Widget build(BuildContext context) {
     if (products.isEmpty) return const SizedBox.shrink();
     return SizedBox(
-      height: 210,
+      height: 266,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.only(left: 12, right: 4, top: 8, bottom: 8),
@@ -419,6 +426,60 @@ class _InputBar extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _BookPitchButton extends StatelessWidget {
+  final Map<String, dynamic> aiData;
+  const _BookPitchButton({required this.aiData});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, right: 60, top: 8, bottom: 4),
+      child: ElevatedButton.icon(
+        onPressed: () => _openPitch(context),
+        icon: const Icon(Icons.sports_soccer, size: 18),
+        label: Text(
+          'Đặt sân ngay',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primaryRed,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      ),
+    );
+  }
+
+  void _openPitch(BuildContext context) {
+    final raw = aiData['suggestedPitch'] as Map<String, dynamic>?;
+    if (raw == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không tìm thấy thông tin sân')),
+      );
+      return;
+    }
+    final pitch = PitchEntity(
+      pitchId: (raw['pitchId'] ?? raw['id'] ?? '').toString(),
+      name: raw['name'] as String? ?? '',
+      type: raw['type'] as String? ?? 'FIVE_A_SIDE',
+      environment: raw['environment'] as String? ?? 'OUTDOOR',
+      price: (raw['price'] as num?)?.toDouble() ?? 0,
+      description: raw['description'] as String? ?? '',
+      imageUrls: (raw['imageUrls'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      address: raw['address'] as String? ?? '',
+    );
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => PitchDetailScreen(pitch: pitch)),
     );
   }
 }

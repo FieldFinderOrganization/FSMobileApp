@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/constants/api_constants.dart';
 
@@ -13,6 +14,9 @@ class AIChatRemoteDatasource {
       ApiConstants.aiChat,
       data: {'userInput': userInput, 'sessionId': sessionId},
     );
+    if (kDebugMode) {
+      debugPrint('[AIChat] sendMessage "$userInput" -> ${response.statusCode}: ${response.data}');
+    }
     return response.data as Map<String, dynamic>;
   }
 

@@ -90,7 +90,10 @@ class ChatCubit extends Cubit<ChatState> {
         current.session.sessionId,
       );
 
-      final aiMessage = response['message'] as String? ?? '';
+      final rawMessage = (response['message'] as String?)?.trim() ?? '';
+      final aiMessage = rawMessage.isEmpty
+          ? 'Xin lỗi, mình chưa nhận được phản hồi phù hợp. Bạn thử diễn đạt lại nhé (vd: "cho xem các sân 5 người" hoặc "giày rẻ nhất").'
+          : rawMessage;
       final aiData = response['data'] as Map<String, dynamic>?;
 
       final aiMsg = ChatMessageModel(
@@ -159,7 +162,10 @@ class ChatCubit extends Cubit<ChatState> {
         current.session.sessionId,
       );
 
-      final aiMessage = response['message'] as String? ?? '';
+      final rawMessage = (response['message'] as String?)?.trim() ?? '';
+      final aiMessage = rawMessage.isEmpty
+          ? 'Mình chưa nhận diện được sản phẩm từ hình ảnh. Bạn thử chụp rõ hơn nhé.'
+          : rawMessage;
       final aiData = response['data'] as Map<String, dynamic>?;
 
       final aiMsg = ChatMessageModel(

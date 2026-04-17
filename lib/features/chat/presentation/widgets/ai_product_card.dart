@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../../../product/presentation/pages/product_detail_screen.dart';
+
 class AiProductCard extends StatelessWidget {
   final Map<String, dynamic> product;
 
@@ -19,8 +21,28 @@ class AiProductCard extends StatelessWidget {
     final hasSale = salePrice != null && salePrice < price;
     final formatter = NumberFormat('#,###', 'vi_VN');
 
-    return Container(
-      width: 140,
+    const double cardWidth = 150;
+    const double imageHeight = 120;
+    const double nameSlotHeight = 34; // vừa đủ 2 dòng với fontSize 12, height 1.3
+    const double cardHeight = 250;
+
+    final rawId = product['id'] ?? product['productId'];
+    final productId = rawId?.toString();
+
+    return GestureDetector(
+      onTap: (productId == null || productId.isEmpty)
+          ? null
+          : () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ProductDetailScreen(productId: productId),
+                ),
+              );
+            },
+      child: Container(
+      width: cardWidth,
+      height: cardHeight,
       margin: const EdgeInsets.only(right: 10),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -42,67 +64,81 @@ class AiProductCard extends StatelessWidget {
             child: imageUrl.isNotEmpty
                 ? Image.network(
                     imageUrl,
-                    height: 110,
+                    height: imageHeight,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _placeholder(),
+                    errorBuilder: (_, __, ___) => _placeholder(imageHeight),
                   )
-                : _placeholder(),
+                : _placeholder(imageHeight),
           ),
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (category.isNotEmpty)
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    height: 14,
+                    child: Text(
+                      category,
+                      style: GoogleFonts.inter(fontSize: 10, color: Colors.grey),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  SizedBox(
+                    height: nameSlotHeight,
+                    child: Text(
+                      name,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        height: 1.3,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF1F2937),
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const Spacer(),
                   Text(
-                    category,
+                    '${formatter.format(displayPrice)}đ',
                     style: GoogleFonts.inter(
-                      fontSize: 10,
-                      color: Colors.grey,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFFDC2626),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                const SizedBox(height: 2),
-                Text(
-                  name,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF1F2937),
+                  SizedBox(
+                    height: 14,
+                    child: hasSale
+                        ? Text(
+                            '${formatter.format(price)}đ',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              color: Colors.grey,
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          )
+                        : const SizedBox.shrink(),
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${formatter.format(displayPrice)}đ',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFFDC2626),
-                  ),
-                ),
-                if (hasSale)
-                  Text(
-                    '${formatter.format(price)}đ',
-                    style: GoogleFonts.inter(
-                      fontSize: 10,
-                      color: Colors.grey,
-                      decoration: TextDecoration.lineThrough,
-                    ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
       ),
+      ),
     );
   }
 
-  Widget _placeholder() => Container(
-        height: 110,
+  Widget _placeholder(double height) => Container(
+        height: height,
         color: const Color(0xFFF3F4F6),
         child: const Center(
           child: Icon(Icons.image_outlined, color: Colors.grey, size: 32),
