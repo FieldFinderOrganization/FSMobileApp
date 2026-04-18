@@ -15,6 +15,8 @@ import '../../../cart/presentation/cubit/cart_cubit.dart';
 import 'edit_profile_screen.dart';
 import 'change_password_screen.dart';
 import 'provider_management_screen.dart';
+import '../../../admin/presentation/cubit/admin_dashboard_cubit.dart';
+import '../../../admin/presentation/pages/admin_shell.dart';
 
 class ProfileScreen extends StatelessWidget {
   final UserEntity user;
@@ -410,6 +412,20 @@ class _ProfileBody extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (_) => ProviderManagementScreen(user: user),
+                  ),
+                );
+              },
+            ),
+          if (user.role == 'ADMIN')
+            _ActionRow(
+              icon: Icons.admin_panel_settings_outlined,
+              label: 'Quản trị ứng dụng',
+              onTap: () {
+                context.read<AdminDashboardCubit>().loadDashboard();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AdminShell(user: user),
                   ),
                 );
               },

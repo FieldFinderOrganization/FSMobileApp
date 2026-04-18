@@ -32,6 +32,8 @@ import 'features/profile/domain/repositories/provider_repository.dart';
 import 'features/chat/data/datasources/ai_chat_remote_datasource.dart';
 import 'features/chat/data/datasources/chat_local_datasource.dart';
 import 'features/chat/presentation/cubit/chat_cubit.dart';
+import 'features/admin/data/datasources/admin_statistics_datasource.dart';
+import 'features/admin/presentation/cubit/admin_dashboard_cubit.dart';
 import 'features/welcome/presentation/pages/welcome_screen.dart';
 
 
@@ -68,6 +70,7 @@ void main() async {
   );
 
   final aiChatDatasource = AIChatRemoteDatasource(dioClient);
+  final adminStatisticsDatasource = AdminStatisticsDatasource(dioClient: dioClient);
 
   runApp(
     MultiRepositoryProvider(
@@ -103,6 +106,9 @@ void main() async {
               remoteDatasource: aiChatDatasource,
               localDatasource: ChatLocalDatasource(),
             )..loadSessions(),
+          ),
+          BlocProvider<AdminDashboardCubit>(
+            create: (context) => AdminDashboardCubit(datasource: adminStatisticsDatasource),
           ),
         ],
         child: const MyApp(),
