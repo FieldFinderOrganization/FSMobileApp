@@ -979,14 +979,67 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           sideTitles: SideTitles(
                             showTitles: true,
                             reservedSize: 22,
+                            interval: 1, 
                             getTitlesWidget: (value, meta) {
+                              final index = value.toInt() - 1;
+                              final total = data.length;
+                              if (index < 0 || index >= total) return const SizedBox();
+
+                              // Thuật toán: Chia mảng dữ liệu ra thành khoảng 5 khúc
+                              int step = (total / 5).ceil();
+                              if (step < 1) step = 1;
+
+                              // CHỈ hiển thị nhãn nếu là: Điểm ĐẦU, Điểm CUỐI, hoặc nằm đúng vào bước nhảy (step)
+                              bool isVisible = (index == 0) || (index == total - 1) || (index % step == 0);
+                              
+                              if (!isVisible) return const SizedBox(); // Ẩn các mốc còn lại để có khoảng trống
+
+                              String labelText = '';
+                              final now = DateTime.now();
+                              final stepsBack = total - 1 - index;
+                              
+                              if (selectedRange == 0) { 
+                                // 1 Tuần: Dùng T2, T3... CN cho siêu gọn
+                                final date = now.subtract(Duration(days: stepsBack));
+                                int weekday = date.weekday;
+                                labelText = weekday == 7 ? 'CN' : 'T${weekday + 1}';
+                              } 
+                              else if (selectedRange == 1) { 
+                                // 1 Tháng: Ngày/Tháng (VD: 15/4)
+                                final date = now.subtract(Duration(days: stepsBack));
+                                labelText = '${date.day}/${date.month}';
+                              } 
+                              else if (selectedRange == 2) { 
+                                // 1 Năm: Tháng (VD: Th1, Th4, Th7...)
+                                int m = now.month - stepsBack;
+                                while (m <= 0) m += 12;
+                                labelText = 'Th$m';
+                              } 
+                              else { 
+                                // Tất cả: Ánh xạ đều mốc thời gian từ 1/1/2025 đến ngày hiện tại
+                                DateTime startDate = DateTime(2025, 1, 1);
+                                int totalDays = now.difference(startDate).inDays;
+                                
+                                // Tính phần trăm vị trí hiện tại và quy ra ngày thực tế
+                                double percent = total <= 1 ? 1.0 : index / (total - 1);
+                                DateTime mappedDate = startDate.add(Duration(days: (totalDays * percent).round()));
+                                
+                                // Hiển thị dạng Tháng/Năm (VD: 6/25, 3/26) để không bị lặp lại "2025 2025"
+                                String shortYear = mappedDate.year.toString().substring(2);
+                                labelText = '${mappedDate.month}/$shortYear';
+                                
+                                // MẸO: Nếu bạn THỰC SỰ CHỈ MUỐN HIỆN SỐ 2025, 2026 thì xóa 2 dòng trên và dùng dòng dưới:
+                                // labelText = '${mappedDate.year}';
+                              }
+
                               return Padding(
                                 padding: const EdgeInsets.only(top: 6),
                                 child: Text(
-                                  'T${value.toInt()}',
+                                  labelText,
                                   style: GoogleFonts.inter(
-                                    color: Colors.grey.shade400,
+                                    color: Colors.grey.shade500, // Đậm màu lên một chút cho dễ nhìn
                                     fontSize: 10,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               );
