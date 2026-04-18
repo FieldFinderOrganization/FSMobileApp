@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -21,16 +22,33 @@ class AdminPitchesScreen extends StatefulWidget {
 }
 
 class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
-  static const _accent = Color(0xFF3E54AC);
-  static const _kViolet = Color(0xFF7C6FCD);
+  // Bảng màu chuẩn Financial Dashboard
+  static const _kPrimary = Color(0xFF3E54AC);
+  static const _kPrimaryEnd = Color(0xFF9E91D1);
+  static const _kSecondary = Color(0xFF7C6FCD);
   static const _kTeal = Color(0xFF0D9988);
+  static const _kBackground = Color(0xFFF4F6FB); 
+  static const _kTextMain = Color(0xFF1A1D2E);
+  static const _kTextMuted = Color(0xFF8A8F9F);
 
-  static const _typeColors = [_accent, _kViolet, _kTeal];
+  static const _typeColors = [_kPrimary, _kSecondary, _kTeal];
 
   AdminPitchListModel? _page;
   bool _loading = true;
   String? _error;
   int _currentPage = 0;
+  
+  // Biến lưu thời gian cập nhật
+  DateTime _lastUpdated = DateTime.now();
+
+  // Biến phục vụ chức năng Tìm kiếm
+  bool _showSearch = false;
+  String _searchQuery = '';
+  final _searchCtrl = TextEditingController();
+  
+  // Biến chống lỗi đua mạng (Race Condition) và hạn chế spam API
+  Timer? _debounce;
+  int _fetchId = 0;
 
   @override
   void initState() {
@@ -38,22 +56,57 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
     _load();
   }
 
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
   Future<void> _load({int page = 0}) async {
+    final currentFetchId = ++_fetchId; // Đánh dấu ID cho request này
     setState(() { _loading = true; _error = null; _currentPage = page; });
+    
     try {
-      final result = await widget.datasource.getAdminPitches(page: page);
-      setState(() { _page = result; _loading = false; });
+      final result = await widget.datasource.getAdminPitches(page: page, search: _searchQuery);
+      
+      // Nếu ID không khớp (nghĩa là đã có 1 request mới hơn được gửi đi), ta bỏ qua kết quả cũ này
+      if (!mounted || currentFetchId != _fetchId) return;
+      
+      setState(() { 
+        _page = result; 
+        _loading = false; 
+        _lastUpdated = DateTime.now(); 
+      });
     } catch (e) {
+      if (!mounted || currentFetchId != _fetchId) return;
       setState(() { _error = e.toString(); _loading = false; });
     }
   }
 
-  String _envLabel(String e) {
-    return switch (e) {
-      'INDOOR' => 'Trong nhà',
-      'OUTDOOR' => 'Ngoài trời',
-      _ => e,
-    };
+  void _onSearch(String q) {
+    setState(() {
+      _searchQuery = q;
+    });
+    
+    // Xóa timer cũ nếu người dùng vẫn đang gõ liên tục
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    
+    // Thiết lập độ trễ 500ms. Chỉ gọi API khi người dùng đã ngừng gõ nửa giây
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      _load(page: 0);
+    });
+  }
+
+  String _getTimeAgo() {
+    final diff = DateTime.now().difference(_lastUpdated);
+    if (diff.inSeconds < 60) {
+      return 'Cập nhật ${diff.inSeconds} giây trước';
+    } else if (diff.inMinutes < 60) {
+      return 'Cập nhật ${diff.inMinutes}p trước';
+    } else {
+      return 'Cập nhật ${diff.inHours}h trước';
+    }
   }
 
   String _fmtPrice(double v) {
@@ -64,101 +117,263 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FC),
+      backgroundColor: _kBackground,
       body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
         slivers: [
           _buildAppBar(),
-          SliverToBoxAdapter(child: _buildDonut()),
+          
+          // Thanh Tìm kiếm (Ẩn/Hiện)
+          if (_showSearch)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 3))],
+                  ),
+                  child: TextField(
+                    controller: _searchCtrl,
+                    autofocus: true,
+                    onChanged: _onSearch,
+                    style: GoogleFonts.inter(fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: 'Tìm theo tên sân hoặc nhà cung cấp...',
+                      hintStyle: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade400),
+                      prefixIcon: const Icon(Icons.search, size: 20, color: _kPrimary),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 18),
+                              onPressed: () {
+                                _searchCtrl.clear();
+                                _onSearch(''); // Sẽ tự clear và tự động load lại
+                              },
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+          SliverToBoxAdapter(
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                _buildDonutCard(),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+          
           if (_loading)
-            const SliverFillRemaining(child: Center(child: CircularProgressIndicator()))
+            const SliverFillRemaining(child: Center(child: CircularProgressIndicator(color: _kPrimary)))
           else if (_error != null)
-            SliverFillRemaining(child: Center(child: Text(_error!)))
+            SliverFillRemaining(child: Center(child: Text(_error!, style: const TextStyle(color: Colors.red))))
           else
-            SliverToBoxAdapter(child: _buildTable()),
+            SliverToBoxAdapter(
+              child: _buildTableCard(bottomPadding),
+            ),
         ],
       ),
     );
   }
 
+  // ─── HEADER ĐÃ CHỈNH SỬA GIỐNG TRANG USER ───────────────────────────────
+
   Widget _buildAppBar() {
     return SliverAppBar(
-      expandedHeight: 130,
+      expandedHeight: 85,
       pinned: true,
-      backgroundColor: _accent,
+      backgroundColor: _kPrimary,
+      elevation: 0,
+      centerTitle: false,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
         onPressed: () => Navigator.pop(context),
       ),
+      title: Text('Sân hoạt động',
+          style: GoogleFonts.inter(
+              fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+      titleSpacing: 0,
+      actions: [
+        IconButton(
+          tooltip: 'Tìm kiếm',
+          icon: Icon(
+            _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+            color: Colors.white, size: 22,
+          ),
+          onPressed: () => setState(() {
+            _showSearch = !_showSearch;
+            if (!_showSearch) { 
+              _searchCtrl.clear(); 
+              _onSearch(''); 
+            }
+          }),
+        ),
+        IconButton(
+          tooltip: 'Lọc',
+          icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 22),
+          onPressed: () {}, 
+        ),
+        IconButton(
+          tooltip: 'Thêm sân',
+          icon: const Icon(Icons.add_business_rounded, color: Colors.white, size: 22),
+          onPressed: () {}, 
+        ),
+        const SizedBox(width: 4),
+      ],
       flexibleSpace: FlexibleSpaceBar(
-        titlePadding: const EdgeInsets.fromLTRB(56, 0, 16, 16),
-        title: Text('Sân hoạt động',
-            style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)),
         background: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF2A3D8F), Color(0xFF5C75D4)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+              colors: [_kPrimary, _kPrimaryEnd], 
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
             ),
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                right: -30, top: -20,
+                child: Container(
+                  width: 160, height: 160,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.06),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 56, 
+                bottom: 6,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    StreamBuilder(
+                      stream: Stream.periodic(const Duration(seconds: 1)),
+                      builder: (context, snapshot) {
+                        return Text(
+                          _getTimeAgo(),
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: Colors.white.withOpacity(0.80),
+                            fontWeight: FontWeight.w400,
+                          ),
+                        );
+                      }
+                    ),
+                    const SizedBox(width: 4),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _loading ? null : () => _load(page: _currentPage),
+                        borderRadius: BorderRadius.circular(20),
+                        child: Padding(
+                          padding: const EdgeInsets.all(6.0),
+                          child: Icon(
+                            Icons.sync_rounded, 
+                            size: 16, 
+                            color: Colors.white.withOpacity(_loading ? 0.4 : 0.9)
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildDonut() {
+  // ─── SUMMARY CARD (Báo cáo tổng quan) ─────────────────────────────────────
+
+  Widget _buildDonutCard() {
     final pts = widget.pitchTypeData;
     if (pts.isEmpty) return const SizedBox();
     final total = pts.fold(0.0, (a, b) => a + b.count);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: _accent.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 6))],
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(color: _kTextMain.withOpacity(0.03), blurRadius: 24, offset: const Offset(0, 8)),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Phân bổ loại sân',
-                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black87)),
-            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Cơ cấu danh mục',
+                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w800, color: _kTextMain)),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _kBackground,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text('Tất cả',
+                      style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: _kTextMuted)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
             Row(
               children: [
                 SizedBox(
-                  width: 110,
-                  height: 110,
+                  width: 120,
+                  height: 120,
                   child: CustomPaint(
                     painter: _DonutP(
                       values: pts.map((p) => p.count.toDouble()).toList(),
                       colors: _typeColors,
                     ),
                     child: Center(
-                      child: Text('${total.toInt()}',
-                          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.black87)),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('${total.toInt()}',
+                              style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w900, color: _kTextMain, height: 1)),
+                          const SizedBox(height: 2),
+                          Text('Tổng sân',
+                              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: _kTextMuted)),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 20),
+                const SizedBox(width: 32),
                 Expanded(
                   child: Column(
                     children: pts.asMap().entries.map((e) {
                       final color = _typeColors[e.key % _typeColors.length];
                       final pct = total > 0 ? (e.value.count / total * 100).toStringAsFixed(1) : '0';
                       return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 5),
+                        padding: const EdgeInsets.only(bottom: 12),
                         child: Row(
                           children: [
                             Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 10),
                             Expanded(child: Text(e.value.type,
-                                style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade600))),
-                            Text('${e.value.count} ($pct%)',
-                                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black87)),
+                                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.grey.shade700))),
+                            Text('${e.value.count}',
+                                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w800, color: _kTextMain)),
                           ],
                         ),
                       );
@@ -173,107 +388,158 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
     );
   }
 
-  Widget _buildTable() {
-    final items = _page?.content ?? [];
+  // ─── DATA TABLE (Danh sách chi tiết) ──────────────────────────────────────
+
+  Widget _buildTableCard(double bottomPadding) {
+    var items = _page?.content ?? [];
+    int displayTotal = _page?.totalElements ?? 0;
+    
+    // BACKUP: Lọc cục bộ tại App trong trường hợp API ở Backend chưa được thiết lập xử lý tham số `search`
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      final filteredLocally = items.where((p) => 
+        p.name.toLowerCase().contains(q) || 
+        p.providerName.toLowerCase().contains(q) ||
+        p.type.toLowerCase().contains(q)
+      ).toList();
+      
+      // Nếu lọc cục bộ trả về kết quả khác list gốc -> Backend chưa chịu lọc -> Ép dùng kết quả lọc cục bộ
+      if (filteredLocally.length != items.length) {
+        items = filteredLocally;
+        displayTotal = items.length; // Hiển thị số đếm cho chuẩn
+      }
+    }
+    
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Danh sách sân',
-                  style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.black87)),
-              if (_page != null)
-                Text('${_page!.totalElements} sân',
-                    style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade500)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: _accent.withOpacity(0.06), blurRadius: 20, offset: const Offset(0, 4))],
-            ),
-            child: Column(
-              children: [
-                ...items.asMap().entries.map((e) => _buildRow(e.value, e.key == items.length - 1)),
-                if (items.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text('Không có dữ liệu', style: GoogleFonts.inter(color: Colors.grey.shade400)),
-                  ),
-              ],
-            ),
-          ),
-          if (_page != null && _page!.totalPages > 1) ...[
-            const SizedBox(height: 16),
-            buildAdminPaginationBar(_currentPage, _page!.totalPages, (p) => _load(page: p), _accent),
+      padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPadding + 32),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(color: _kTextMain.withOpacity(0.03), blurRadius: 24, offset: const Offset(0, 8)),
           ],
-        ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Chi tiết Sân',
+                      style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w800, color: _kTextMain)),
+                  if (_page != null)
+                    Text('$displayTotal kết quả',
+                        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: _kTextMuted)),
+                ],
+              ),
+            ),
+            const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F5)),
+            ...items.asMap().entries.map((e) => _buildRow(e.value, e.key == items.length - 1)),
+            
+            if (items.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(40),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(Icons.search_off_rounded, size: 36, color: Colors.grey.shade300),
+                      const SizedBox(height: 8),
+                      Text('Không tìm thấy sân phù hợp', style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade400)),
+                    ],
+                  ),
+                ),
+              ),
+
+            // Pagination Area (Ẩn đi nếu kết quả tìm kiếm quá ít không chia nổi trang)
+            if (_page != null && _page!.totalPages > 1 && displayTotal > 10) ...[
+              const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F5)),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: buildAdminPaginationBar(_currentPage, _page!.totalPages, (p) => _load(page: p), _kPrimary),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildRow(AdminPitchItem pitch, bool isLast) {
-    final typeColor = pitch.type.contains('5') ? _accent : pitch.type.contains('7') ? _kViolet : _kTeal;
+    final typeColor = pitch.type.contains('5') 
+        ? _kPrimary 
+        : pitch.type.contains('7') ? _kSecondary : _kTeal;
+
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: typeColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  color: typeColor.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: typeColor.withOpacity(0.1), width: 1),
                 ),
-                child: Icon(Icons.sports_soccer_outlined, color: typeColor, size: 20),
+                child: Icon(Icons.sports_soccer_rounded, color: typeColor, size: 22),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
+              
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(pitch.name,
-                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87),
+                        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: _kTextMain),
                         maxLines: 1, overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 2),
-                    Text(pitch.providerName,
-                        style: GoogleFonts.inter(fontSize: 11, color: Colors.grey.shade500),
-                        maxLines: 1, overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.storefront_rounded, size: 12, color: Colors.grey.shade400),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(pitch.providerName,
+                              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: _kTextMuted),
+                              maxLines: 1, overflow: TextOverflow.ellipsis),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
+              
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   _pill(pitch.type, typeColor),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(_fmtPrice(pitch.price),
-                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black87)),
+                      style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w800, color: _kTextMain, letterSpacing: -0.5)),
                 ],
               ),
             ],
           ),
         ),
-        if (!isLast) Divider(height: 1, indent: 16, endIndent: 16, color: Colors.grey.shade100),
+        if (!isLast) const Divider(height: 1, indent: 84, endIndent: 24, color: Color(0xFFF0F0F5)),
       ],
     );
   }
 
   Widget _pill(String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-      decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(20)),
-      child: Text(text, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: color)),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+      child: Text(text, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: color)),
     );
   }
 }
+
+// ─── DONUT CHART PAINTER ──────────────────────────────────────────────────
 
 class _DonutP extends CustomPainter {
   final List<double> values;
@@ -285,15 +551,27 @@ class _DonutP extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final total = values.fold(0.0, (a, b) => a + b);
     if (total == 0) return;
+    
     final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) / 2;
     final rect = Rect.fromCircle(center: center, radius: radius);
-    final paint = Paint()..style = PaintingStyle.stroke..strokeWidth = 14..strokeCap = StrokeCap.butt;
+    
+    final bgPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 12
+      ..color = Colors.grey.shade100;
+    canvas.drawCircle(center, radius - 6, bgPaint);
+
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 14
+      ..strokeCap = StrokeCap.round; 
+      
     double startAngle = -math.pi / 2;
     for (int i = 0; i < values.length; i++) {
       final sweep = 2 * math.pi * values[i] / total;
       paint.color = colors[i % colors.length];
-      canvas.drawArc(rect.deflate(7), startAngle + 0.03, sweep - 0.06, false, paint);
+      canvas.drawArc(rect.deflate(7), startAngle + 0.05, sweep - 0.1, false, paint);
       startAngle += sweep;
     }
   }

@@ -395,7 +395,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       List<RevenuePointModel> revenueData, List<PitchTypeModel> pitchTypes) {
     final sparkSpots = _revenueToSpots(revenueData);
 
-    String pct(double v) => '${v > 0 ? '+' : ''}${v.toStringAsFixed(1)}%';
+    String pct(double v) {
+      final formatted = v.toStringAsFixed(1);
+      if (formatted == '0.0' || formatted == '-0.0') return ''; // Nếu là 0 thì trả về chuỗi rỗng
+      return '${v > 0 ? '+' : ''}$formatted%';
+    }
     Color changeColor(double v) =>
         v > 0 ? _kTealMint : v < 0 ? _kCoralPink : Colors.grey.shade400;
     bool isPos(double v) => v > 0;
@@ -552,22 +556,23 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                 ],
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: changeColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  change,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: changeColor,
+              if (change.isNotEmpty)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: changeColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    change,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: changeColor,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 14),

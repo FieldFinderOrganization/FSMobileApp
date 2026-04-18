@@ -111,10 +111,10 @@ class AdminStatisticsDatasource {
         .toList();
   }
 
-  Future<AdminPitchListModel> getAdminPitches({int page = 0, int size = 10}) async {
+  Future<AdminPitchListModel> getAdminPitches({int page = 0, int size = 10, String search = ''}) async {
     final response = await dioClient.dio.get(
       ApiConstants.adminPitchesList,
-      queryParameters: {'page': page, 'size': size},
+      queryParameters: {'page': page, 'size': size, 'search': search},
     );
     return AdminPitchListModel.fromJson(response.data as Map<String, dynamic>);
   }
