@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/repositories/home_repository.dart';
 import '../../../product/domain/entities/product_entity.dart';
@@ -8,6 +9,7 @@ export 'home_state.dart';
 
 class HomeCubit extends Cubit<HomeState> {
   final HomeRepository _repository;
+  Timer? _searchDebounce;
 
   HomeCubit({required HomeRepository repository})
       : _repository = repository,
@@ -70,12 +72,24 @@ class HomeCubit extends Cubit<HomeState> {
         district: state.selectedDistrict,
         type: state.selectedPitchType,
         sort: sortStr,
+        name: state.searchQuery.isNotEmpty ? state.searchQuery : null,
       );
+      final pitches = result['content'] as List<PitchEntity>;
+
+      // Populate allDistricts once from the unfiltered first load
+      final isUnfiltered = state.selectedDistrict.isEmpty &&
+          state.selectedPitchType.isEmpty &&
+          state.searchQuery.isEmpty;
+      final allDistricts = isUnfiltered
+          ? (pitches.map((p) => p.district).where((d) => d.isNotEmpty).toSet().toList()..sort())
+          : state.allDistricts;
+
       emit(state.copyWith(
-        pitches: result['content'] as List<PitchEntity>,
+        pitches: pitches,
         pitchesPage: 0,
         pitchesHasMore: !(result['last'] as bool),
         pitchesStatus: LoadStatus.success,
+        allDistricts: allDistricts,
       ));
     } catch (e) {
       emit(state.copyWith(
@@ -99,6 +113,7 @@ class HomeCubit extends Cubit<HomeState> {
         district: state.selectedDistrict,
         type: state.selectedPitchType,
         sort: sortStr,
+        name: state.searchQuery.isNotEmpty ? state.searchQuery : null,
       );
 
       final newPitches = result['content'] as List<PitchEntity>;
@@ -294,6 +309,14 @@ class HomeCubit extends Cubit<HomeState> {
     final next = state.selectedDistrict == district ? '' : district;
     emit(state.copyWith(selectedDistrict: next));
     _loadPitchesFirstPage();
+  }
+
+  void updateSearchQuery(String query) {
+    _searchDebounce?.cancel();
+    emit(state.copyWith(searchQuery: query));
+    _searchDebounce = Timer(const Duration(milliseconds: 400), () {
+      _loadPitchesFirstPage();
+    });
   }
 
   void updatePitchFilters({String? type, String? sort}) {

@@ -11,6 +11,7 @@ import '../../../../features/pitch/domain/repositories/pitch_repository.dart';
 import '../cubit/provider_cubit.dart';
 import '../cubit/pitch_management_cubit.dart';
 import '../../domain/entities/provider_address_entity.dart';
+import 'pitch_reviews_sheet.dart';
 
 class ProviderPitchTab extends StatefulWidget {
   final UserEntity user;
@@ -206,8 +207,24 @@ class _ProviderPitchTabState extends State<ProviderPitchTab> {
           ),
           Column(
             children: [
-              IconButton(icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.textGrey), onPressed: () => _showPitchDialog(context, _selectedAddress!.providerAddressId, pitch: pitch)),
-               if (widget.user.role == 'ADMIN')
+              IconButton(
+                icon: const Icon(Icons.star_outline_rounded, size: 20, color: Color(0xFFFFC107)),
+                tooltip: 'Xem đánh giá',
+                onPressed: () => showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => PitchReviewsSheet(
+                    pitchId: pitch.pitchId,
+                    pitchName: pitch.name,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.textGrey),
+                onPressed: () => _showPitchDialog(context, _selectedAddress!.providerAddressId, pitch: pitch),
+              ),
+              if (widget.user.role == 'ADMIN')
                 IconButton(
                   icon: const Icon(Icons.delete_outline_rounded, size: 20, color: Colors.redAccent),
                   onPressed: () => _showDeletePitchDialog(context, pitch, _selectedAddress!.providerAddressId),

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/utils/string_utils.dart';
 import '../../domain/entities/pitch_entity.dart';
 import '../../../home/presentation/cubit/home_cubit.dart';
+import '../../../home/presentation/cubit/home_state.dart';
 import '../widgets/filter_sheet.dart';
 import 'pitch_detail_screen.dart';
 
@@ -65,6 +65,7 @@ class _PitchTabBodyState extends State<_PitchTabBody>
     } else {
       _animController.reverse();
     }
+    context.read<HomeCubit>().updateSearchQuery(value.trim());
   }
 
   void _showFilterSheet() {
@@ -97,10 +98,12 @@ class _PitchTabBodyState extends State<_PitchTabBody>
               children: [
                 _buildHeader(state),
                 Expanded(
-                  child: pitches.isEmpty &&
-                          state.pitchesStatus != LoadStatus.loading
-                      ? _buildEmptyState()
-                      : _buildPitchList(pitches, state),
+                  child: state.pitchesStatus == LoadStatus.loading ||
+                          state.pitchesStatus == LoadStatus.initial
+                      ? const Center(child: CircularProgressIndicator(color: AppColors.primaryRed))
+                      : pitches.isEmpty
+                          ? _buildEmptyState()
+                          : _buildPitchList(pitches, state),
                 ),
               ],
             ),
@@ -111,15 +114,8 @@ class _PitchTabBodyState extends State<_PitchTabBody>
   }
 
   List<PitchEntity> _getFilteredPitches(HomeState state) {
-    final normalizedQuery = StringUtils.removeDiacritics(_query.toLowerCase());
-    // Since we now have server-side filtering for district and type, 
-    // we only do client-side filtering for the search query here.
-    return state.pitches.where((p) {
-      if (_query.isEmpty) return true;
-      final name = StringUtils.removeDiacritics(p.name.toLowerCase());
-      final type = StringUtils.removeDiacritics(p.displayType.toLowerCase());
-      return name.contains(normalizedQuery) || type.contains(normalizedQuery);
-    }).toList();
+    // Server handles all filtering (district, type, sort, name search)
+    return state.pitches;
   }
 
   Widget _buildHeader(HomeState state) {
@@ -213,10 +209,7 @@ class _PitchTabBodyState extends State<_PitchTabBody>
   }
 
   Widget _buildDistrictBar(HomeState state) {
-    // Note: getActiveDistricts should now probably pull from all loaded data or a separate list.
-    // For now, keep it as is if it's still useful.
-    final activeDistricts = state.getActiveDistricts(_query);
-    final districts = ['Tất cả', ...activeDistricts];
+    final districts = ['Tất cả', ...state.allDistricts];
 
     return SizedBox(
       height: 38,

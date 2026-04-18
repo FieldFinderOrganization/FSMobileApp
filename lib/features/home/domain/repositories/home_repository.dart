@@ -18,6 +18,7 @@ abstract class HomeRepository {
     String? district,
     String? type,
     String? sort,
+    String? name,
   });
   Future<List<CategoryEntity>> fetchCategories();
   Future<List<DiscountEntity>> fetchDiscounts();

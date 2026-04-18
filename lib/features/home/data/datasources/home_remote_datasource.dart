@@ -54,12 +54,14 @@ class HomeRemoteDatasource {
     int size = 10,
     String? district,
     String? type,
-    String? sort, // format: "field,asc" or "field,desc"
+    String? sort,
+    String? name,
   }) async {
     final Map<String, dynamic> params = {'page': page, 'size': size};
     if (district != null && district.isNotEmpty) params['district'] = district;
     if (type != null && type.isNotEmpty) params['type'] = type;
     if (sort != null && sort.isNotEmpty) params['sort'] = sort;
+    if (name != null && name.isNotEmpty) params['name'] = name;
 
     final response = await _dio.get(
       ApiConstants.pitches,

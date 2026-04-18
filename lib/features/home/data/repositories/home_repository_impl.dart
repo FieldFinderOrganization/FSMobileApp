@@ -54,6 +54,7 @@ class HomeRepositoryImpl implements HomeRepository {
     String? district,
     String? type,
     String? sort,
+    String? name,
   }) async {
     try {
       final result = await _datasource.fetchPitches(
@@ -62,6 +63,7 @@ class HomeRepositoryImpl implements HomeRepository {
         district: district,
         type: type,
         sort: sort,
+        name: name,
       );
       return {
         'content': (result['content'] as List).cast<PitchEntity>(),

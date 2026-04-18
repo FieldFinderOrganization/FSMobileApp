@@ -1123,9 +1123,27 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
               Expanded(
                 child: ScaleTransition(
                   scale: _fabScaleAnimation,
-                  child: GestureDetector(
+                  child: Builder(builder: (context) {
+                    final authState = context.watch<AuthCubit>().state;
+                    final currentUserId = authState.currentUser?.userId ?? '';
+                    final providerUserId = widget.pitch.providerUserId ?? '';
+                    final isOwner = providerUserId.isNotEmpty && providerUserId == currentUserId;
+                    return GestureDetector(
                     onTap: () {
                       HapticFeedback.mediumImpact();
+                      if (isOwner) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Bạn không thể đặt sân của chính mình',
+                              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                            ),
+                            backgroundColor: Colors.orange.shade700,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                        return;
+                      }
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -1139,43 +1157,49 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                     child: Container(
                       height: 52,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF9B0A2E), Color(0xFF7B0323)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
+                        gradient: isOwner
+                            ? null
+                            : const LinearGradient(
+                                colors: [Color(0xFF9B0A2E), Color(0xFF7B0323)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                        color: isOwner ? const Color(0xFFEEEEEE) : null,
                         borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primaryRed.withValues(alpha: 0.4),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                        boxShadow: isOwner
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: AppColors.primaryRed.withValues(alpha: 0.4),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                       ),
                       child: Center(
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
-                              Icons.calendar_month_rounded,
-                              color: Colors.white,
+                            Icon(
+                              isOwner ? Icons.block_rounded : Icons.calendar_month_rounded,
+                              color: isOwner ? AppColors.textGrey : Colors.white,
                               size: 18,
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Đặt lịch ngay',
+                              isOwner ? 'Sân của bạn' : 'Đặt lịch ngay',
                               style: GoogleFonts.inter(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                                color: isOwner ? AppColors.textGrey : Colors.white,
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                  ),
+                  );
+                  }),
                 ),
               ),
             ],

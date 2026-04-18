@@ -33,7 +33,7 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
   // Semantic Colors cho Trạng thái
   static const _kSuccess = Color(0xFF10B981); // Xanh lá - Thành công
   static const _kDanger = Color(0xFFEF4444);  // Đỏ - Đã hủy
-  static const _kWarning = Color(0xFFF59E0B); // Cam - Chờ xử lý
+  static const _kWarning = Color(0xFFF59E0B); // Cam - Chờ thanh toán
 
   AdminBookingListModel? _page;
   bool _loading = true;
@@ -198,7 +198,7 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
             pw.Header(level: 1, text: 'Tổng quan'),
             pw.Bullet(text: 'Tổng đơn: ${stats.total}', style: pw.TextStyle(font: font)),
             pw.Bullet(text: 'Thành công: ${stats.confirmed}', style: pw.TextStyle(font: font)),
-            pw.Bullet(text: 'Chờ xử lý: ${stats.pending}', style: pw.TextStyle(font: font)),
+            pw.Bullet(text: 'Chờ thanh toán: ${stats.pending}', style: pw.TextStyle(font: font)),
             pw.Bullet(text: 'Đã hủy: ${stats.canceled}', style: pw.TextStyle(font: font)),
             pw.SizedBox(height: 16),
           ],
@@ -623,7 +623,7 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
           const SizedBox(width: 8),
           _buildStatusChip('Thành công', 'CONFIRMED'),
           const SizedBox(width: 8),
-          _buildStatusChip('Chờ xử lý', 'PENDING'),
+          _buildStatusChip('Chờ thanh toán', 'PENDING'),
           const SizedBox(width: 8),
           _buildStatusChip('Đã hủy', 'CANCELED'),
           
@@ -721,7 +721,7 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
           _buildLegendItem('Tổng đơn', total, _kRest),
         ];
       case 'PENDING':
-        rateLabel = 'Tỉ lệ chờ xử lý';
+        rateLabel = 'Tỉ lệ Chờ thanh toán';
         rate      = (pending / total) * 100;
         rateColor = _kWarning;
         barSegments = [
@@ -729,7 +729,7 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
           if (total - pending > 0) Expanded(flex: total - pending, child: Container(color: _kRest)),
         ];
         legendItems = [
-          _buildLegendItem('Chờ xử lý', pending, _kWarning),
+          _buildLegendItem('Chờ thanh toán', pending, _kWarning),
           _buildLegendItem('Tổng đơn', total, _kRest),
         ];
       case 'CANCELED':
@@ -755,7 +755,7 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
         ];
         legendItems = [
           _buildLegendItem('Thành công', confirmed, _kSuccess),
-          _buildLegendItem('Chờ xử lý', pending, _kWarning),
+          _buildLegendItem('Chờ thanh toán', pending, _kWarning),
           _buildLegendItem('Đã hủy', canceled, _kDanger),
         ];
     }
@@ -887,7 +887,7 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
 
   Widget _buildTransactionRow(AdminBookingItem item, bool isLast) {
     Color statusColor = _kWarning;
-    String statusLabel = 'Chờ xử lý';
+    String statusLabel = 'Chờ thanh toán';
     if (item.status == 'CONFIRMED') { statusColor = _kSuccess; statusLabel = 'Thành công'; }
     else if (item.status == 'CANCELED') { statusColor = _kDanger; statusLabel = 'Đã hủy'; }
 

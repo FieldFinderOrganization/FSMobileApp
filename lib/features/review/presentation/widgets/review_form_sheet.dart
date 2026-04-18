@@ -73,6 +73,7 @@ class _ReviewFormSheetState extends State<ReviewFormSheet> {
   Widget build(BuildContext context) {
     return BlocListener<MyReviewsCubit, MyReviewsState>(
       listener: (context, state) {
+        if (!context.mounted) return;
         if (state is MyReviewsActionSuccess) {
           final messenger = ScaffoldMessenger.of(context);
           Navigator.of(context).pop();

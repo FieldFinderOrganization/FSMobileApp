@@ -62,9 +62,11 @@ class HomeState {
   final bool isProductsExpanded;
   final bool hasLoadedMore;
 
-  final String selectedDistrict; // '' = Tất cả
-  final String selectedPitchType; // 'Sân 5', 'Sân 7', 'Sân 11'
-  final String pitchSortOrder; // 'asc', 'desc', 'none'
+  final String selectedDistrict;
+  final String selectedPitchType;
+  final String pitchSortOrder;
+  final String searchQuery; // server-side name search
+  final List<String> allDistricts; // full district list, never filtered
 
   final String? errorMessage;
 
@@ -96,6 +98,8 @@ class HomeState {
     this.selectedDistrict = '',
     this.selectedPitchType = '',
     this.pitchSortOrder = 'none',
+    this.searchQuery = '',
+    this.allDistricts = const [],
     this.errorMessage,
   });
 
@@ -200,6 +204,8 @@ class HomeState {
     String? selectedDistrict,
     String? selectedPitchType,
     String? pitchSortOrder,
+    String? searchQuery,
+    List<String>? allDistricts,
     String? errorMessage,
   }) {
     return HomeState(
@@ -232,6 +238,8 @@ class HomeState {
       selectedDistrict: selectedDistrict ?? this.selectedDistrict,
       selectedPitchType: selectedPitchType ?? this.selectedPitchType,
       pitchSortOrder: pitchSortOrder ?? this.pitchSortOrder,
+      searchQuery: searchQuery ?? this.searchQuery,
+      allDistricts: allDistricts ?? this.allDistricts,
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }
