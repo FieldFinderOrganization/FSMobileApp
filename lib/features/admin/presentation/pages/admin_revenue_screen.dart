@@ -1,6 +1,13 @@
+import 'dart:io';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../../data/models/admin_overview_model.dart';
 import '../../data/models/revenue_point_model.dart';
 
@@ -26,6 +33,7 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
 
   late List<RevenuePointModel> _sorted;
   final DateTime _lastUpdated = DateTime.now();
+  bool _isExporting = false;
 
   String _getTimeAgo() {
     final diff = DateTime.now().difference(_lastUpdated);
@@ -39,6 +47,81 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
     super.initState();
     _sorted = List.of(widget.revenueData)
       ..sort((a, b) => b.revenue.compareTo(a.revenue));
+  }
+
+  Future<void> _exportPdf() async {
+    if (_isExporting) return;
+    setState(() => _isExporting = true);
+    try {
+      final font     = await PdfGoogleFonts.notoSansRegular();
+      final boldFont = await PdfGoogleFonts.notoSansBold();
+      final currFmt  = NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
+      final dateFmt  = DateFormat('dd/MM/yyyy');
+      final now      = DateTime.now();
+      final ov       = widget.overview;
+
+      final pdf = pw.Document();
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          theme: pw.ThemeData.withFont(base: font, bold: boldFont),
+          build: (ctx) => [
+            pw.Header(level: 0, child: pw.Text('Báo cáo Doanh thu Admin',
+                style: pw.TextStyle(font: boldFont, fontSize: 22))),
+            pw.Text('Xuất ngày: ${dateFmt.format(now)}', style: pw.TextStyle(font: font)),
+            pw.SizedBox(height: 16),
+            pw.Header(level: 1, text: 'Tổng quan'),
+            pw.Bullet(text: 'Tổng doanh thu: ${currFmt.format(ov.totalRevenue)}', style: pw.TextStyle(font: font)),
+            pw.Bullet(text: 'Doanh thu đặt sân: ${currFmt.format(ov.bookingRevenue)}', style: pw.TextStyle(font: font)),
+            pw.Bullet(text: 'Doanh thu sản phẩm: ${currFmt.format(ov.productRevenue)}', style: pw.TextStyle(font: font)),
+            pw.SizedBox(height: 16),
+            if (_sorted.isNotEmpty) ...[
+              pw.Header(level: 1, text: 'Top ngày doanh thu cao nhất'),
+              pw.Table.fromTextArray(
+                headers: ['#', 'Ngày', 'Doanh thu'],
+                data: _sorted.take(10).toList().asMap().entries.map((e) => [
+                  '${e.key + 1}',
+                  e.value.date,
+                  currFmt.format(e.value.revenue),
+                ]).toList(),
+                headerStyle: pw.TextStyle(font: boldFont, fontSize: 10),
+                cellStyle: pw.TextStyle(font: font, fontSize: 9),
+                cellAlignment: pw.Alignment.centerLeft,
+                headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
+              ),
+            ],
+          ],
+        ),
+      );
+
+      final bytes    = await pdf.save();
+      final fileName = 'admin_doanh_thu_${DateFormat('yyyyMMdd').format(now)}.pdf';
+      final dir      = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
+      final file     = File('${dir.path}/$fileName');
+      await file.writeAsBytes(bytes);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Đã lưu: $fileName'),
+          backgroundColor: Colors.green.shade700,
+          duration: const Duration(seconds: 8),
+          action: SnackBarAction(
+            label: 'Mở file',
+            textColor: Colors.white,
+            onPressed: () => OpenFile.open(file.path),
+          ),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Lỗi xuất PDF: $e'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
   }
 
   String _fmt(double v) {
@@ -76,9 +159,17 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
           style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
       titleSpacing: 0,
       actions: [
-        IconButton(tooltip: 'Tìm kiếm', icon: const Icon(Icons.search_rounded, color: Colors.white, size: 22), onPressed: () {}),
-        IconButton(tooltip: 'Lọc', icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 22), onPressed: () {}),
-        IconButton(tooltip: 'Xuất PDF', icon: const Icon(Icons.picture_as_pdf_outlined, color: Colors.white, size: 22), onPressed: () {}),
+        _isExporting
+            ? const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 14),
+                child: SizedBox(width: 20, height: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+              )
+            : IconButton(
+                tooltip: 'Xuất PDF',
+                icon: const Icon(Icons.picture_as_pdf_outlined, color: Colors.white, size: 22),
+                onPressed: () => _exportPdf(),
+              ),
         const SizedBox(width: 4),
       ],
       flexibleSpace: FlexibleSpaceBar(

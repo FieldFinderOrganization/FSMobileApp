@@ -68,11 +68,17 @@ class AdminStatisticsDatasource {
     return ProductStatisticsModel.fromJson(response.data as Map<String, dynamic>);
   }
 
-  Future<AdminUserListModel> getUsers({int page = 0, int size = 10, String search = ''}) async {
-    final response = await dioClient.dio.get(
-      ApiConstants.adminUsers,
-      queryParameters: {'page': page, 'size': size, 'search': search},
-    );
+  Future<AdminUserListModel> getUsers({
+    int page = 0,
+    int size = 10,
+    String search = '',
+    String? status,
+    String? role,
+  }) async {
+    final params = <String, dynamic>{'page': page, 'size': size, 'search': search};
+    if (status != null) params['status'] = status;
+    if (role != null) params['role'] = role;
+    final response = await dioClient.dio.get(ApiConstants.adminUsers, queryParameters: params);
     return AdminUserListModel.fromJson(response.data as Map<String, dynamic>);
   }
 

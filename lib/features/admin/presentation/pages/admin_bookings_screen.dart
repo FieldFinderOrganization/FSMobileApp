@@ -1,6 +1,13 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../../data/datasources/admin_statistics_datasource.dart';
 import '../../data/models/admin_booking_list_model.dart';
 import '../../data/models/booking_stats_model.dart';
@@ -45,6 +52,7 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
   String? _selectedStatus; // null = Tất cả, 'CONFIRMED', 'CANCELED', 'PENDING'
 
   BookingStatsModel? _bookingStats;
+  bool _isExporting = false;
 
   @override
   void initState() {
@@ -98,6 +106,73 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
     if (diff.inSeconds < 60) return 'Cập nhật ${diff.inSeconds} giây trước';
     if (diff.inMinutes < 60) return 'Cập nhật ${diff.inMinutes}p trước';
     return 'Cập nhật ${diff.inHours}h trước';
+  }
+
+  Future<void> _exportPdf() async {
+    if (_isExporting) return;
+    setState(() => _isExporting = true);
+    try {
+      final font     = await PdfGoogleFonts.notoSansRegular();
+      final boldFont = await PdfGoogleFonts.notoSansBold();
+      final currFmt  = NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
+      final dateFmt  = DateFormat('dd/MM/yyyy');
+      final now      = DateTime.now();
+      final stats    = _bookingStats;
+      final items    = _page?.content ?? [];
+
+      final pdf = pw.Document();
+      pdf.addPage(pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        theme: pw.ThemeData.withFont(base: font, bold: boldFont),
+        build: (ctx) => [
+          pw.Header(level: 0, child: pw.Text('Báo cáo Đặt sân',
+              style: pw.TextStyle(font: boldFont, fontSize: 22))),
+          pw.Text('Xuất ngày: ${dateFmt.format(now)}', style: pw.TextStyle(font: font)),
+          pw.SizedBox(height: 16),
+          if (stats != null) ...[
+            pw.Header(level: 1, text: 'Tổng quan'),
+            pw.Bullet(text: 'Tổng đơn: ${stats.total}', style: pw.TextStyle(font: font)),
+            pw.Bullet(text: 'Thành công: ${stats.confirmed}', style: pw.TextStyle(font: font)),
+            pw.Bullet(text: 'Chờ xử lý: ${stats.pending}', style: pw.TextStyle(font: font)),
+            pw.Bullet(text: 'Đã hủy: ${stats.canceled}', style: pw.TextStyle(font: font)),
+            pw.SizedBox(height: 16),
+          ],
+          if (items.isNotEmpty) ...[
+            pw.Header(level: 1, text: 'Danh sách đặt sân'),
+            pw.Table.fromTextArray(
+              headers: ['Người đặt', 'Sân', 'Ngày', 'Giá', 'Trạng thái'],
+              data: items.map((b) => [
+                b.userName, b.pitchName, b.bookingDate,
+                currFmt.format(b.totalPrice), b.status,
+              ]).toList(),
+              headerStyle: pw.TextStyle(font: boldFont, fontSize: 9),
+              cellStyle: pw.TextStyle(font: font, fontSize: 8),
+              headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
+            ),
+          ],
+        ],
+      ));
+
+      final bytes    = await pdf.save();
+      final fileName = 'admin_dat_san_${DateFormat('yyyyMMdd').format(now)}.pdf';
+      final dir      = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
+      final file     = File('${dir.path}/$fileName');
+      await file.writeAsBytes(bytes);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Đã lưu: $fileName'),
+          backgroundColor: Colors.green.shade700,
+          duration: const Duration(seconds: 8),
+          action: SnackBarAction(label: 'Mở file', textColor: Colors.white,
+              onPressed: () => OpenFile.open(file.path)),
+        ));
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi xuất PDF: $e'), backgroundColor: Colors.red));
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
   }
 
   String _fmtPrice(double v) {
@@ -259,11 +334,14 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
           icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 22),
           onPressed: () {}, // Icon này để từ từ phát triển như yêu cầu của bạn
         ),
-        IconButton(
-          tooltip: 'Thêm Booking',
-          icon: const Icon(Icons.add_chart_rounded, color: Colors.white, size: 22),
-          onPressed: () {}, 
-        ),
+        _isExporting
+            ? const Padding(padding: EdgeInsets.symmetric(horizontal: 14),
+                child: SizedBox(width: 20, height: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)))
+            : IconButton(
+                tooltip: 'Xuất PDF',
+                icon: const Icon(Icons.picture_as_pdf_outlined, color: Colors.white, size: 22),
+                onPressed: _exportPdf),
         const SizedBox(width: 4),
       ],
       flexibleSpace: FlexibleSpaceBar(

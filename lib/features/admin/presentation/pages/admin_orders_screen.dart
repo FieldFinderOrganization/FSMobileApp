@@ -1,6 +1,13 @@
+import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../../data/datasources/admin_statistics_datasource.dart';
 import '../../data/models/admin_order_list_model.dart';
 import 'admin_users_screen.dart' show buildAdminPaginationBar;
@@ -30,11 +37,30 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
   List<Map<String, dynamic>> _stats = [];
   bool _loading = true;
   String? _error;
+  DateTime _lastUpdated = DateTime.now();
+
+  bool _showSearch = false;
+  String _searchQuery = '';
+  final _searchCtrl = TextEditingController();
+  bool _isExporting = false;
+
+  String _getTimeAgo() {
+    final diff = DateTime.now().difference(_lastUpdated);
+    if (diff.inSeconds < 60) return 'Cập nhật ${diff.inSeconds} giây trước';
+    if (diff.inMinutes < 60) return 'Cập nhật ${diff.inMinutes}p trước';
+    return 'Cập nhật ${diff.inHours}h trước';
+  }
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   String? get _activeStatus => _filterIdx == 0 ? null : _filters[_filterIdx];
@@ -51,6 +77,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
           _page = results[0] as AdminOrderListModel;
           _stats = results[1] as List<Map<String, dynamic>>;
           _loading = false;
+          _lastUpdated = DateTime.now();
         });
       } else {
         final result = await widget.datasource.getAdminOrders(page: page, status: _activeStatus);
@@ -75,6 +102,89 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
     'PENDING' => 'Chờ xử lý',
     _ => 'Đã hủy',
   };
+
+  Future<void> _exportPdf() async {
+    if (_isExporting) return;
+    setState(() => _isExporting = true);
+    try {
+      final font     = await PdfGoogleFonts.notoSansRegular();
+      final boldFont = await PdfGoogleFonts.notoSansBold();
+      final currFmt  = NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
+      final dateFmt  = DateFormat('dd/MM/yyyy');
+      final now      = DateTime.now();
+      final items    = _filteredItems;
+      final total    = _page?.totalElements ?? 0;
+
+      final pdf = pw.Document();
+      pdf.addPage(pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        theme: pw.ThemeData.withFont(base: font, bold: boldFont),
+        build: (ctx) => [
+          pw.Header(level: 0, child: pw.Text('Báo cáo Đơn hàng',
+              style: pw.TextStyle(font: boldFont, fontSize: 22))),
+          pw.Text('Xuất ngày: ${dateFmt.format(now)}', style: pw.TextStyle(font: font)),
+          pw.Text('Tổng đơn: $total', style: pw.TextStyle(font: font)),
+          pw.SizedBox(height: 16),
+          if (_stats.isNotEmpty) ...[
+            pw.Header(level: 1, text: 'Phân bổ trạng thái'),
+            pw.Table.fromTextArray(
+              headers: ['Trạng thái', 'Số lượng'],
+              data: _stats.map((s) => [
+                _statusLabel(s['status']?.toString() ?? ''),
+                '${(s['count'] as num? ?? 0).toInt()}',
+              ]).toList(),
+              headerStyle: pw.TextStyle(font: boldFont, fontSize: 10),
+              cellStyle: pw.TextStyle(font: font, fontSize: 9),
+              headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
+            ),
+            pw.SizedBox(height: 16),
+          ],
+          if (items.isNotEmpty) ...[
+            pw.Header(level: 1, text: 'Danh sách đơn hàng'),
+            pw.Table.fromTextArray(
+              headers: ['Mã đơn', 'Khách hàng', 'Ngày tạo', 'Giá trị', 'Trạng thái'],
+              data: items.map((o) => [
+                '#${o.orderId}', o.userName, o.createdAt,
+                currFmt.format(o.totalAmount), _statusLabel(o.status),
+              ]).toList(),
+              headerStyle: pw.TextStyle(font: boldFont, fontSize: 9),
+              cellStyle: pw.TextStyle(font: font, fontSize: 8),
+              headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
+            ),
+          ],
+        ],
+      ));
+
+      final bytes    = await pdf.save();
+      final fileName = 'admin_don_hang_${DateFormat('yyyyMMdd').format(now)}.pdf';
+      final dir      = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
+      final file     = File('${dir.path}/$fileName');
+      await file.writeAsBytes(bytes);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Đã lưu: $fileName'),
+          backgroundColor: Colors.green.shade700,
+          duration: const Duration(seconds: 8),
+          action: SnackBarAction(label: 'Mở file', textColor: Colors.white,
+              onPressed: () => OpenFile.open(file.path)),
+        ));
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi xuất PDF: $e'), backgroundColor: Colors.red));
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
+  List<AdminOrderItem> get _filteredItems {
+    final items = _page?.content ?? [];
+    if (_searchQuery.isEmpty) return items;
+    final q = _searchQuery.toLowerCase();
+    return items.where((o) =>
+      o.userName.toLowerCase().contains(q) ||
+      o.orderId.toString().contains(q)).toList();
+  }
 
   String _fmtPrice(double v) {
     if (v >= 1e6) return '${(v / 1e6).toStringAsFixed(1)}tr';
@@ -106,24 +216,112 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
 
   Widget _buildAppBar() {
     return SliverAppBar(
-      expandedHeight: 130,
+      expandedHeight: 85,
       pinned: true,
       backgroundColor: _accent,
+      elevation: 0,
+      centerTitle: false,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
         onPressed: () => Navigator.pop(context),
       ),
+      title: Text('Đơn hàng',
+          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+      titleSpacing: 0,
+      actions: [
+        IconButton(
+          tooltip: 'Tìm kiếm',
+          icon: Icon(_showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+              color: Colors.white, size: 22),
+          onPressed: () => setState(() {
+            _showSearch = !_showSearch;
+            if (!_showSearch) { _searchCtrl.clear(); _searchQuery = ''; }
+          }),
+        ),
+        IconButton(tooltip: 'Lọc', icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 22), onPressed: () {}),
+        _isExporting
+            ? const Padding(padding: EdgeInsets.symmetric(horizontal: 14),
+                child: SizedBox(width: 20, height: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)))
+            : IconButton(
+                tooltip: 'Xuất PDF',
+                icon: const Icon(Icons.picture_as_pdf_outlined, color: Colors.white, size: 22),
+                onPressed: _exportPdf),
+        const SizedBox(width: 4),
+      ],
+      bottom: _showSearch
+          ? PreferredSize(
+              preferredSize: const Size.fromHeight(48),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: TextField(
+                  controller: _searchCtrl,
+                  autofocus: true,
+                  style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'Tìm theo tên khách hoặc mã đơn...',
+                    hintStyle: GoogleFonts.inter(color: Colors.white54, fontSize: 14),
+                    border: InputBorder.none,
+                    prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 20),
+                  ),
+                  onChanged: (q) => setState(() => _searchQuery = q),
+                ),
+              ),
+            )
+          : null,
       flexibleSpace: FlexibleSpaceBar(
-        titlePadding: const EdgeInsets.fromLTRB(56, 0, 16, 16),
-        title: Text('Đơn hàng',
-            style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)),
         background: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [Color(0xFFD97706), Color(0xFFFBBF24)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
             ),
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                right: -30, top: -20,
+                child: Container(
+                  width: 160, height: 160,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.06),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 56, bottom: 6,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    StreamBuilder(
+                      stream: Stream.periodic(const Duration(seconds: 1)),
+                      builder: (context, _) => Text(
+                        _getTimeAgo(),
+                        style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: Colors.white.withOpacity(0.80),
+                            fontWeight: FontWeight.w400),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _loading ? null : _load,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Padding(
+                          padding: const EdgeInsets.all(6),
+                          child: Icon(Icons.sync_rounded, size: 16,
+                              color: Colors.white.withOpacity(_loading ? 0.4 : 0.9)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -226,7 +424,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
   }
 
   Widget _buildTable() {
-    final items = _page?.content ?? [];
+    final items = _filteredItems;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
       child: Column(

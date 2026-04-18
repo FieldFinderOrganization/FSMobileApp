@@ -1,5 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../../data/datasources/admin_statistics_datasource.dart';
 import '../../data/models/admin_rating_stats_model.dart';
 
@@ -33,6 +40,79 @@ class _AdminRatingScreenState extends State<AdminRatingScreen> {
   void initState() {
     super.initState();
     _load();
+  }
+
+  Future<void> _exportPdf() async {
+    final data = _data;
+    if (data == null) return;
+    setState(() => _loading = true);
+    try {
+      final font     = await PdfGoogleFonts.notoSansRegular();
+      final boldFont = await PdfGoogleFonts.notoSansBold();
+      final dateFmt  = DateFormat('dd/MM/yyyy');
+      final now      = DateTime.now();
+
+      final pdf = pw.Document();
+      pdf.addPage(pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        theme: pw.ThemeData.withFont(base: font, bold: boldFont),
+        build: (ctx) => [
+          pw.Header(level: 0, child: pw.Text('Báo cáo Đánh giá',
+              style: pw.TextStyle(font: boldFont, fontSize: 22))),
+          pw.Text('Xuất ngày: ${dateFmt.format(now)}', style: pw.TextStyle(font: font)),
+          pw.SizedBox(height: 16),
+          pw.Header(level: 1, text: 'Tổng quan'),
+          pw.Bullet(text: 'Tổng đánh giá: ${data.totalReviews}', style: pw.TextStyle(font: font)),
+          pw.Bullet(text: 'Điểm trung bình: ${data.averageRating.toStringAsFixed(1)} / 5.0', style: pw.TextStyle(font: font)),
+          pw.SizedBox(height: 8),
+          pw.Header(level: 1, text: 'Phân bố sao'),
+          pw.Table.fromTextArray(
+            headers: ['Số sao', 'Số lượng', 'Tỉ lệ'],
+            data: data.distribution.map((d) => [
+              '${d.stars} ★', '${d.count}', '${d.percentage.toStringAsFixed(1)}%',
+            ]).toList(),
+            headerStyle: pw.TextStyle(font: boldFont, fontSize: 10),
+            cellStyle: pw.TextStyle(font: font, fontSize: 9),
+            headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
+          ),
+          if (data.recentReviews.isNotEmpty) ...[
+            pw.SizedBox(height: 16),
+            pw.Header(level: 1, text: 'Đánh giá gần đây'),
+            pw.Table.fromTextArray(
+              headers: ['Người dùng', 'Sân', 'Sao', 'Nhận xét', 'Ngày'],
+              data: data.recentReviews.map((r) => [
+                r.userName, r.pitchName, '${r.rating} ★',
+                r.comment.length > 40 ? '${r.comment.substring(0, 40)}...' : r.comment,
+                r.createdAt,
+              ]).toList(),
+              headerStyle: pw.TextStyle(font: boldFont, fontSize: 9),
+              cellStyle: pw.TextStyle(font: font, fontSize: 8),
+              headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
+            ),
+          ],
+        ],
+      ));
+
+      final bytes    = await pdf.save();
+      final fileName = 'admin_danh_gia_${DateFormat('yyyyMMdd').format(now)}.pdf';
+      final dir      = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
+      final file     = File('${dir.path}/$fileName');
+      await file.writeAsBytes(bytes);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Đã lưu: $fileName'),
+          backgroundColor: Colors.green.shade700,
+          duration: const Duration(seconds: 8),
+          action: SnackBarAction(label: 'Mở file', textColor: Colors.white,
+              onPressed: () => OpenFile.open(file.path)),
+        ));
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi xuất PDF: $e'), backgroundColor: Colors.red));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   Future<void> _load() async {
@@ -82,7 +162,8 @@ class _AdminRatingScreenState extends State<AdminRatingScreen> {
       actions: [
         IconButton(tooltip: 'Tìm kiếm', icon: const Icon(Icons.search_rounded, color: Colors.white, size: 22), onPressed: () {}),
         IconButton(tooltip: 'Lọc', icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 22), onPressed: () {}),
-        IconButton(tooltip: 'Xuất PDF', icon: const Icon(Icons.picture_as_pdf_outlined, color: Colors.white, size: 22), onPressed: () {}),
+        IconButton(tooltip: 'Xuất PDF', icon: const Icon(Icons.picture_as_pdf_outlined, color: Colors.white, size: 22),
+            onPressed: _data != null ? _exportPdf : null),
         const SizedBox(width: 4),
       ],
       flexibleSpace: FlexibleSpaceBar(

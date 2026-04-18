@@ -1,7 +1,15 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../../data/datasources/admin_statistics_datasource.dart';
 import '../../data/models/admin_user_list_model.dart';
 import '../../data/models/admin_user_stats_model.dart';
@@ -40,6 +48,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   bool   _showSearch  = false;
   String _searchQuery = '';
   final _searchCtrl   = TextEditingController();
+  bool   _isExporting = false;
+  String? _filterStatus; // null = tất cả, 'ACTIVE', 'BLOCKED'
+  String? _filterRole;   // null = tất cả, 'ADMIN', 'PROVIDER', 'USER'
 
   @override
   void initState() {
@@ -58,7 +69,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       setState(() { _loading = true; _error = null; });
       final results = await Future.wait([
         widget.datasource.getUserStats(),
-        widget.datasource.getUsers(page: _currentPage, search: _searchQuery),
+        widget.datasource.getUsers(page: _currentPage, search: _searchQuery, status: _filterStatus, role: _filterRole),
       ]);
       
       if (!mounted) return;
@@ -77,7 +88,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   Future<void> _loadPage(int page) async {
     setState(() { _currentPage = page; _loading = true; });
     try {
-      final result = await widget.datasource.getUsers(page: page, search: _searchQuery);
+      final result = await widget.datasource.getUsers(page: page, search: _searchQuery, status: _filterStatus, role: _filterRole);
       setState(() { _page = result; _loading = false; });
     } catch (e) {
       setState(() { _error = e.toString(); _loading = false; });
@@ -92,6 +103,225 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       return 'Dữ liệu cập nhật ${diff.inMinutes}p trước';
     } else {
       return 'Dữ liệu cập nhật ${diff.inHours}h trước';
+    }
+  }
+
+  Future<void> _showFilterSheet() async {
+    String? tempStatus = _filterStatus;
+    String? tempRole   = _filterRole;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) {
+          Widget chipGroup(String label, List<Map<String, String?>> items, String? selected, void Function(String?) onSelect) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF1A1D2E))),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  children: items.map((item) {
+                    final val = item['value'];
+                    final isSelected = selected == val;
+                    return ChoiceChip(
+                      label: Text(item['label']!, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500,
+                          color: isSelected ? Colors.white : const Color(0xFF1A1D2E))),
+                      selected: isSelected,
+                      selectedColor: _kPrimary,
+                      checkmarkColor: Colors.white,
+                      backgroundColor: Colors.grey.shade100,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      side: BorderSide.none,
+                      onSelected: (_) => setLocal(() => onSelect(val)),
+                    );
+                  }).toList(),
+                ),
+              ],
+            );
+          }
+
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: EdgeInsets.fromLTRB(24, 20, 24, MediaQuery.of(ctx).viewInsets.bottom + MediaQuery.of(ctx).padding.bottom + 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
+                const SizedBox(height: 16),
+                Text('Lọc người dùng', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: const Color(0xFF1A1D2E))),
+                const SizedBox(height: 20),
+                chipGroup('Trạng thái', [
+                  {'label': 'Tất cả', 'value': null},
+                  {'label': 'Hoạt động', 'value': 'ACTIVE'},
+                  {'label': 'Bị khóa',   'value': 'BLOCKED'},
+                ], tempStatus, (v) => tempStatus = v),
+                const SizedBox(height: 20),
+                chipGroup('Vai trò', [
+                  {'label': 'Tất cả',        'value': null},
+                  {'label': 'Admin',          'value': 'ADMIN'},
+                  {'label': 'Nhà cung cấp',  'value': 'PROVIDER'},
+                  {'label': 'Người dùng',    'value': 'USER'},
+                ], tempRole, (v) => tempRole = v),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          setLocal(() { tempStatus = null; tempRole = null; });
+                        },
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.grey.shade300),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: Text('Đặt lại', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey.shade600)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            _filterStatus = tempStatus;
+                            _filterRole   = tempRole;
+                            _currentPage  = 0;
+                          });
+                          Navigator.pop(ctx);
+                          _load();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _kPrimary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          elevation: 0,
+                        ),
+                        child: Text('Áp dụng', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _exportPdf() async {
+    if (_isExporting) return;
+
+    final total = _page?.totalElements ?? 0;
+    if (total == 0) return;
+
+    // Dialog chọn số lượng
+    final options = <Map<String, dynamic>>[
+      if (total > 50) {'label': '50 bản ghi đầu', 'size': 50},
+      if (total > 100) {'label': '100 bản ghi đầu', 'size': 100},
+      {'label': 'Tất cả ($total bản ghi)', 'size': total},
+    ];
+
+    int? chosenSize;
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Chọn số lượng xuất', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: options.map((opt) => ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(opt['label'] as String, style: GoogleFonts.inter(fontSize: 13)),
+            leading: Radio<int>(
+              value: opt['size'] as int,
+              groupValue: chosenSize,
+              activeColor: _kPrimary,
+              onChanged: (v) { chosenSize = v; Navigator.pop(ctx); },
+            ),
+            onTap: () { chosenSize = opt['size'] as int; Navigator.pop(ctx); },
+          )).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Huỷ', style: GoogleFonts.inter(color: Colors.grey.shade600)),
+          ),
+        ],
+      ),
+    );
+    if (chosenSize == null) return;
+
+    setState(() => _isExporting = true);
+    try {
+      final exportData = await widget.datasource.getUsers(
+        page: 0, size: chosenSize!, search: _searchQuery,
+        status: _filterStatus, role: _filterRole,
+      );
+      final font     = await PdfGoogleFonts.notoSansRegular();
+      final boldFont = await PdfGoogleFonts.notoSansBold();
+      final dateFmt  = DateFormat('dd/MM/yyyy');
+      final now      = DateTime.now();
+      final items    = exportData.content;
+      final stats    = _stats;
+
+      final pdf = pw.Document();
+      pdf.addPage(pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        theme: pw.ThemeData.withFont(base: font, bold: boldFont),
+        build: (ctx) => [
+          pw.Header(level: 0, child: pw.Text('Báo cáo Người dùng',
+              style: pw.TextStyle(font: boldFont, fontSize: 22))),
+          pw.Text('Xuất ngày: ${dateFmt.format(now)}', style: pw.TextStyle(font: font)),
+          pw.SizedBox(height: 16),
+          if (stats != null) ...[
+            pw.Header(level: 1, text: 'Tổng quan'),
+            pw.Bullet(text: 'Tổng người dùng: ${stats.total}', style: pw.TextStyle(font: font)),
+            ...stats.byStatus.map((s) => pw.Bullet(
+                text: '${s.status}: ${s.count}', style: pw.TextStyle(font: font))),
+            pw.SizedBox(height: 16),
+          ],
+          if (items.isNotEmpty) ...[
+            pw.Header(level: 1, text: 'Danh sách người dùng'),
+            pw.Table.fromTextArray(
+              headers: ['Tên', 'Email', 'Điện thoại', 'Vai trò', 'Trạng thái'],
+              data: items.map((u) => [
+                u.name, u.email, u.phone, u.role, u.status,
+              ]).toList(),
+              headerStyle: pw.TextStyle(font: boldFont, fontSize: 9),
+              cellStyle: pw.TextStyle(font: font, fontSize: 8),
+              headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
+            ),
+          ],
+        ],
+      ));
+
+      final bytes    = await pdf.save();
+      final fileName = 'admin_nguoi_dung_${DateFormat('yyyyMMdd').format(now)}.pdf';
+      final tempDir  = await getTemporaryDirectory();
+      final file     = File('${tempDir.path}/$fileName');
+      await file.writeAsBytes(bytes);
+      if (mounted) {
+        await Share.shareXFiles(
+          [XFile(file.path, mimeType: 'application/pdf')],
+          subject: fileName,
+        );
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi xuất PDF: $e'), backgroundColor: Colors.red));
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
     }
   }
 
@@ -211,9 +441,30 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         ),
         IconButton(
           tooltip: 'Lọc',
-          icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 22),
-          onPressed: () {},
+          icon: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              const Icon(Icons.tune_rounded, color: Colors.white, size: 22),
+              if (_filterStatus != null || _filterRole != null)
+                Positioned(
+                  top: -2, right: -2,
+                  child: Container(
+                    width: 8, height: 8,
+                    decoration: const BoxDecoration(color: _kRed, shape: BoxShape.circle),
+                  ),
+                ),
+            ],
+          ),
+          onPressed: _showFilterSheet,
         ),
+        _isExporting
+            ? const Padding(padding: EdgeInsets.symmetric(horizontal: 14),
+                child: SizedBox(width: 20, height: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)))
+            : IconButton(
+                tooltip: 'Xuất PDF',
+                icon: const Icon(Icons.picture_as_pdf_outlined, color: Colors.white, size: 22),
+                onPressed: _exportPdf),
         IconButton(
           tooltip: 'Thêm người dùng',
           icon: const Icon(Icons.person_add_alt_1_rounded, color: Colors.white, size: 22),

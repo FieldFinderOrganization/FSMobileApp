@@ -1,7 +1,14 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../../data/datasources/admin_statistics_datasource.dart';
 import '../../data/models/admin_pitch_list_model.dart';
 import '../../data/models/pitch_type_model.dart';
@@ -49,6 +56,7 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
   // Biến chống lỗi đua mạng (Race Condition) và hạn chế spam API
   Timer? _debounce;
   int _fetchId = 0;
+  bool _isExporting = false;
 
   @override
   void initState() {
@@ -96,6 +104,66 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
     _debounce = Timer(const Duration(milliseconds: 500), () {
       _load(page: 0);
     });
+  }
+
+  Future<void> _exportPdf() async {
+    if (_isExporting) return;
+    setState(() => _isExporting = true);
+    try {
+      final font     = await PdfGoogleFonts.notoSansRegular();
+      final boldFont = await PdfGoogleFonts.notoSansBold();
+      final currFmt  = NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
+      final dateFmt  = DateFormat('dd/MM/yyyy');
+      final now      = DateTime.now();
+      final items    = _page?.content ?? [];
+      final total    = _page?.totalElements ?? 0;
+
+      final pdf = pw.Document();
+      pdf.addPage(pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        theme: pw.ThemeData.withFont(base: font, bold: boldFont),
+        build: (ctx) => [
+          pw.Header(level: 0, child: pw.Text('Báo cáo Sân hoạt động',
+              style: pw.TextStyle(font: boldFont, fontSize: 22))),
+          pw.Text('Xuất ngày: ${dateFmt.format(now)}', style: pw.TextStyle(font: font)),
+          pw.Text('Tổng số sân: $total', style: pw.TextStyle(font: font)),
+          pw.SizedBox(height: 16),
+          if (items.isNotEmpty) ...[
+            pw.Header(level: 1, text: 'Danh sách sân'),
+            pw.Table.fromTextArray(
+              headers: ['Tên sân', 'Loại', 'Nhà cung cấp', 'Giá', 'Môi trường'],
+              data: items.map((p) => [
+                p.name, p.type, p.providerName,
+                currFmt.format(p.price), p.environment,
+              ]).toList(),
+              headerStyle: pw.TextStyle(font: boldFont, fontSize: 9),
+              cellStyle: pw.TextStyle(font: font, fontSize: 8),
+              headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
+            ),
+          ],
+        ],
+      ));
+
+      final bytes    = await pdf.save();
+      final fileName = 'admin_san_${DateFormat('yyyyMMdd').format(now)}.pdf';
+      final dir      = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
+      final file     = File('${dir.path}/$fileName');
+      await file.writeAsBytes(bytes);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Đã lưu: $fileName'),
+          backgroundColor: Colors.green.shade700,
+          duration: const Duration(seconds: 8),
+          action: SnackBarAction(label: 'Mở file', textColor: Colors.white,
+              onPressed: () => OpenFile.open(file.path)),
+        ));
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi xuất PDF: $e'), backgroundColor: Colors.red));
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
   }
 
   String _getTimeAgo() {
@@ -223,11 +291,14 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
           icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 22),
           onPressed: () {}, 
         ),
-        IconButton(
-          tooltip: 'Thêm sân',
-          icon: const Icon(Icons.add_business_rounded, color: Colors.white, size: 22),
-          onPressed: () {}, 
-        ),
+        _isExporting
+            ? const Padding(padding: EdgeInsets.symmetric(horizontal: 14),
+                child: SizedBox(width: 20, height: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)))
+            : IconButton(
+                tooltip: 'Xuất PDF',
+                icon: const Icon(Icons.picture_as_pdf_outlined, color: Colors.white, size: 22),
+                onPressed: _exportPdf),
         const SizedBox(width: 4),
       ],
       flexibleSpace: FlexibleSpaceBar(
