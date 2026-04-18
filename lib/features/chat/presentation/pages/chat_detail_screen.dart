@@ -12,6 +12,7 @@ import '../../../checkout/domain/entities/checkout_item_entity.dart';
 import '../../../checkout/presentation/pages/checkout_screen.dart';
 import '../../../pitch/domain/entities/pitch_entity.dart';
 import '../../../pitch/presentation/pages/pitch_detail_screen.dart';
+import '../../../product/presentation/pages/product_detail_screen.dart';
 import '../widgets/chat_bubble.dart';
 
 class ChatDetailScreen extends StatefulWidget {
@@ -163,6 +164,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                                     products: (msg.aiData!['products']
                                         as List<dynamic>)
                                         .cast<Map<String, dynamic>>()),
+                              if (!msg.isUser &&
+                                  msg.aiData != null &&
+                                  msg.aiData!['showImage'] == true &&
+                                  msg.aiData!['product'] != null)
+                                _SingleProductImage(aiData: msg.aiData!),
                             ],
                           );
                         },
@@ -483,3 +489,151 @@ class _BookPitchButton extends StatelessWidget {
     );
   }
 }
+
+class _SingleProductImage extends StatelessWidget {
+  final Map<String, dynamic> aiData;
+
+  const _SingleProductImage({required this.aiData});
+
+  @override
+  Widget build(BuildContext context) {
+    final product = aiData['product'] as Map<String, dynamic>?;
+    if (product == null) return const SizedBox.shrink();
+
+    final imageUrl = product['imageUrl'] as String? ?? '';
+    final name = product['name'] as String? ?? '';
+    final rawId = product['id'] ?? product['productId'];
+    final productId = rawId?.toString();
+
+    if (imageUrl.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(left: 12, right: 60, top: 4, bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          GestureDetector(
+            onTap: () {
+              // Phóng to ảnh
+              showDialog(
+                context: context,
+                builder: (_) => Dialog(
+                  backgroundColor: Colors.transparent,
+                  insetPadding: const EdgeInsets.all(16),
+                  child: Stack(
+                    alignment: Alignment.topRight,
+                    children: [
+                      InteractiveViewer(
+                        panEnabled: true,
+                        minScale: 0.5,
+                        maxScale: 4,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            imageUrl,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => const Center(
+                              child: Icon(Icons.broken_image,
+                                  color: Colors.grey, size: 48),
+                            ),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close,
+                            color: Colors.white, size: 30),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+            child: ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(12)),
+              child: Image.network(
+                imageUrl,
+                height: 200,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  height: 200,
+                  color: const Color(0xFFF3F4F6),
+                  child: const Center(
+                    child: Icon(Icons.image_outlined,
+                        color: Colors.grey, size: 48),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: const Color(0xFF1F2937),
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: (productId == null || productId.isEmpty)
+                        ? null
+                        : () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    ProductDetailScreen(productId: productId),
+                              ),
+                            );
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppColors.primaryRed,
+                      side: const BorderSide(color: AppColors.primaryRed),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'Xem chi tiết',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
