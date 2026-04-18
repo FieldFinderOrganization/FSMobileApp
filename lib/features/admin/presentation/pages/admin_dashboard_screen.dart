@@ -167,7 +167,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeroHeader(state.overview),
+          _buildHeroHeader(state),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
@@ -198,10 +198,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   // ─── HERO HEADER ─────────────────────────────────────────────────────────
 
-  Widget _buildHeroHeader(AdminOverviewModel overview) {
+  Widget _buildHeroHeader(AdminDashboardLoaded state) {
+    final overview = state.overview;
     final now = DateTime.now();
     final dateStr = DateFormat('EEEE, d MMMM, y', 'vi').format(now);
     final revenue = _formatRevenue(overview.totalRevenue);
+    final ds = context.read<AdminDashboardCubit>().datasource;
 
     final statusBarHeight = MediaQuery.of(context).padding.top;
     return Container(
@@ -261,6 +263,26 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     ),
                     child: const Icon(Icons.notifications_outlined,
                         color: Colors.white, size: 22),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ClipOval(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  child: InkWell(
+                    onTap: () => Scaffold.of(context).openDrawer(),
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            color: Colors.white.withOpacity(0.25), width: 1),
+                      ),
+                      child: const Icon(Icons.menu_rounded,
+                          color: Colors.white, size: 22),
+                    ),
                   ),
                 ),
               ),
@@ -328,15 +350,25 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             children: [
               Expanded(
                   child: _buildGlassStat(
-                      revenue, 'Doanh thu', Icons.trending_up)),
+                      revenue, 'Doanh thu', Icons.trending_up,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(
+                            builder: (_) => AdminRevenueScreen(
+                              overview: overview,
+                              revenueData: state.revenueData,
+                              datasource: ds,
+                            ))))),
               const SizedBox(width: 10),
               Expanded(
                   child: _buildGlassStat('${overview.totalUsers}', 'Người dùng',
-                      Icons.people_outline)),
+                      Icons.people_outline,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(
+                            builder: (_) => AdminUsersScreen(datasource: ds))))),
               const SizedBox(width: 10),
               Expanded(
                   child: _buildGlassStat('${overview.bookingsTodayCount}',
-                      'Đặt sân HN', Icons.calendar_today_outlined)),
+                      'Đặt sân HN', Icons.calendar_today_outlined,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(
+                            builder: (_) => AdminBookingsScreen(datasource: ds))))),
             ],
           ),
         ],
@@ -344,45 +376,55 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  Widget _buildGlassStat(String value, String label, IconData icon) {
+  Widget _buildGlassStat(String value, String label, IconData icon,
+      {VoidCallback? onTap}) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.13),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            splashColor: Colors.white.withOpacity(0.15),
+            highlightColor: Colors.white.withOpacity(0.08),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.22), width: 1),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: Colors.white.withOpacity(0.8), size: 14),
-              const SizedBox(height: 6),
-              Text(
-                value,
-                style: GoogleFonts.inter(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  height: 1,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.13),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withOpacity(0.22), width: 1),
               ),
-              const SizedBox(height: 3),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                    fontSize: 10,
-                    color: Colors.white.withOpacity(0.65),
-                    height: 1),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(icon, color: Colors.white.withOpacity(0.8), size: 14),
+                  const SizedBox(height: 6),
+                  Text(
+                    value,
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      height: 1,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    label,
+                    style: GoogleFonts.inter(
+                        fontSize: 10,
+                        color: Colors.white.withOpacity(0.65),
+                        height: 1),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -411,7 +453,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return Column(
       children: [
         GestureDetector(
-          onTap: () => push(AdminRevenueScreen(overview: overview, revenueData: revenueData)),
+          onTap: () => push(AdminRevenueScreen(overview: overview, revenueData: revenueData, datasource: ds)),
           child: _buildLargeKpiCard(
             title: 'Tổng doanh thu',
             value: _formatRevenue(overview.totalRevenue),
@@ -944,7 +986,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildRevenueChart(List<RevenuePointModel> data,
       AdminOverviewModel overview, int selectedRange) {
     final spots = _revenueToSpots(data);
-    final total = _formatRevenue(overview.totalRevenue);
+    final periodTotal = data.fold(0.0, (sum, r) => sum + r.revenue);
+    final total = _formatRevenue(selectedRange == 3 ? overview.totalRevenue : periodTotal);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),

@@ -8,17 +8,20 @@ import 'package:share_plus/share_plus.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import '../../data/datasources/admin_statistics_datasource.dart';
 import '../../data/models/admin_overview_model.dart';
 import '../../data/models/revenue_point_model.dart';
 
 class AdminRevenueScreen extends StatefulWidget {
   final AdminOverviewModel overview;
   final List<RevenuePointModel> revenueData;
+  final AdminStatisticsDatasource datasource;
 
   const AdminRevenueScreen({
     super.key,
     required this.overview,
     required this.revenueData,
+    required this.datasource,
   });
 
   @override
@@ -31,9 +34,51 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
   static const _kTeal   = Color(0xFF0D9988);
   static const _kViolet = Color(0xFF7C6FCD);
 
+  static const _rangeLabels = ['Quý này', 'Tháng này', 'Năm này', 'Tất cả'];
+  static const _rangeChips  = ['Quý', 'Tháng', 'Năm', 'Tất cả'];
+
+  int _selectedRange = 1; // 0=Quý, 1=Tháng, 2=Năm, 3=Tất cả
+  bool _loading = false;
+
+  late List<RevenuePointModel> _revenueData;
   late List<RevenuePointModel> _sorted;
-  final DateTime _lastUpdated = DateTime.now();
+  late double _periodTotal;
+  DateTime _lastUpdated = DateTime.now();
   bool _isExporting = false;
+
+  (String, String) _getDateRange(int range) {
+    final now = DateTime.now();
+    late DateTime start;
+    switch (range) {
+      case 0: start = now.subtract(const Duration(days: 90));        break;
+      case 1: start = now.subtract(const Duration(days: 30));        break;
+      case 2: start = now.subtract(const Duration(days: 365));       break;
+      default: start = now.subtract(const Duration(days: 365 * 5)); break;
+    }
+    final fmt = DateFormat('yyyy-MM-dd');
+    return (fmt.format(start), fmt.format(now));
+  }
+
+  void _applyData(List<RevenuePointModel> data) {
+    _revenueData = data;
+    _sorted = data.where((r) => r.revenue > 0).toList()
+      ..sort((a, b) => b.revenue.compareTo(a.revenue));
+    _periodTotal = data.fold(0.0, (sum, r) => sum + r.revenue);
+    _lastUpdated = DateTime.now();
+  }
+
+  Future<void> _loadRevenue() async {
+    setState(() => _loading = true);
+    try {
+      final (start, end) = _getDateRange(_selectedRange);
+      final data = await widget.datasource.getRevenue(startDate: start, endDate: end);
+      if (mounted) setState(() => _applyData(data));
+    } catch (_) {
+      // keep existing data on error
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   String _getTimeAgo() {
     final diff = DateTime.now().difference(_lastUpdated);
@@ -45,8 +90,9 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
   @override
   void initState() {
     super.initState();
-    _sorted = List.of(widget.revenueData)
-      ..sort((a, b) => b.revenue.compareTo(a.revenue));
+    _applyData(widget.revenueData);
+    // Load data for default range (Tháng)
+    _loadRevenue();
   }
 
   Future<void> _exportPdf() async {
@@ -69,9 +115,11 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
             pw.Header(level: 0, child: pw.Text('Báo cáo Doanh thu Admin',
                 style: pw.TextStyle(font: boldFont, fontSize: 22))),
             pw.Text('Xuất ngày: ${dateFmt.format(now)}', style: pw.TextStyle(font: font)),
-            pw.Text('Số ngày có dữ liệu: ${_sorted.length}', style: pw.TextStyle(font: font)),
+            pw.Text('Số ngày có doanh thu: ${_sorted.length}', style: pw.TextStyle(font: font)),
             pw.SizedBox(height: 16),
-            pw.Header(level: 1, text: 'Tổng quan'),
+            pw.Header(level: 1, text: 'Tổng quan kỳ này'),
+            pw.Bullet(text: 'Tổng doanh thu ${_rangeLabels[_selectedRange].toLowerCase()}: ${currFmt.format(_selectedRange == 3 ? ov.totalRevenue : _periodTotal)}', style: pw.TextStyle(font: font)),
+            pw.Header(level: 1, text: 'Tổng quan toàn thời gian'),
             pw.Bullet(text: 'Tổng doanh thu: ${currFmt.format(ov.totalRevenue)}', style: pw.TextStyle(font: font)),
             pw.Bullet(text: 'Doanh thu đặt sân: ${currFmt.format(ov.bookingRevenue)}', style: pw.TextStyle(font: font)),
             pw.Bullet(text: 'Doanh thu sản phẩm: ${currFmt.format(ov.productRevenue)}', style: pw.TextStyle(font: font)),
@@ -183,7 +231,7 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
                   width: 160, height: 160,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.06),
+                    color: Colors.white.withValues(alpha: 0.06),
                   ),
                 ),
               ),
@@ -198,7 +246,7 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
                         _getTimeAgo(),
                         style: GoogleFonts.inter(
                             fontSize: 13,
-                            color: Colors.white.withOpacity(0.80),
+                            color: Colors.white.withValues(alpha: 0.80),
                             fontWeight: FontWeight.w400),
                       ),
                     ),
@@ -211,7 +259,7 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
                         child: Padding(
                           padding: const EdgeInsets.all(6),
                           child: Icon(Icons.sync_rounded, size: 16,
-                              color: Colors.white.withOpacity(0.9)),
+                              color: Colors.white.withValues(alpha: 0.9)),
                         ),
                       ),
                     ),
@@ -232,14 +280,45 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Time range selector
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List.generate(_rangeChips.length, (i) {
+                final selected = i == _selectedRange;
+                return Padding(
+                  padding: EdgeInsets.only(right: i < _rangeChips.length - 1 ? 8 : 0),
+                  child: ChoiceChip(
+                    label: Text(_rangeChips[i],
+                        style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: selected ? Colors.white : _accent)),
+                    selected: selected,
+                    selectedColor: _accent,
+                    backgroundColor: _accent.withValues(alpha: 0.08),
+                    side: BorderSide(color: selected ? _accent : _accent.withValues(alpha: 0.2)),
+                    onSelected: (_) {
+                      if (i != _selectedRange) {
+                        setState(() => _selectedRange = i);
+                        _loadRevenue();
+                      }
+                    },
+                  ),
+                );
+              }),
+            ),
+          ),
+          const SizedBox(height: 16),
           // Summary chips
           Row(
             children: [
-              _chip('Tổng', _fmt(ov.totalRevenue), _accent),
+              _chip(_rangeLabels[_selectedRange],
+                  _fmt(_selectedRange == 3 ? ov.totalRevenue : _periodTotal), _accent),
               const SizedBox(width: 10),
-              _chip('Đặt sân', _fmt(ov.bookingRevenue), _kTeal),
+              _chip('Đặt sân\n(tổng)', _fmt(ov.bookingRevenue), _kTeal),
               const SizedBox(width: 10),
-              _chip('Sản phẩm', _fmt(ov.productRevenue), _kViolet),
+              _chip('Sản phẩm\n(tổng)', _fmt(ov.productRevenue), _kViolet),
             ],
           ),
           const SizedBox(height: 20),
@@ -249,7 +328,7 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: _accent.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 6))],
+              boxShadow: [BoxShadow(color: _accent.withValues(alpha: 0.08), blurRadius: 20, offset: const Offset(0, 6))],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,7 +336,10 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
                 Text('Xu hướng doanh thu',
                     style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black87)),
                 const SizedBox(height: 16),
-                if (widget.revenueData.isEmpty)
+                if (_loading)
+                  const SizedBox(height: 160,
+                      child: Center(child: CircularProgressIndicator(strokeWidth: 2)))
+                else if (_revenueData.isEmpty)
                   SizedBox(height: 160, child: Center(child: Text('Chưa có dữ liệu', style: GoogleFonts.inter(color: Colors.grey.shade400))))
                 else
                   SizedBox(height: 160, child: _buildChart()),
@@ -265,7 +347,10 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          // Breakdown
+          // Breakdown — tổng toàn thời gian
+          Text('Tổng doanh thu (toàn thời gian)',
+              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey.shade500)),
+          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(child: _breakdownCard('Đặt sân', ov.bookingRevenue, _kTeal, Icons.sports_soccer_outlined)),
@@ -275,14 +360,14 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
           ),
           const SizedBox(height: 24),
           // Top days table
-          Text('Top 10 ngày doanh thu cao nhất',
+          Text('Top 10 ngày doanh thu cao nhất (kỳ này)',
               style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.black87)),
           const SizedBox(height: 12),
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: _accent.withOpacity(0.06), blurRadius: 20, offset: const Offset(0, 4))],
+              boxShadow: [BoxShadow(color: _accent.withValues(alpha: 0.06), blurRadius: 20, offset: const Offset(0, 4))],
             ),
             child: Column(
               children: _sorted.take(10).toList().asMap().entries.map((e) {
@@ -297,7 +382,7 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
   }
 
   Widget _buildChart() {
-    final pts = widget.revenueData;
+    final pts = _revenueData;
     final maxY = pts.map((p) => p.revenue).fold(0.0, (a, b) => a > b ? a : b);
     final spots = pts.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value.revenue)).toList();
 
@@ -336,7 +421,7 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
             belowBarData: BarAreaData(
               show: true,
               gradient: LinearGradient(
-                colors: [_accent.withOpacity(0.25), _accent.withOpacity(0.0)],
+                colors: [_accent.withValues(alpha: 0.25), _accent.withValues(alpha: 0.0)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -359,7 +444,7 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
                 height: 26,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: rank <= 3 ? _accent.withOpacity(0.12) : Colors.grey.shade100,
+                  color: rank <= 3 ? _accent.withValues(alpha: 0.12) : Colors.grey.shade100,
                   shape: BoxShape.circle,
                 ),
                 child: Text('$rank',
@@ -386,11 +471,11 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(14)),
+        decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(14)),
         child: Column(
           children: [
             Text(value, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: color)),
-            Text(label, style: GoogleFonts.inter(fontSize: 10, color: color.withOpacity(0.8))),
+            Text(label, style: GoogleFonts.inter(fontSize: 10, color: color.withValues(alpha: 0.8))),
           ],
         ),
       ),
@@ -403,13 +488,13 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: color.withOpacity(0.08), blurRadius: 16, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: color.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, 4))],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: color.withOpacity(0.12), shape: BoxShape.circle),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.12), shape: BoxShape.circle),
             child: Icon(icon, color: color, size: 18),
           ),
           const SizedBox(width: 12),

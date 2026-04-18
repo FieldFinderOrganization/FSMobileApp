@@ -4,8 +4,14 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../features/auth/domain/entities/user_entity.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../features/home/presentation/pages/main_shell.dart';
 import '../cubit/admin_dashboard_cubit.dart';
+import '../cubit/admin_dashboard_state.dart';
+import 'admin_bookings_screen.dart';
 import 'admin_dashboard_screen.dart';
+import 'admin_orders_screen.dart';
+import 'admin_pitches_screen.dart';
+import 'admin_users_screen.dart';
 
 class AdminShell extends StatefulWidget {
   final UserEntity user;
@@ -98,30 +104,47 @@ class _AdminShellState extends State<AdminShell> {
     }
   }
 
+  void _pushScreen(Widget screen) {
+    Navigator.pop(context); // close drawer
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+  }
+
   Widget _buildCleanDrawer() {
     return Drawer(
       width: 280,
       backgroundColor: const Color(0xFF1A1A2E),
       surfaceTintColor: Colors.transparent,
       child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDrawerHeader(),
-            const Divider(
-                height: 1, thickness: 1, color: Color(0xFF2A2A4A)),
-            const SizedBox(height: 12),
-            _buildDrawerItem(0, 'Tổng quan', Icons.space_dashboard_outlined),
-            _buildDrawerItem(1, 'Người dùng', Icons.people_outline),
-            _buildDrawerItem(2, 'Sân bóng', Icons.sports_soccer_outlined),
-            _buildDrawerItem(3, 'Khu vực', Icons.map_outlined),
-            _buildDrawerItem(4, 'Đặt sân', Icons.calendar_today_outlined),
-            _buildDrawerItem(5, 'Đơn hàng', Icons.receipt_long_outlined),
-            const Spacer(),
-            const Divider(
-                height: 1, thickness: 1, color: Color(0xFF2A2A4A)),
-            _buildLogoutItem(),
-          ],
+        child: BlocBuilder<AdminDashboardCubit, AdminDashboardState>(
+          builder: (context, state) {
+            final cubit = context.read<AdminDashboardCubit>();
+            final loaded = state is AdminDashboardLoaded ? state : null;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildDrawerHeader(),
+                const Divider(height: 1, thickness: 1, color: Color(0xFF2A2A4A)),
+                const SizedBox(height: 12),
+                _buildDrawerItem(0, 'Tổng quan', Icons.space_dashboard_outlined,
+                    onTap: () => Navigator.pop(context)),
+                _buildDrawerItem(1, 'Người dùng', Icons.people_outline,
+                    onTap: () => _pushScreen(AdminUsersScreen(datasource: cubit.datasource))),
+                _buildDrawerItem(2, 'Sân bóng', Icons.sports_soccer_outlined,
+                    onTap: () => _pushScreen(AdminPitchesScreen(
+                          datasource: cubit.datasource,
+                          pitchTypeData: loaded?.pitchesByType ?? [],
+                        ))),
+                _buildDrawerItem(4, 'Đặt sân', Icons.calendar_today_outlined,
+                    onTap: () => _pushScreen(AdminBookingsScreen(datasource: cubit.datasource))),
+                _buildDrawerItem(5, 'Đơn hàng', Icons.receipt_long_outlined,
+                    onTap: () => _pushScreen(AdminOrdersScreen(datasource: cubit.datasource))),
+                const Spacer(),
+                const Divider(height: 1, thickness: 1, color: Color(0xFF2A2A4A)),
+                _buildBackToAppItem(),
+                _buildLogoutItem(),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -169,15 +192,12 @@ class _AdminShellState extends State<AdminShell> {
     );
   }
 
-  Widget _buildDrawerItem(int index, String title, IconData icon) {
+  Widget _buildDrawerItem(int index, String title, IconData icon, {VoidCallback? onTap}) {
     final isSelected = _selectedIndex == index;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       child: InkWell(
-        onTap: () {
-          setState(() => _selectedIndex = index);
-          Navigator.pop(context);
-        },
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         splashColor: AppColors.primaryRed.withOpacity(0.1),
         child: Container(
@@ -211,6 +231,35 @@ class _AdminShellState extends State<AdminShell> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBackToAppItem() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => MainShell(user: widget.user)),
+            (route) => false,
+          );
+        },
+        child: Row(
+          children: [
+            const Icon(Icons.arrow_back_ios_new_rounded,
+                color: Colors.white54, size: 20),
+            const SizedBox(width: 14),
+            Text(
+              'Quay lại app chính',
+              style: GoogleFonts.inter(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.white54,
+              ),
+            ),
+          ],
         ),
       ),
     );
