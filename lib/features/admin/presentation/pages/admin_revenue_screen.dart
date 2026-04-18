@@ -19,11 +19,20 @@ class AdminRevenueScreen extends StatefulWidget {
 }
 
 class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
-  static const _accent = Color(0xFF3E54AC);
-  static const _kTeal = Color(0xFF0D9988);
+  static const _accent    = Color(0xFF3E54AC);
+  static const _accentEnd = Color(0xFF5C75D4);
+  static const _kTeal   = Color(0xFF0D9988);
   static const _kViolet = Color(0xFF7C6FCD);
 
   late List<RevenuePointModel> _sorted;
+  final DateTime _lastUpdated = DateTime.now();
+
+  String _getTimeAgo() {
+    final diff = DateTime.now().difference(_lastUpdated);
+    if (diff.inSeconds < 60) return 'Cập nhật ${diff.inSeconds} giây trước';
+    if (diff.inMinutes < 60) return 'Cập nhật ${diff.inMinutes}p trước';
+    return 'Cập nhật ${diff.inHours}h trước';
+  }
 
   @override
   void initState() {
@@ -54,24 +63,77 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
 
   Widget _buildAppBar() {
     return SliverAppBar(
-      expandedHeight: 130,
+      expandedHeight: 85,
       pinned: true,
       backgroundColor: _accent,
+      elevation: 0,
+      centerTitle: false,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
         onPressed: () => Navigator.pop(context),
       ),
+      title: Text('Doanh thu',
+          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+      titleSpacing: 0,
+      actions: [
+        IconButton(tooltip: 'Tìm kiếm', icon: const Icon(Icons.search_rounded, color: Colors.white, size: 22), onPressed: () {}),
+        IconButton(tooltip: 'Lọc', icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 22), onPressed: () {}),
+        IconButton(tooltip: 'Xuất PDF', icon: const Icon(Icons.picture_as_pdf_outlined, color: Colors.white, size: 22), onPressed: () {}),
+        const SizedBox(width: 4),
+      ],
       flexibleSpace: FlexibleSpaceBar(
-        titlePadding: const EdgeInsets.fromLTRB(56, 0, 16, 16),
-        title: Text('Doanh thu',
-            style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)),
         background: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF2A3D8F), Color(0xFF5C75D4)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+              colors: [_accent, _accentEnd],
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
             ),
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                right: -30, top: -20,
+                child: Container(
+                  width: 160, height: 160,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.06),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 56, bottom: 6,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    StreamBuilder(
+                      stream: Stream.periodic(const Duration(seconds: 1)),
+                      builder: (context, _) => Text(
+                        _getTimeAgo(),
+                        style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: Colors.white.withOpacity(0.80),
+                            fontWeight: FontWeight.w400),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => setState(() {}),
+                        borderRadius: BorderRadius.circular(20),
+                        child: Padding(
+                          padding: const EdgeInsets.all(6),
+                          child: Icon(Icons.sync_rounded, size: 16,
+                              color: Colors.white.withOpacity(0.9)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),

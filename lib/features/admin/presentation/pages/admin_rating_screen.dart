@@ -13,12 +13,21 @@ class AdminRatingScreen extends StatefulWidget {
 }
 
 class _AdminRatingScreenState extends State<AdminRatingScreen> {
-  static const _accent = Color(0xFF7C6FCD);
+  static const _accent    = Color(0xFF7C6FCD);
+  static const _accentEnd = Color(0xFF9B8EE0);
   static const _gold = Color(0xFFF59E0B);
 
   AdminRatingStatsModel? _data;
   bool _loading = true;
   String? _error;
+  DateTime _lastUpdated = DateTime.now();
+
+  String _getTimeAgo() {
+    final diff = DateTime.now().difference(_lastUpdated);
+    if (diff.inSeconds < 60) return 'Cập nhật ${diff.inSeconds} giây trước';
+    if (diff.inMinutes < 60) return 'Cập nhật ${diff.inMinutes}p trước';
+    return 'Cập nhật ${diff.inHours}h trước';
+  }
 
   @override
   void initState() {
@@ -30,7 +39,7 @@ class _AdminRatingScreenState extends State<AdminRatingScreen> {
     setState(() { _loading = true; _error = null; });
     try {
       final result = await widget.datasource.getRatingStats();
-      setState(() { _data = result; _loading = false; });
+      setState(() { _data = result; _loading = false; _lastUpdated = DateTime.now(); });
     } catch (e) {
       setState(() { _error = e.toString(); _loading = false; });
     }
@@ -58,24 +67,77 @@ class _AdminRatingScreenState extends State<AdminRatingScreen> {
 
   Widget _buildAppBar() {
     return SliverAppBar(
-      expandedHeight: 130,
+      expandedHeight: 85,
       pinned: true,
       backgroundColor: _accent,
+      elevation: 0,
+      centerTitle: false,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
         onPressed: () => Navigator.pop(context),
       ),
+      title: Text('Đánh giá',
+          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+      titleSpacing: 0,
+      actions: [
+        IconButton(tooltip: 'Tìm kiếm', icon: const Icon(Icons.search_rounded, color: Colors.white, size: 22), onPressed: () {}),
+        IconButton(tooltip: 'Lọc', icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 22), onPressed: () {}),
+        IconButton(tooltip: 'Xuất PDF', icon: const Icon(Icons.picture_as_pdf_outlined, color: Colors.white, size: 22), onPressed: () {}),
+        const SizedBox(width: 4),
+      ],
       flexibleSpace: FlexibleSpaceBar(
-        titlePadding: const EdgeInsets.fromLTRB(56, 0, 16, 16),
-        title: Text('Đánh giá',
-            style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)),
         background: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF5C4FC7), Color(0xFF9B8EE0)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+              colors: [_accent, _accentEnd],
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
             ),
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                right: -30, top: -20,
+                child: Container(
+                  width: 160, height: 160,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.06),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 56, bottom: 6,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    StreamBuilder(
+                      stream: Stream.periodic(const Duration(seconds: 1)),
+                      builder: (context, _) => Text(
+                        _getTimeAgo(),
+                        style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: Colors.white.withOpacity(0.80),
+                            fontWeight: FontWeight.w400),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _loading ? null : _load,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Padding(
+                          padding: const EdgeInsets.all(6),
+                          child: Icon(Icons.sync_rounded, size: 16,
+                              color: Colors.white.withOpacity(_loading ? 0.4 : 0.9)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
