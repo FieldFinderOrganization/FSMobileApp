@@ -7,6 +7,7 @@ import '../../../home/presentation/widgets/fade_in_section.dart';
 import 'pitch_card.dart';
 import '../../../home/presentation/widgets/section_header.dart';
 import '../../../home/presentation/widgets/shimmer_card.dart';
+import '../../../../shared/notifications/navigation_notification.dart';
 
 class FeaturedPitchesSection extends StatelessWidget {
   final HomeState state;
@@ -24,7 +25,11 @@ class FeaturedPitchesSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(title: 'Sân nổi bật', onSeeAll: () {}, index: '01'),
+          SectionHeader(
+            title: 'Sân nổi bật',
+            index: '01',
+            onSeeAll: () => const SwitchTabNotification(1).dispatch(context),
+          ),
           // ── Pitch list ──────────────────────────────────────────────────
           SizedBox(
             height: 260,

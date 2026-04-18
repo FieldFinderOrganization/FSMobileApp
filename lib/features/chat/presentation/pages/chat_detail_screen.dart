@@ -12,6 +12,7 @@ import '../../../checkout/domain/entities/checkout_item_entity.dart';
 import '../../../checkout/presentation/pages/checkout_screen.dart';
 import '../../../pitch/domain/entities/pitch_entity.dart';
 import '../../../pitch/presentation/pages/pitch_detail_screen.dart';
+import '../../../pitch/presentation/widgets/pitch_card.dart';
 import '../../../product/presentation/pages/product_detail_screen.dart';
 import '../widgets/chat_bubble.dart';
 
@@ -166,6 +167,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                                         .cast<Map<String, dynamic>>()),
                               if (!msg.isUser &&
                                   msg.aiData != null &&
+                                  msg.aiData!['matchedPitches'] != null)
+                                _PitchList(
+                                    pitches: (msg.aiData!['matchedPitches']
+                                            as List<dynamic>)
+                                        .cast<Map<String, dynamic>>()),
+                              if (!msg.isUser &&
+                                  msg.aiData != null &&
                                   msg.aiData!['showImage'] == true &&
                                   msg.aiData!['product'] != null)
                                 _SingleProductImage(aiData: msg.aiData!),
@@ -243,6 +251,48 @@ class _ProductList extends StatelessWidget {
     );
   }
 }
+
+class _PitchList extends StatelessWidget {
+  final List<Map<String, dynamic>> pitches;
+  const _PitchList({required this.pitches});
+
+  @override
+  Widget build(BuildContext context) {
+    if (pitches.isEmpty) return const SizedBox.shrink();
+    
+    return SizedBox(
+      height: 210,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(left: 12, right: 4, top: 8, bottom: 8),
+        itemCount: pitches.length,
+        itemBuilder: (_, i) {
+          final raw = pitches[i];
+          final pitch = PitchEntity(
+            pitchId: (raw['pitchId'] ?? raw['id'] ?? '').toString(),
+            name: raw['name'] as String? ?? '',
+            type: raw['type'] as String? ?? 'FIVE_A_SIDE',
+            environment: raw['environment'] as String? ?? 'OUTDOOR',
+            price: (raw['price'] as num?)?.toDouble() ?? 0,
+            description: raw['description'] as String? ?? '',
+            imageUrls: (raw['imageUrls'] as List<dynamic>?)
+                    ?.map((e) => e.toString())
+                    .toList() ??
+                const [],
+            address: raw['address'] as String? ?? '',
+          );
+          
+          return Container(
+            width: 250,
+            margin: const EdgeInsets.only(right: 12),
+            child: PitchCard(pitch: pitch),
+          );
+        },
+      ),
+    );
+  }
+}
+
 
 class _TypingIndicator extends StatelessWidget {
   const _TypingIndicator();

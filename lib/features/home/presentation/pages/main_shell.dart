@@ -17,6 +17,7 @@ import '../../../pitch/presentation/pages/pitch_tab_screen.dart';
 import '../../../product/presentation/pages/product_list_screen.dart';
 import '../../../profile/presentation/pages/profile_screen.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../shared/notifications/navigation_notification.dart';
 
 /// Shell cố định bao toàn bộ màn hình chính (sau khi đăng nhập).
 /// Dùng [IndexedStack] để giữ state của từng tab khi chuyển qua lại.
@@ -76,45 +77,51 @@ class _MainShellState extends State<MainShell>
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    return BlocListener<AuthCubit, AuthState>(
-      listenWhen: (previous, current) =>
-          previous.currentUser == null && current.currentUser != null,
-      listener: (context, state) {
-        // Reload all data when login is successful to ensure token is picked up
-        context.read<HomeCubit>().loadAll();
-        context.read<CartCubit>().loadCart();
+    return NotificationListener<SwitchTabNotification>(
+      onNotification: (notification) {
+        setState(() => _currentIndex = notification.index);
+        return true;
       },
-      child: BlocBuilder<AuthCubit, AuthState>(
-        builder: (context, state) {
-          final currentUser = state.currentUser ?? widget.user;
-
-          return Scaffold(
-            backgroundColor: Colors.white,
-            // IndexedStack giữ state từng tab — không rebuild khi chuyển tab
-            body: IndexedStack(
-              index: _currentIndex,
-              children: [
-                // 0 — Trang chủ
-                HomeScreen(),
-                // 1 — Sân (danh sách và tìm kiếm sân)
-                const PitchTabScreen(),
-                // 2 — Shop
-                const ProductListScreen(),
-                // 3 — Chat
-                ChatScreen(currentUserId: currentUser.userId),
-                // 4 — Tôi
-                ProfileScreen(user: currentUser),
-              ],
-            ),
-            // Bottom Navigation Bar
-            bottomNavigationBar: _AppBottomBar(
-              currentIndex: _currentIndex,
-              tabs: _tabs,
-              bottomPadding: bottomPadding,
-              onTap: _onTabTapped,
-            ),
-          );
+      child: BlocListener<AuthCubit, AuthState>(
+        listenWhen: (previous, current) =>
+            previous.currentUser == null && current.currentUser != null,
+        listener: (context, state) {
+          // Reload all data when login is successful to ensure token is picked up
+          context.read<HomeCubit>().loadAll();
+          context.read<CartCubit>().loadCart();
         },
+        child: BlocBuilder<AuthCubit, AuthState>(
+          builder: (context, state) {
+            final currentUser = state.currentUser ?? widget.user;
+
+            return Scaffold(
+              backgroundColor: Colors.white,
+              // IndexedStack giữ state từng tab — không rebuild khi chuyển tab
+              body: IndexedStack(
+                index: _currentIndex,
+                children: [
+                  // 0 — Trang chủ
+                  HomeScreen(),
+                  // 1 — Sân (danh sách và tìm kiếm sân)
+                  const PitchTabScreen(),
+                  // 2 — Shop
+                  const ProductListScreen(),
+                  // 3 — Chat
+                  ChatScreen(currentUserId: currentUser.userId),
+                  // 4 — Tôi
+                  ProfileScreen(user: currentUser),
+                ],
+              ),
+              // Bottom Navigation Bar
+              bottomNavigationBar: _AppBottomBar(
+                currentIndex: _currentIndex,
+                tabs: _tabs,
+                bottomPadding: bottomPadding,
+                onTap: _onTabTapped,
+              ),
+            );
+          },
+        ),
       ),
     );
   }
