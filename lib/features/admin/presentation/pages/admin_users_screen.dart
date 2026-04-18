@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -22,6 +23,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   static const _kRed       = Color(0xFFEF4444);
   static const _kOrange    = Color(0xFFF59E0B);
   static const _kProviderColor = Color(0xFF059669);
+  DateTime _lastUpdated = DateTime.now();
 
   // Avatar palette (Gmail-style)
   static const _kAvatarPalette = [
@@ -58,12 +60,16 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         widget.datasource.getUserStats(),
         widget.datasource.getUsers(page: _currentPage, search: _searchQuery),
       ]);
+      
+      if (!mounted) return;
       setState(() {
         _stats = results[0] as AdminUserStatsModel;
         _page  = results[1] as AdminUserListModel;
         _loading = false;
+        _lastUpdated = DateTime.now();
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() { _error = e.toString(); _loading = false; });
     }
   }
@@ -75,6 +81,17 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       setState(() { _page = result; _loading = false; });
     } catch (e) {
       setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  String _getTimeAgo() {
+    final diff = DateTime.now().difference(_lastUpdated);
+    if (diff.inSeconds < 60) {
+      return 'Dữ liệu cập nhật ${diff.inSeconds} giây trước';
+    } else if (diff.inMinutes < 60) {
+      return 'Dữ liệu cập nhật ${diff.inMinutes}p trước';
+    } else {
+      return 'Dữ liệu cập nhật ${diff.inHours}h trước';
     }
   }
 
@@ -98,8 +115,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       body: CustomScrollView(
         slivers: [
           _buildSliverAppBar(),
-
-          // ── Stat cards (below hero, part of gradient bg) ────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -170,18 +185,18 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
 
   Widget _buildSliverAppBar() {
     return SliverAppBar(
-      expandedHeight: 110,
+      expandedHeight: 85,
       pinned: true,
       backgroundColor: _kPrimary,
-      // Title luôn nằm cùng hàng với back arrow
-      title: Text('Người dùng',
-          style: GoogleFonts.inter(
-              fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)),
       centerTitle: false,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
         onPressed: () => Navigator.pop(context),
       ),
+      title: Text('Người dùng',
+          style: GoogleFonts.inter(
+              fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+      titleSpacing: 0,
       actions: [
         IconButton(
           tooltip: 'Tìm kiếm',
@@ -227,14 +242,44 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   ),
                 ),
               ),
-              // Subtitle chỉ hiện khi expanded
               Positioned(
-                left: 56, bottom: 14,
-                child: Text('Quản lý & Thống kê',
-                    style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: Colors.white.withOpacity(0.70),
-                        fontWeight: FontWeight.w400)),
+                left: 56, 
+                bottom: 6,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Dùng StreamBuilder để CHỈ render lại dòng chữ này mỗi 1 giây
+                    StreamBuilder(
+                      stream: Stream.periodic(const Duration(seconds: 1)),
+                      builder: (context, snapshot) {
+                        return Text(
+                          _getTimeAgo(),
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: Colors.white.withOpacity(0.80),
+                            fontWeight: FontWeight.w400,
+                          ),
+                        );
+                      }
+                    ),
+                    const SizedBox(width: 4),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _loading ? null : _load,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Padding(
+                          padding: const EdgeInsets.all(6.0),
+                          child: Icon(
+                            Icons.sync_rounded, 
+                            size: 16, 
+                            color: Colors.white.withOpacity(_loading ? 0.4 : 0.9)
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
