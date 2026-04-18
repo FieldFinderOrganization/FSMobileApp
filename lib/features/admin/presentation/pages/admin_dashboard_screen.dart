@@ -453,6 +453,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   changeColor: changeColor(overview.pitchesChangePercent),
                   accentColor: _kDeepIndigo,
                   progress: (overview.totalPitches / 200).clamp(0.0, 1.0),
+                  icon: Icons.sports_soccer,
                 ),
               ),
             ),
@@ -465,8 +466,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               child: GestureDetector(
                 onTap: () => push(AdminBookingsScreen(datasource: ds)),
                 child: _buildCompactKpiCard(
-                  title: 'Đặt sân hôm nay',
-                  value: _formatNumber(overview.bookingsTodayCount),
+                  title: 'Tổng đơn đặt sân',
+                  value: _formatNumber(overview.totalBookings),
                   change: pct(overview.bookingsTodayChangePercent),
                   changeColor: changeColor(overview.bookingsTodayChangePercent),
                   icon: Icons.calendar_today_outlined,
@@ -486,6 +487,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   changeColor: Colors.grey.shade400,
                   accentColor: _kMidViolet,
                   progress: (overview.averageRating / 5.0).clamp(0.0, 1.0),
+                  icon: Icons.star_outline_rounded,
                 ),
               ),
             ),
@@ -763,6 +765,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     required Color changeColor,
     required Color accentColor,
     required double progress,
+    IconData? icon,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -784,16 +787,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              SizedBox(
+              Container(
                 width: 34,
                 height: 34,
-                child: CustomPaint(
-                  painter: _ProgressRingPainter(
-                    progress: progress,
-                    color: accentColor,
-                    trackColor: accentColor.withOpacity(0.15),
-                  ),
+                decoration: BoxDecoration(
+                  color: accentColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
+                child: Icon(icon ?? Icons.bar_chart_outlined, size: 18, color: accentColor),
               ),
             ],
           ),

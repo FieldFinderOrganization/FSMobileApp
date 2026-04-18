@@ -59,6 +59,7 @@ class ApiConstants {
   static const String adminUsers = '/admin/users';
   static const String adminUserStats = '/admin/users/stats';
   static const String adminBookingsList = '/admin/bookings';
+  static const String adminBookingStats = '/admin/bookings/stats';
   static const String adminOrdersList = '/admin/orders';
   static const String adminOrderStats = '/admin/orders/stats';
   static const String adminPitchesList = '/admin/pitches';

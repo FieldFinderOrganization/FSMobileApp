@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/dio_client.dart';
 import '../models/admin_booking_list_model.dart';
+import '../models/booking_stats_model.dart';
 import '../models/admin_order_list_model.dart';
 import '../models/admin_overview_model.dart';
 import '../models/admin_pitch_list_model.dart';
@@ -78,6 +79,11 @@ class AdminStatisticsDatasource {
   Future<AdminUserStatsModel> getUserStats() async {
     final response = await dioClient.dio.get(ApiConstants.adminUserStats);
     return AdminUserStatsModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<BookingStatsModel> getBookingStats() async {
+    final response = await dioClient.dio.get(ApiConstants.adminBookingStats);
+    return BookingStatsModel.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<AdminBookingListModel> getAdminBookings({int page = 0, int size = 10, String? status}) async {

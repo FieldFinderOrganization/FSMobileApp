@@ -9,6 +9,7 @@ class AdminOverviewModel {
   final double pitchesChangePercent;
   final int bookingsTodayCount;
   final double bookingsTodayChangePercent;
+  final int totalBookings;
   final int pendingOrdersCount;
   final double averageRating;
 
@@ -23,6 +24,7 @@ class AdminOverviewModel {
     required this.pitchesChangePercent,
     required this.bookingsTodayCount,
     required this.bookingsTodayChangePercent,
+    required this.totalBookings,
     required this.pendingOrdersCount,
     required this.averageRating,
   });
@@ -41,6 +43,7 @@ class AdminOverviewModel {
       pitchesChangePercent: d('pitchesChangePercent'),
       bookingsTodayCount: i('bookingsTodayCount'),
       bookingsTodayChangePercent: d('bookingsTodayChangePercent'),
+      totalBookings: i('totalBookings'),
       pendingOrdersCount: i('pendingOrdersCount'),
       averageRating: d('averageRating'),
     );
