@@ -29,6 +29,7 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
     with SingleTickerProviderStateMixin {
   late PageController _imagePageController;
   int _currentImagePage = 0;
+  bool _showAllReviews = false;
   DateTime _selectedDate = DateTime.now();
 
   late AnimationController _fabAnimController;
@@ -132,8 +133,8 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                           // ── Reviews ───────────────────────────────────────────
                           _buildReviews(reviews),
 
-                          // Bottom padding for FAB
-                          const SizedBox(height: 100),
+                          // Bottom padding for booking bar
+                          const SizedBox(height: 120),
                         ],
                       ),
                     ),
@@ -805,8 +806,49 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                 ),
               ),
             )
-          else
-            ...reviews.map((r) => _buildReviewCard(r)),
+          else ...[
+            ...(_showAllReviews ? reviews : reviews.take(5).toList())
+                .map((r) => _buildReviewCard(r)),
+            if (reviews.length > 5)
+              Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 4),
+                child: GestureDetector(
+                  onTap: () => setState(() => _showAllReviews = !_showAllReviews),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: const Color(0xFFEEEEEE)),
+                      borderRadius: BorderRadius.circular(12),
+                      color: const Color(0xFFF8F9FA),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _showAllReviews
+                              ? 'Thu gọn'
+                              : 'Xem thêm ${reviews.length - 5} đánh giá',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryRed,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          _showAllReviews
+                              ? Icons.keyboard_arrow_up_rounded
+                              : Icons.keyboard_arrow_down_rounded,
+                          size: 18,
+                          color: AppColors.primaryRed,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ],
       ),
     );
@@ -996,10 +1038,11 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
           ),
         ],
       ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            20, 12, 20,
+            12 + MediaQuery.of(context).viewPadding.bottom,
+          ),
           child: Row(
             children: [
               // Chat button
@@ -1138,7 +1181,6 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
             ],
           ),
         ),
-      ),
     );
   }
 }

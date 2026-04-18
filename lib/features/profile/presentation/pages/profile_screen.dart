@@ -9,6 +9,7 @@ import '../../../../features/auth/login/presentation/pages/login_screen.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../pitch/presentation/pages/booking_history_screen.dart';
 import '../../../order/presentation/pages/order_history_screen.dart';
+import '../../../review/presentation/pages/my_reviews_screen.dart';
 import '../../../home/presentation/cubit/home_cubit.dart';
 import '../../../product/presentation/cubit/product_cubit.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
@@ -390,6 +391,18 @@ class _ProfileBody extends StatelessWidget {
               );
             },
             isFirst: true,
+          ),
+          _ActionRow(
+            icon: Icons.star_outline_rounded,
+            label: 'Đánh giá',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => MyReviewsScreen(userId: user.userId),
+                ),
+              );
+            },
           ),
           _ActionRow(
             icon: Icons.shopping_bag_outlined,

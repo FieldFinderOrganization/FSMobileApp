@@ -7,6 +7,7 @@ class ReviewModel extends ReviewEntity {
     required super.userId,
     required super.userName,
     super.userImageUrl,
+    super.pitchName,
     required super.rating,
     required super.comment,
     required super.createdAt,
@@ -19,6 +20,7 @@ class ReviewModel extends ReviewEntity {
       userId: json['userId']?.toString() ?? '',
       userName: json['userName'] as String? ?? 'Người dùng ẩn danh',
       userImageUrl: json['userImageUrl'] as String?,
+      pitchName: json['pitchName'] as String?,
       rating: (json['rating'] as num?)?.toInt() ?? 0,
       comment: json['comment'] as String? ?? '',
       createdAt: json['createdAt'] != null

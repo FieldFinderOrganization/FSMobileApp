@@ -6,6 +6,7 @@ class ReviewEntity extends Equatable {
   final String userId;
   final String userName;
   final String? userImageUrl;
+  final String? pitchName;
   final int rating;
   final String comment;
   final DateTime createdAt;
@@ -16,6 +17,7 @@ class ReviewEntity extends Equatable {
     required this.userId,
     required this.userName,
     this.userImageUrl,
+    this.pitchName,
     required this.rating,
     required this.comment,
     required this.createdAt,
@@ -28,6 +30,7 @@ class ReviewEntity extends Equatable {
         userId,
         userName,
         userImageUrl,
+        pitchName,
         rating,
         comment,
         createdAt,

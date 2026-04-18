@@ -12,6 +12,7 @@ class BookingResponseModel {
   final String providerName;
   final String pitchName;
   final String? pitchImageUrl;
+  final String? pitchId;
   final List<int> slots;
   final String? createdAt;
   final String? paidAt;
@@ -30,6 +31,7 @@ class BookingResponseModel {
     required this.providerName,
     required this.pitchName,
     this.pitchImageUrl,
+    this.pitchId,
     required this.slots,
     this.createdAt,
     this.paidAt,
@@ -50,6 +52,7 @@ class BookingResponseModel {
       providerName: json['providerName'] ?? '',
       pitchName: json['pitchName'] ?? '',
       pitchImageUrl: json['pitchImageUrl'],
+      pitchId: json['pitchId']?.toString(),
       slots: (json['slots'] as List<dynamic>?)?.map((e) => e as int).toList() ?? [],
       createdAt: json['createdAt'],
       paidAt: json['paidAt'],
@@ -71,6 +74,7 @@ class BookingResponseModel {
       'providerName': providerName,
       'pitchName': pitchName,
       'pitchImageUrl': pitchImageUrl,
+      'pitchId': pitchId,
       'slots': slots,
       'createdAt': createdAt,
       'paidAt': paidAt,
