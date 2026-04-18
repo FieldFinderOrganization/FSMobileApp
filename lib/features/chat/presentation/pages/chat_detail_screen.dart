@@ -12,6 +12,7 @@ import '../../../checkout/domain/entities/checkout_item_entity.dart';
 import '../../../checkout/presentation/pages/checkout_screen.dart';
 import '../../../pitch/domain/entities/pitch_entity.dart';
 import '../../../pitch/presentation/pages/pitch_detail_screen.dart';
+import '../../../pitch/presentation/pages/booking_screen.dart';
 import '../../../pitch/presentation/widgets/pitch_card.dart';
 import '../../../product/presentation/pages/product_detail_screen.dart';
 import '../widgets/chat_bubble.dart';
@@ -533,6 +534,31 @@ class _BookPitchButton extends StatelessWidget {
           const [],
       address: raw['address'] as String? ?? '',
     );
+    
+    final bookingDateStr = aiData['bookingDate'] as String?;
+    if (bookingDateStr != null) {
+      DateTime? bDate;
+      try {
+        bDate = DateTime.parse(bookingDateStr);
+      } catch (e) {}
+
+      if (bDate != null) {
+        final slotListRaw = aiData['slotList'] as List<dynamic>?;
+        final slotList = slotListRaw?.map((e) => (e as num).toInt()).toList();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => BookingScreen(
+              pitch: pitch,
+              selectedDate: bDate!,
+              initialSlotList: slotList,
+            ),
+          ),
+        );
+        return;
+      }
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => PitchDetailScreen(pitch: pitch)),

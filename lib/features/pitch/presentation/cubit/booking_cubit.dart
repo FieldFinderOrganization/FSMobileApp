@@ -12,6 +12,7 @@ class BookingCubit extends Cubit<BookingState> {
   final PaymentRepository paymentRepository;
   final PitchEntity pitch;
   final DateTime date;
+  final List<int>? initialSlotList;
   DateTime? paymentDeadline;
 
   BookingCubit({
@@ -19,6 +20,7 @@ class BookingCubit extends Cubit<BookingState> {
     required this.paymentRepository,
     required this.pitch,
     required this.date,
+    this.initialSlotList,
   }) : super(BookingInitial()) {
     loadSlots();
   }
@@ -75,6 +77,8 @@ class BookingCubit extends Cubit<BookingState> {
           status = SlotStatus.past;
         } else if (isToday && slotStartTime.isBefore(now.add(const Duration(minutes: 30)))) {
           status = SlotStatus.tooLate;
+        } else if (initialSlotList != null && initialSlotList!.contains(id)) {
+          status = SlotStatus.selected;
         }
 
         return BookingSlotEntity(
@@ -85,7 +89,14 @@ class BookingCubit extends Cubit<BookingState> {
         );
       }).toList();
 
-      emit(BookingSuccess(slots: allSlots));
+      final selectedIds = allSlots.where((s) => s.status == SlotStatus.selected).map((s) => s.slotId).toList();
+      final totalAmount = selectedIds.length * pitch.price;
+
+      emit(BookingSuccess(
+        slots: allSlots,
+        selectedSlotIds: selectedIds,
+        totalAmount: totalAmount,
+      ));
     } catch (e) {
       emit(BookingError(e.toString()));
     }

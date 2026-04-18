@@ -22,11 +22,13 @@ import 'payment_screen.dart';
 class BookingScreen extends StatelessWidget {
   final PitchEntity pitch;
   final DateTime selectedDate;
+  final List<int>? initialSlotList;
 
   const BookingScreen({
     super.key,
     required this.pitch,
     required this.selectedDate,
+    this.initialSlotList,
   });
 
   @override
@@ -47,6 +49,7 @@ class BookingScreen extends StatelessWidget {
           ),
           pitch: pitch,
           date: selectedDate,
+          initialSlotList: initialSlotList,
         );
       },
       child: const _BookingView(),
