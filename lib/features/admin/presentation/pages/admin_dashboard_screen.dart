@@ -190,7 +190,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: MediaQuery.of(context).padding.bottom + 32),
         ],
       ),
     );

@@ -68,6 +68,20 @@ class AdminStatisticsDatasource {
     return ProductStatisticsModel.fromJson(response.data as Map<String, dynamic>);
   }
 
+  Future<AdminPitchListModel> getAdminPitches({
+    int page = 0,
+    int size = 10,
+    String search = '',
+    String? type,
+    String? sort,
+  }) async {
+    final params = <String, dynamic>{'page': page, 'size': size, 'search': search};
+    if (type != null) params['type'] = type;
+    if (sort != null) params['sort'] = sort;
+    final response = await dioClient.dio.get(ApiConstants.adminPitchesList, queryParameters: params);
+    return AdminPitchListModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
   Future<AdminUserListModel> getUsers({
     int page = 0,
     int size = 10,
@@ -92,27 +106,43 @@ class AdminStatisticsDatasource {
     return BookingStatsModel.fromJson(response.data as Map<String, dynamic>);
   }
 
-  Future<AdminBookingListModel> getAdminBookings({int page = 0, int size = 10, String? status}) async {
-    final response = await dioClient.dio.get(
-      ApiConstants.adminBookingsList,
-      queryParameters: {
-        'page': page,
-        'size': size,
-        if (status != null) 'status': status,
-      },
-    );
+  Future<AdminBookingListModel> getAdminBookings({
+    int page = 0,
+    int size = 10,
+    String? status,
+    String? startDate,
+    String? endDate,
+    double? minPrice,
+    double? maxPrice,
+  }) async {
+    final params = <String, dynamic>{'page': page, 'size': size};
+    if (status != null) params['status'] = status;
+    if (startDate != null) params['startDate'] = startDate;
+    if (endDate != null) params['endDate'] = endDate;
+    if (minPrice != null) params['minPrice'] = minPrice;
+    if (maxPrice != null) params['maxPrice'] = maxPrice;
+    final response = await dioClient.dio.get(ApiConstants.adminBookingsList, queryParameters: params);
     return AdminBookingListModel.fromJson(response.data as Map<String, dynamic>);
   }
 
-  Future<AdminOrderListModel> getAdminOrders({int page = 0, int size = 10, String? status}) async {
-    final response = await dioClient.dio.get(
-      ApiConstants.adminOrdersList,
-      queryParameters: {
-        'page': page,
-        'size': size,
-        if (status != null) 'status': status,
-      },
-    );
+  Future<AdminOrderListModel> getAdminOrders({
+    int page = 0,
+    int size = 10,
+    String? status,
+    String search = '',
+    String? startDate,
+    String? endDate,
+    double? minAmount,
+    double? maxAmount,
+    String sort = 'default',
+  }) async {
+    final params = <String, dynamic>{'page': page, 'size': size, 'search': search, 'sort': sort};
+    if (status != null) params['status'] = status;
+    if (startDate != null) params['startDate'] = startDate;
+    if (endDate != null) params['endDate'] = endDate;
+    if (minAmount != null) params['minAmount'] = minAmount;
+    if (maxAmount != null) params['maxAmount'] = maxAmount;
+    final response = await dioClient.dio.get(ApiConstants.adminOrdersList, queryParameters: params);
     return AdminOrderListModel.fromJson(response.data as Map<String, dynamic>);
   }
 
@@ -123,16 +153,9 @@ class AdminStatisticsDatasource {
         .toList();
   }
 
-  Future<AdminPitchListModel> getAdminPitches({int page = 0, int size = 10, String search = ''}) async {
-    final response = await dioClient.dio.get(
-      ApiConstants.adminPitchesList,
-      queryParameters: {'page': page, 'size': size, 'search': search},
-    );
-    return AdminPitchListModel.fromJson(response.data as Map<String, dynamic>);
-  }
-
   Future<AdminRatingStatsModel> getRatingStats() async {
     final response = await dioClient.dio.get(ApiConstants.adminReviewStats);
     return AdminRatingStatsModel.fromJson(response.data as Map<String, dynamic>);
   }
 }
+

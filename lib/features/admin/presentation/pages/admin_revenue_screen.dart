@@ -3,8 +3,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -69,6 +69,7 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
             pw.Header(level: 0, child: pw.Text('Báo cáo Doanh thu Admin',
                 style: pw.TextStyle(font: boldFont, fontSize: 22))),
             pw.Text('Xuất ngày: ${dateFmt.format(now)}', style: pw.TextStyle(font: font)),
+            pw.Text('Số ngày có dữ liệu: ${_sorted.length}', style: pw.TextStyle(font: font)),
             pw.SizedBox(height: 16),
             pw.Header(level: 1, text: 'Tổng quan'),
             pw.Bullet(text: 'Tổng doanh thu: ${currFmt.format(ov.totalRevenue)}', style: pw.TextStyle(font: font)),
@@ -96,21 +97,14 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
 
       final bytes    = await pdf.save();
       final fileName = 'admin_doanh_thu_${DateFormat('yyyyMMdd').format(now)}.pdf';
-      final dir      = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
-      final file     = File('${dir.path}/$fileName');
+      final tempDir  = await getTemporaryDirectory();
+      final file     = File('${tempDir.path}/$fileName');
       await file.writeAsBytes(bytes);
-
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Đã lưu: $fileName'),
-          backgroundColor: Colors.green.shade700,
-          duration: const Duration(seconds: 8),
-          action: SnackBarAction(
-            label: 'Mở file',
-            textColor: Colors.white,
-            onPressed: () => OpenFile.open(file.path),
-          ),
-        ));
+        await Share.shareXFiles(
+          [XFile(file.path, mimeType: 'application/pdf')],
+          subject: fileName,
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -234,7 +228,7 @@ class _AdminRevenueScreenState extends State<AdminRevenueScreen> {
   Widget _buildContent() {
     final ov = widget.overview;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+      padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).padding.bottom + 40),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

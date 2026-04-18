@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -50,6 +50,10 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
 
   // Filter States
   String? _selectedStatus; // null = Tất cả, 'CONFIRMED', 'CANCELED', 'PENDING'
+  DateTime? _filterStartDate;
+  DateTime? _filterEndDate;
+  double? _filterMinPrice;
+  double? _filterMaxPrice;
 
   BookingStatsModel? _bookingStats;
   bool _isExporting = false;
@@ -81,7 +85,14 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
     setState(() { _loading = true; _error = null; _currentPage = page; });
     
     try {
-      final result = await widget.datasource.getAdminBookings(page: page, size: 10, status: _selectedStatus);
+      final fmt = DateFormat('yyyy-MM-dd');
+      final result = await widget.datasource.getAdminBookings(
+        page: page, size: 10, status: _selectedStatus,
+        startDate: _filterStartDate != null ? fmt.format(_filterStartDate!) : null,
+        endDate: _filterEndDate != null ? fmt.format(_filterEndDate!) : null,
+        minPrice: _filterMinPrice,
+        maxPrice: _filterMaxPrice,
+      );
       
       if (!mounted || currentFetchId != _fetchId) return;
       setState(() { 
@@ -110,15 +121,68 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
 
   Future<void> _exportPdf() async {
     if (_isExporting) return;
+
+    final total = _page?.totalElements ?? 0;
+    if (total == 0) return;
+
+    final options = <Map<String, dynamic>>[
+      if (total > 50) {'label': '50 bản ghi đầu', 'size': 50},
+      if (total > 100) {'label': '100 bản ghi đầu', 'size': 100},
+      {'label': 'Tất cả ($total bản ghi)', 'size': total},
+    ];
+
+    int? chosenSize;
+    if (options.length == 1) {
+      chosenSize = total;
+    } else {
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Chọn số lượng xuất', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: options.map((opt) => ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(opt['label'] as String, style: GoogleFonts.inter(fontSize: 13)),
+            leading: Radio<int>(
+              value: opt['size'] as int,
+              groupValue: chosenSize,
+              activeColor: const Color(0xFF4454A0),
+              onChanged: (v) { chosenSize = v; Navigator.pop(ctx); },
+            ),
+            onTap: () { chosenSize = opt['size'] as int; Navigator.pop(ctx); },
+          )).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Huỷ', style: GoogleFonts.inter(color: Colors.grey.shade600)),
+          ),
+        ],
+      ),
+    );
+    } // end else
+    if (chosenSize == null) return;
+
     setState(() => _isExporting = true);
     try {
+      final fmt2 = DateFormat('yyyy-MM-dd');
+      final exportData = await widget.datasource.getAdminBookings(
+        page: 0, size: chosenSize!, status: _selectedStatus,
+        startDate: _filterStartDate != null ? fmt2.format(_filterStartDate!) : null,
+        endDate: _filterEndDate != null ? fmt2.format(_filterEndDate!) : null,
+        minPrice: _filterMinPrice,
+        maxPrice: _filterMaxPrice,
+      );
       final font     = await PdfGoogleFonts.notoSansRegular();
       final boldFont = await PdfGoogleFonts.notoSansBold();
       final currFmt  = NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
       final dateFmt  = DateFormat('dd/MM/yyyy');
       final now      = DateTime.now();
       final stats    = _bookingStats;
-      final items    = _page?.content ?? [];
+      final items    = exportData.content;
 
       final pdf = pw.Document();
       pdf.addPage(pw.MultiPage(
@@ -128,6 +192,7 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
           pw.Header(level: 0, child: pw.Text('Báo cáo Đặt sân',
               style: pw.TextStyle(font: boldFont, fontSize: 22))),
           pw.Text('Xuất ngày: ${dateFmt.format(now)}', style: pw.TextStyle(font: font)),
+          pw.Text('Số bản ghi xuất: ${items.length}', style: pw.TextStyle(font: font)),
           pw.SizedBox(height: 16),
           if (stats != null) ...[
             pw.Header(level: 1, text: 'Tổng quan'),
@@ -155,17 +220,14 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
 
       final bytes    = await pdf.save();
       final fileName = 'admin_dat_san_${DateFormat('yyyyMMdd').format(now)}.pdf';
-      final dir      = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
-      final file     = File('${dir.path}/$fileName');
+      final tempDir  = await getTemporaryDirectory();
+      final file     = File('${tempDir.path}/$fileName');
       await file.writeAsBytes(bytes);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Đã lưu: $fileName'),
-          backgroundColor: Colors.green.shade700,
-          duration: const Duration(seconds: 8),
-          action: SnackBarAction(label: 'Mở file', textColor: Colors.white,
-              onPressed: () => OpenFile.open(file.path)),
-        ));
+        await Share.shareXFiles(
+          [XFile(file.path, mimeType: 'application/pdf')],
+          subject: fileName,
+        );
       }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
@@ -182,56 +244,193 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
     return '${v.toStringAsFixed(0)}đ';
   }
 
-  // ─── BOTTOM SHEETS MÔ PHỎNG LỌC (CLICKABLE) ──────────────────────────────
-  void _showDateFilter() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Lọc theo thời gian', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800, color: _kTextMain)),
-              const SizedBox(height: 16),
-              ListTile(title: Text('Hôm nay', style: GoogleFonts.inter(fontWeight: FontWeight.w500)), onTap: () => Navigator.pop(context)),
-              ListTile(
-                title: Text('Tháng này', style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: _kPrimary)), 
-                trailing: const Icon(Icons.check_circle_rounded, color: _kPrimary),
-                onTap: () => Navigator.pop(context)
-              ),
-              ListTile(title: Text('Tháng trước', style: GoogleFonts.inter(fontWeight: FontWeight.w500)), onTap: () => Navigator.pop(context)),
-              ListTile(title: Text('Tùy chỉnh...', style: GoogleFonts.inter(fontWeight: FontWeight.w500)), onTap: () => Navigator.pop(context)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  bool get _hasActiveFilter =>
+      _filterStartDate != null || _filterEndDate != null ||
+      _filterMinPrice != null || _filterMaxPrice != null;
 
-  void _showPriceFilter() {
+  void _showFilterSheet() {
+    DateTime? tempStart = _filterStartDate;
+    DateTime? tempEnd   = _filterEndDate;
+    final minCtrl = TextEditingController(text: _filterMinPrice?.toStringAsFixed(0) ?? '');
+    final maxCtrl = TextEditingController(text: _filterMaxPrice?.toStringAsFixed(0) ?? '');
+    final dateFmt = DateFormat('dd/MM/yyyy');
+
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Lọc theo giá trị', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800, color: _kTextMain)),
-              const SizedBox(height: 16),
-              ListTile(title: Text('Tất cả mệnh giá', style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: _kPrimary)), onTap: () => Navigator.pop(context)),
-              ListTile(title: Text('Dưới 500k', style: GoogleFonts.inter(fontWeight: FontWeight.w500)), onTap: () => Navigator.pop(context)),
-              ListTile(title: Text('Từ 500k - 2 Triệu', style: GoogleFonts.inter(fontWeight: FontWeight.w500)), onTap: () => Navigator.pop(context)),
-              ListTile(title: Text('Trên 2 Triệu', style: GoogleFonts.inter(fontWeight: FontWeight.w500)), onTap: () => Navigator.pop(context)),
-            ],
-          ),
-        ),
-      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final bottomPad = MediaQuery.of(ctx).padding.bottom;
+        return StatefulBuilder(builder: (ctx, setSheet) {
+          return Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            child: Container(
+              padding: EdgeInsets.fromLTRB(24, 24, 24, bottomPad + 24),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40, height: 4,
+                      decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text('Bộ lọc nâng cao', style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w800, color: _kTextMain)),
+                  const SizedBox(height: 20),
+                  Text('Khoảng thời gian', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: _kTextMuted)),
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: () async {
+                      final range = await showDateRangePicker(
+                        context: ctx,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
+                        initialDateRange: (tempStart != null && tempEnd != null)
+                            ? DateTimeRange(start: tempStart!, end: tempEnd!)
+                            : null,
+                        builder: (ctx, child) => Theme(
+                          data: ThemeData.light().copyWith(colorScheme: const ColorScheme.light(primary: _kPrimary)),
+                          child: child!,
+                        ),
+                      );
+                      if (range != null) {
+                        setSheet(() { tempStart = range.start; tempEnd = range.end; });
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: (tempStart != null) ? _kPrimary : Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.calendar_today_outlined, size: 16, color: (tempStart != null) ? _kPrimary : _kTextMuted),
+                          const SizedBox(width: 10),
+                          Text(
+                            tempStart != null && tempEnd != null
+                                ? '${dateFmt.format(tempStart!)} — ${dateFmt.format(tempEnd!)}'
+                                : 'Chọn khoảng ngày',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: tempStart != null ? _kTextMain : _kTextMuted,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (tempStart != null)
+                            GestureDetector(
+                              onTap: () => setSheet(() { tempStart = null; tempEnd = null; }),
+                              child: Icon(Icons.close, size: 16, color: Colors.grey.shade400),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text('Khoảng giá (₫)', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: _kTextMuted)),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: minCtrl,
+                          keyboardType: TextInputType.number,
+                          style: GoogleFonts.inter(fontSize: 13),
+                          decoration: InputDecoration(
+                            hintText: 'Từ',
+                            hintStyle: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade400),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text('—', style: GoogleFonts.inter(color: _kTextMuted)),
+                      ),
+                      Expanded(
+                        child: TextField(
+                          controller: maxCtrl,
+                          keyboardType: TextInputType.number,
+                          style: GoogleFonts.inter(fontSize: 13),
+                          decoration: InputDecoration(
+                            hintText: 'Đến',
+                            hintStyle: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade400),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 28),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            setSheet(() { tempStart = null; tempEnd = null; });
+                            minCtrl.clear(); maxCtrl.clear();
+                          },
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: Text('Đặt lại', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              _filterStartDate = tempStart;
+                              _filterEndDate   = tempEnd;
+                              _filterMinPrice  = double.tryParse(minCtrl.text);
+                              _filterMaxPrice  = double.tryParse(maxCtrl.text);
+                              _currentPage = 0;
+                            });
+                            Navigator.pop(ctx);
+                            _load(page: 0);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _kPrimary,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          child: Text('Áp dụng', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.white)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        });
+      },
     );
   }
 
@@ -329,10 +528,23 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
             if (!_showSearch) { _searchCtrl.clear(); _onSearch(''); }
           }),
         ),
-        IconButton(
-          tooltip: 'Lọc nâng cao',
-          icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 22),
-          onPressed: () {}, // Icon này để từ từ phát triển như yêu cầu của bạn
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            IconButton(
+              tooltip: 'Lọc nâng cao',
+              icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 22),
+              onPressed: _showFilterSheet,
+            ),
+            if (_hasActiveFilter)
+              Positioned(
+                top: 8, right: 8,
+                child: Container(
+                  width: 8, height: 8,
+                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                ),
+              ),
+          ],
         ),
         _isExporting
             ? const Padding(padding: EdgeInsets.symmetric(horizontal: 14),
@@ -422,9 +634,7 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
           ),
           
           // Nhóm Option Hành động (Mở bottom sheet)
-          _buildActionChip(label: 'Tháng này', icon: Icons.calendar_today_outlined, onTap: _showDateFilter),
-          const SizedBox(width: 8),
-          _buildActionChip(label: 'Khoảng giá', icon: Icons.attach_money_rounded, onTap: _showPriceFilter),
+          _buildActionChip(label: 'Thời gian & Giá', icon: Icons.tune_rounded, onTap: _showFilterSheet),
         ],
       ),
     );
