@@ -36,6 +36,18 @@ class AdminDashboardScreen extends StatefulWidget {
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   int? _touchedDonutIndex;
   int? _touchedBarIndex;
+  DateTime _lastUpdated = DateTime.now();
+
+  String _getTimeAgo() {
+    final diff = DateTime.now().difference(_lastUpdated);
+    if (diff.inSeconds < 60) {
+      return 'Cập nhật ${diff.inSeconds} giây trước';
+    } else if (diff.inMinutes < 60) {
+      return 'Cập nhật ${diff.inMinutes}p trước';
+    } else {
+      return 'Cập nhật ${diff.inHours}h trước';
+    }
+  }
 
   // Hero — diagonal Deep Indigo → Soft Violet pastel
   static const _kHeroStart = Color(0xFF3E54AC);
@@ -62,7 +74,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AdminDashboardCubit, AdminDashboardState>(
+    return BlocConsumer<AdminDashboardCubit, AdminDashboardState>(
+      listener: (context, state) {
+        // Cập nhật lại thời gian khi Cubit tải xong dữ liệu thành công
+        if (state is AdminDashboardLoaded) {
+          _lastUpdated = DateTime.now(); 
+        }
+      },
       builder: (context, state) {
         if (state is AdminDashboardLoading || state is AdminDashboardInitial) {
           return _buildLoadingBody();
@@ -249,12 +267,63 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ],
           ),
           const SizedBox(height: 4),
-          Text(
-            dateStr,
-            style: GoogleFonts.inter(
-                fontSize: 12, color: Colors.white.withOpacity(0.55)),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 0,
+            runSpacing: 6,
+            children: [
+              Text(
+                dateStr,
+                style: GoogleFonts.inter(
+                    fontSize: 12, color: Colors.white.withOpacity(0.6)),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Container(
+                  width: 4, height: 4,
+                  decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.4),
+                      shape: BoxShape.circle),
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  StreamBuilder(
+                    stream: Stream.periodic(const Duration(seconds: 1)),
+                    builder: (context, snapshot) {
+                      return Text(
+                        _getTimeAgo(),
+                        style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: Colors.white.withOpacity(0.9),
+                            fontWeight: FontWeight.w500),
+                      );
+                    }
+                  ),
+                  const SizedBox(width: 2),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        context.read<AdminDashboardCubit>().loadDashboard();
+                      },
+                      borderRadius: BorderRadius.circular(20),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Icon(
+                          Icons.sync_rounded,
+                          size: 14,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
