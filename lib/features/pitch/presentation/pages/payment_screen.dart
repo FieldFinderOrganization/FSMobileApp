@@ -309,7 +309,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             _buildSummaryItem('Ngày đặt', dateLabel),
           ],
           const SizedBox(height: 8),
-          _buildSummaryItem('Trạng thái', 'Đang chờ thanh toán'),
+          _buildSummaryItem('Trạng thái', 'Đang Chờ TT'),
         ],
       ),
     );

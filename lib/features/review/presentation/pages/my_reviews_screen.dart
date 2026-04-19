@@ -103,11 +103,14 @@ class _MyReviewsBody extends StatelessWidget {
                           ),
                         );
                       }
-                      if (state is MyReviewsLoaded) {
+                      if (state is MyReviewsLoaded ||
+                          state is MyReviewsSubmitting ||
+                          state is MyReviewsActionSuccess ||
+                          state is MyReviewsActionError) {
                         return TabBarView(
                           children: [
-                            _buildReviewsList(state),
-                            _buildUnreviewedList(state),
+                            _buildReviewsList(context, state),
+                            _buildUnreviewedList(context, state),
                           ],
                         );
                       }
@@ -176,8 +179,17 @@ class _MyReviewsBody extends StatelessWidget {
     );
   }
 
-  Widget _buildReviewsList(MyReviewsLoaded state) {
-    if (state.reviews.isEmpty) {
+  Widget _buildReviewsList(BuildContext context, MyReviewsState state) {
+    if (state is! MyReviewsLoaded) {
+      final cubit = context.read<MyReviewsCubit>();
+      if (cubit.state is MyReviewsLoaded) {
+        state = cubit.state;
+      } else {
+        return const Center(child: CircularProgressIndicator(color: AppColors.primaryRed));
+      }
+    }
+    final loadedState = state as MyReviewsLoaded;
+    if (loadedState.reviews.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -194,13 +206,22 @@ class _MyReviewsBody extends StatelessWidget {
     }
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 12),
-      itemCount: state.reviews.length,
-      itemBuilder: (_, i) => ReviewCard(review: state.reviews[i]),
+      itemCount: loadedState.reviews.length,
+      itemBuilder: (_, i) => ReviewCard(review: loadedState.reviews[i]),
     );
   }
 
-  Widget _buildUnreviewedList(MyReviewsLoaded state) {
-    if (state.unreviewedBookings.isEmpty) {
+  Widget _buildUnreviewedList(BuildContext context, MyReviewsState state) {
+    if (state is! MyReviewsLoaded) {
+      final cubit = context.read<MyReviewsCubit>();
+      if (cubit.state is MyReviewsLoaded) {
+        state = cubit.state;
+      } else {
+        return const Center(child: CircularProgressIndicator(color: AppColors.primaryRed));
+      }
+    }
+    final loadedState = state as MyReviewsLoaded;
+    if (loadedState.unreviewedBookings.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -217,8 +238,8 @@ class _MyReviewsBody extends StatelessWidget {
     }
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 12),
-      itemCount: state.unreviewedBookings.length,
-      itemBuilder: (_, i) => UnreviewedBookingCard(booking: state.unreviewedBookings[i]),
+      itemCount: loadedState.unreviewedBookings.length,
+      itemBuilder: (_, i) => UnreviewedBookingCard(booking: loadedState.unreviewedBookings[i]),
     );
   }
 }

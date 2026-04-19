@@ -320,7 +320,7 @@ class _OrderHistoryBody extends StatelessWidget {
       case 'TẤT CẢ':
         return 'Tất cả';
       case 'PENDING':
-        return 'Chờ thanh toán';
+        return 'Chờ TT';
       case 'CONFIRMED':
         return 'Đã xác nhận';
       case 'CANCELED':
@@ -964,7 +964,7 @@ class _OrderItemCardState extends State<_OrderItemCard> {
   String _translateStatus(String status) {
     switch (status.toUpperCase()) {
       case 'PENDING':
-        return 'Chờ thanh toán';
+        return 'Chờ TT';
       case 'CONFIRMED':
         return 'Đã xác nhận';
       case 'CANCELED':

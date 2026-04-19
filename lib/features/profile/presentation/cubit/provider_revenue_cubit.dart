@@ -328,7 +328,7 @@ class ProviderRevenueCubit extends Cubit<ProviderRevenueState> {
       case 'CANCELED':
         return 'Đã hủy';
       default:
-        return 'Chờ thanh toán';
+        return 'Chờ TT';
     }
   }
 }

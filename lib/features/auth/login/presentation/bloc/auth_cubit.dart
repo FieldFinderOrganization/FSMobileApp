@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../../core/storage/token_storage.dart';
 import '../../../domain/entities/auth_token_entity.dart';
 import '../../../domain/repositories/auth_repository.dart';
@@ -154,6 +155,11 @@ class AuthCubit extends Cubit<AuthState> {
       }
     }
     await _tokenStorage.clearAll();
+
+    // Clear local chat history upon logout
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('ai_chat_sessions');
+
     emit(const AuthInitial());
   }
 

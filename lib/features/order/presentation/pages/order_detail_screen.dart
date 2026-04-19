@@ -64,7 +64,7 @@ class OrderDetailScreen extends StatelessWidget {
     final status = order.status.toUpperCase();
     Color statusColor = Colors.orange;
     IconData statusIcon = Icons.pending_rounded;
-    String statusText = 'Chờ thanh toán';
+    String statusText = 'Chờ TT';
 
     if (status == 'CONFIRMED') {
       statusColor = Colors.green;

@@ -33,7 +33,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
   static const _kWarning    = Color(0xFFF59E0B);
 
   static const _filters      = ['Tất cả', 'PENDING', 'PAID', 'CONFIRMED', 'DELIVERED', 'CANCELED'];
-  static const _filterLabels = ['Tất cả', 'Chờ thanh toán', 'Đã thanh toán', 'Đã xác nhận', 'Đã giao', 'Đã hủy'];
+  static const _filterLabels = ['Tất cả', 'Chờ TT', 'Đã thanh toán', 'Đã xác nhận', 'Đã giao', 'Đã hủy'];
 
   int _filterIdx = 0;
   int _currentPage = 0;
@@ -134,7 +134,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
     'PAID' => 'Đã TT',
     'DELIVERED' => 'Đã giao',
     'CONFIRMED' => 'Xác nhận',
-    'PENDING' => 'Chờ thanh toán',
+    'PENDING' => 'Chờ TT',
     _ => 'Đã hủy',
   };
 

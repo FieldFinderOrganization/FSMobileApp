@@ -40,7 +40,7 @@ class _ProviderBookingBody extends StatelessWidget {
   static const _statuses = ['Tất cả', 'PENDING', 'CONFIRMED', 'CANCELED'];
   static const _statusLabels = {
     'Tất cả': 'Tất cả',
-    'PENDING': 'Chờ thanh toán',
+    'PENDING': 'Chờ TT',
     'CONFIRMED': 'Đã xác nhận',
     'CANCELED': 'Đã hủy',
   };
@@ -296,7 +296,7 @@ class _StatusBadge extends StatelessWidget {
         break;
       default:
         color = Colors.orange;
-        label = 'Chờ thanh toán';
+        label = 'Chờ TT';
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

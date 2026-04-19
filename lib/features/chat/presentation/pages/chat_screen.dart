@@ -66,7 +66,22 @@ class ChatScreen extends StatelessWidget {
   }
 }
 
-class _AiChatTab extends StatelessWidget {
+class _AiChatTab extends StatefulWidget {
+  @override
+  State<_AiChatTab> createState() => _AiChatTabState();
+}
+
+class _AiChatTabState extends State<_AiChatTab> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      if (mounted) {
+        context.read<ChatCubit>().loadSessions();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<ChatCubit, ChatState>(
@@ -97,7 +112,6 @@ class _AiChatTab extends StatelessWidget {
         body: BlocBuilder<ChatCubit, ChatState>(
           builder: (context, state) {
             if (state is ChatInitial) {
-              context.read<ChatCubit>().loadSessions();
               return const Center(child: CircularProgressIndicator());
             }
             if (state is ChatSessionListLoaded) {

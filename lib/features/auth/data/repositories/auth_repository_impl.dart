@@ -183,6 +183,12 @@ class AuthRepositoryImpl implements AuthRepository {
   Exception _mapDioError(DioException e) {
     final statusCode = e.response?.statusCode;
     if (statusCode == 401) {
+      final error = e.response?.data?['error'] as String?;
+      final message = e.response?.data?['message'] as String?;
+      final detail = message ?? error;
+      if (e.requestOptions.path.contains('/login') && detail != null && detail.isNotEmpty) {
+        return Exception(_cleanMessage(detail));
+      }
       return Exception('Phiên đăng nhập không hợp lệ. Vui lòng thử lại.');
     } else if (statusCode == 403) {
       final error = e.response?.data?['error'] as String?;

@@ -915,7 +915,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Đơn hàng Chờ thanh toán',
+                Text('Đơn hàng Chờ TT',
                     style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
@@ -2012,7 +2012,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         return ('Đã hủy', _kNegative.withOpacity(0.12),
             const Color(0xFFDC2626));
       default:
-        return ('Chờ thanh toán', _kWarning.withOpacity(0.12),
+        return ('Chờ TT', _kWarning.withOpacity(0.12),
             const Color(0xFFD97706));
     }
   }

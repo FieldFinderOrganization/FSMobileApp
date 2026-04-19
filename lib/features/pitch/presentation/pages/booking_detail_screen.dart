@@ -67,7 +67,7 @@ class BookingDetailScreen extends StatelessWidget {
     
     Color statusColor = Colors.orange;
     IconData statusIcon = Icons.pending_rounded;
-    String statusText = 'Chờ thanh toán';
+    String statusText = 'Chờ TT';
 
     if (isPaid) {
       statusColor = Colors.green;

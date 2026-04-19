@@ -149,10 +149,14 @@ class HomeCubit extends Cubit<HomeState> {
       if (state.sortOption == SortOption.priceAsc) sortStr = 'price,asc';
       if (state.sortOption == SortOption.priceDesc) sortStr = 'price,desc';
 
+      final categoryNameToUse = state.selectedSubCategoryNames.isNotEmpty
+          ? state.selectedSubCategoryNames.first
+          : state.selectedCategoryName;
+
       final result = await _repository.fetchProducts(
         page: 0,
         size: 10,
-        categoryId: _getCategoryIdFromName(state.selectedCategoryName),
+        categoryId: _getCategoryIdFromName(categoryNameToUse),
         brand: state.selectedBrand,
         genders: state.selectedGenders,
         sort: sortStr,
@@ -179,10 +183,14 @@ class HomeCubit extends Cubit<HomeState> {
       if (state.sortOption == SortOption.priceAsc) sortStr = 'price,asc';
       if (state.sortOption == SortOption.priceDesc) sortStr = 'price,desc';
 
+      final categoryNameToUse = state.selectedSubCategoryNames.isNotEmpty
+          ? state.selectedSubCategoryNames.first
+          : state.selectedCategoryName;
+
       final result = await _repository.fetchProducts(
         page: nextPage,
         size: 10,
-        categoryId: _getCategoryIdFromName(state.selectedCategoryName),
+        categoryId: _getCategoryIdFromName(categoryNameToUse),
         brand: state.selectedBrand,
         genders: state.selectedGenders,
         sort: sortStr,
