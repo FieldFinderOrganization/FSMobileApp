@@ -75,15 +75,17 @@ class _ProviderManagementScreenState extends State<ProviderManagementScreen>
             ],
           ),
         ),
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            ProviderInfoTab(user: widget.user),
-            ProviderAddressTab(user: widget.user),
-            ProviderPitchTab(user: widget.user),
-            ProviderBookingTab(user: widget.user),
-            ProviderRevenueTab(user: widget.user),
-          ],
+        body: SafeArea(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              ProviderInfoTab(user: widget.user),
+              ProviderAddressTab(user: widget.user),
+              ProviderPitchTab(user: widget.user),
+              ProviderBookingTab(user: widget.user),
+              ProviderRevenueTab(user: widget.user),
+            ],
+          ),
         ),
       ),
     );

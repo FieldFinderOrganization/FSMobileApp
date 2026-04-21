@@ -38,6 +38,16 @@ class _ReviewFormSheetState extends State<ReviewFormSheet> {
     _commentController = TextEditingController(text: widget.initialComment);
   }
 
+  late ScaffoldMessengerState _messenger;
+  late NavigatorState _navigator;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _messenger = ScaffoldMessenger.of(context);
+    _navigator = Navigator.of(context);
+  }
+
   @override
   void dispose() {
     _commentController.dispose();
@@ -73,18 +83,17 @@ class _ReviewFormSheetState extends State<ReviewFormSheet> {
   Widget build(BuildContext context) {
     return BlocListener<MyReviewsCubit, MyReviewsState>(
       listener: (context, state) {
-        if (!context.mounted) return;
+        if (!mounted) return;
         if (state is MyReviewsActionSuccess) {
-          final messenger = ScaffoldMessenger.of(context);
-          Navigator.of(context).pop();
-          messenger.showSnackBar(
+          _navigator.pop();
+          _messenger.showSnackBar(
             SnackBar(
               content: Text(state.message),
               backgroundColor: Colors.green,
             ),
           );
         } else if (state is MyReviewsActionError) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          _messenger.showSnackBar(
             SnackBar(
               content: Text('Lỗi: ${state.message}'),
               backgroundColor: Colors.redAccent,

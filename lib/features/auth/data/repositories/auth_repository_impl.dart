@@ -182,28 +182,36 @@ class AuthRepositoryImpl implements AuthRepository {
 
   Exception _mapDioError(DioException e) {
     final statusCode = e.response?.statusCode;
+    final responseData = e.response?.data;
+    
+    String? error;
+    String? message;
+    
+    if (responseData is Map) {
+      error = responseData['error'] as String?;
+      message = responseData['message'] as String?;
+    } else if (responseData is String) {
+      message = responseData;
+    }
+
     if (statusCode == 401) {
-      final error = e.response?.data?['error'] as String?;
-      final message = e.response?.data?['message'] as String?;
       final detail = message ?? error;
       if (e.requestOptions.path.contains('/login') && detail != null && detail.isNotEmpty) {
         return Exception(_cleanMessage(detail));
       }
       return Exception('Phiên đăng nhập không hợp lệ. Vui lòng thử lại.');
     } else if (statusCode == 403) {
-      final error = e.response?.data?['error'] as String?;
-      final message = e.response?.data?['message'] as String?;
       final detail = message ?? error;
       if (detail != null && detail.isNotEmpty) {
-        return Exception(detail);
+        return Exception(_cleanMessage(detail));
       }
       return Exception('Truy cập bị từ chối. Vui lòng thử lại.');
     } else if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.receiveTimeout) {
       return Exception('Không thể kết nối máy chủ. Vui lòng kiểm tra mạng.');
     }
-    final message = e.response?.data?['message'] as String?;
-    return Exception(_cleanMessage(message ?? 'Thao tác thất bại. Vui lòng thử lại.'));
+    
+    return Exception(_cleanMessage(message ?? error ?? 'Thao tác thất bại. Vui lòng thử lại.'));
   }
 
   String _cleanMessage(String raw) {
