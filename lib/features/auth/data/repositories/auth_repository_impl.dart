@@ -180,6 +180,42 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  @override
+  Future<Map<String, dynamic>> passkeyRegisterStart() async {
+    try {
+      return await _datasource.passkeyRegisterStart();
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
+  @override
+  Future<void> passkeyRegisterFinish(Map<String, dynamic> data) async {
+    try {
+      await _datasource.passkeyRegisterFinish(data);
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> passkeyLoginStart(String email) async {
+    try {
+      return await _datasource.passkeyLoginStart(email);
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
+  @override
+  Future<AuthTokenEntity> passkeyLoginFinish(Map<String, dynamic> data) async {
+    try {
+      return await _datasource.passkeyLoginFinish(data);
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
   Exception _mapDioError(DioException e) {
     final statusCode = e.response?.statusCode;
     final responseData = e.response?.data;

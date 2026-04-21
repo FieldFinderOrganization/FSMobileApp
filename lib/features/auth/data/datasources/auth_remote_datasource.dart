@@ -149,4 +149,28 @@ class AuthRemoteDatasource {
       queryParameters: {'email': email, 'newPassword': newPassword},
     );
   }
+
+  // Passkey flow
+
+  Future<Map<String, dynamic>> passkeyRegisterStart() async {
+    final response = await _dio.post(ApiConstants.passkeyRegisterStart);
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<void> passkeyRegisterFinish(Map<String, dynamic> data) async {
+    await _dio.post(ApiConstants.passkeyRegisterFinish, data: data);
+  }
+
+  Future<Map<String, dynamic>> passkeyLoginStart(String email) async {
+    final response = await _dio.post(
+      ApiConstants.passkeyLoginStart,
+      data: {'email': email},
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<AuthTokenModel> passkeyLoginFinish(Map<String, dynamic> data) async {
+    final response = await _dio.post(ApiConstants.passkeyLoginFinish, data: data);
+    return AuthTokenModel.fromJson(response.data as Map<String, dynamic>);
+  }
 }

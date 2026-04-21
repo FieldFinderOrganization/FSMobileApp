@@ -76,3 +76,16 @@ class AuthChangePasswordOtpVerified extends AuthState {
 class AuthChangePasswordSuccess extends AuthState {
   const AuthChangePasswordSuccess();
 }
+
+class AuthPasskeyRegistered extends AuthState {
+  const AuthPasskeyRegistered();
+}
+
+class AuthPasskeyRegisterFailure extends AuthState {
+  final String message;
+
+  const AuthPasskeyRegisterFailure(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}

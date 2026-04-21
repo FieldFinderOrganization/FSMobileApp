@@ -7,17 +7,28 @@ import '../../../../../core/storage/token_storage.dart';
 import '../../../domain/entities/auth_token_entity.dart';
 import '../../../domain/repositories/auth_repository.dart';
 import 'auth_state.dart';
+import 'passkey_service.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   final AuthRepository _authRepository;
   final TokenStorage _tokenStorage;
+  late final PasskeyService _passkeyService;
 
   AuthCubit({
     required AuthRepository authRepository,
     required TokenStorage tokenStorage,
   }) : _authRepository = authRepository,
        _tokenStorage = tokenStorage,
-       super(const AuthInitial());
+       super(const AuthInitial()) {
+    _passkeyService = PasskeyService(authRepository);
+  }
+
+  AuthTokenEntity? get _currentToken {
+    final currentState = state;
+    if (currentState is AuthSuccess) return currentState.authToken;
+    if (currentState is AuthOtpVerified) return currentState.authToken;
+    return null;
+  }
 
   Future<void> signInWithGoogle() async {
     emit(const AuthLoading());
@@ -90,6 +101,41 @@ class AuthCubit extends Cubit<AuthState> {
       emit(AuthOtpSent(pendingToken: authToken, email: email));
     } catch (e) {
       emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
+    }
+  }
+
+  Future<void> signInWithPasskey(String email) async {
+    emit(const AuthLoading());
+    try {
+      final authToken = await _passkeyService.loginWithPasskey(email);
+      
+      // Bỏ qua bước OTP vì passkey là xác thực mạnh (sinh trắc học)
+      await _tokenStorage.saveTokens(
+        accessToken: authToken.accessToken,
+        refreshToken: authToken.refreshToken,
+        userId: authToken.user.userId,
+        role: authToken.user.role,
+      );
+      emit(AuthSuccess(authToken));
+    } catch (e) {
+      emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
+    }
+  }
+
+  Future<void> registerPasskey() async {
+    final previousState = state;
+    final token = _currentToken;
+    if (token == null) return;
+    
+    emit(const AuthLoading());
+    try {
+      await _passkeyService.registerPasskey(token.user.email);
+      
+      emit(const AuthPasskeyRegistered());
+      emit(previousState);
+    } catch (e) {
+      emit(AuthPasskeyRegisterFailure(e.toString().replaceFirst('Exception: ', '')));
+      emit(previousState);
     }
   }
 
@@ -168,16 +214,9 @@ class AuthCubit extends Cubit<AuthState> {
     String? phone,
     String? imagePath,
   }) async {
-    final currentState = state;
-    AuthTokenEntity? currentToken;
-
-    if (currentState is AuthSuccess) {
-      currentToken = currentState.authToken;
-    } else if (currentState is AuthOtpVerified) {
-      currentToken = currentState.authToken;
-    }
-
-    if (currentToken == null) return;
+    final previousState = state;
+    final token = _currentToken;
+    if (token == null) return;
 
     emit(const AuthLoading());
     try {
@@ -187,82 +226,82 @@ class AuthCubit extends Cubit<AuthState> {
       }
 
       final updatedUser = await _authRepository.updateProfile(
-        userId: currentToken.user.userId,
+        userId: token.user.userId,
         name: name,
-        email: currentToken.user.email,
+        email: token.user.email,
         phone: phone,
-        status: currentToken.user.status,
+        status: token.user.status,
         imageUrl: imageUrl,
       );
 
-      final newToken = currentToken.copyWith(user: updatedUser);
+      final newToken = token.copyWith(user: updatedUser);
       emit(AuthSuccess(newToken));
     } catch (e) {
       emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
-      // Quay lại state cũ sau khi báo lỗi để user thấy data cũ
-      emit(AuthSuccess(currentToken));
+      emit(previousState);
     }
   }
 
   Future<void> verifyCurrentPassword(String currentPassword) async {
-    final currentState = state;
-    if (currentState is! AuthSuccess) return;
+    final previousState = state;
+    final token = _currentToken;
+    if (token == null) return;
 
     emit(const AuthLoading());
     try {
       await _authRepository.verifyCurrentPassword(
-        currentState.authToken.user.userId,
+        token.user.userId,
         currentPassword,
       );
       emit(const AuthChangePasswordVerifySuccess());
-      emit(AuthSuccess(currentState.authToken));
+      emit(previousState);
     } catch (e) {
       emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
-      emit(AuthSuccess(currentState.authToken));
+      emit(previousState);
     }
   }
 
   Future<void> verifyChangePasswordOtp(String email, String code) async {
-    final currentState = state;
-    if (currentState is! AuthSuccess) return;
+    final previousState = state;
+    if (_currentToken == null) return;
 
     emit(const AuthLoading());
     try {
       await _authRepository.verifyOtp(email, code);
       emit(const AuthChangePasswordOtpVerified());
-      emit(AuthSuccess(currentState.authToken));
+      emit(previousState);
     } catch (e) {
       emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
-      emit(AuthSuccess(currentState.authToken));
+      emit(previousState);
     }
   }
 
   Future<void> changePassword(String email, String newPassword) async {
-    final currentState = state;
-    if (currentState is! AuthSuccess) return;
+    final previousState = state;
+    if (_currentToken == null) return;
 
     emit(const AuthLoading());
     try {
       await _authRepository.changePassword(email, newPassword);
       emit(const AuthChangePasswordSuccess());
-      emit(AuthSuccess(currentState.authToken));
+      emit(previousState);
     } catch (e) {
       emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
-      emit(AuthSuccess(currentState.authToken));
+      emit(previousState);
     }
   }
 
   Future<void> sendChangePasswordOtp(String email) async {
-    final currentState = state;
-    if (currentState is! AuthSuccess) return;
+    final previousState = state;
+    if (_currentToken == null) return;
 
     emit(const AuthLoading());
     try {
       await _authRepository.sendChangePasswordOtp(email);
-      emit(AuthSuccess(currentState.authToken));
+      emit(previousState);
     } catch (e) {
       emit(AuthFailure(e.toString().replaceFirst('Exception: ', '')));
-      emit(AuthSuccess(currentState.authToken));
+      emit(previousState);
     }
   }
 }

@@ -30,5 +30,11 @@ abstract class AuthRepository {
   Future<void> verifyCurrentPassword(String userId, String currentPassword);
   Future<void> sendChangePasswordOtp(String email);
   Future<void> changePassword(String email, String newPassword);
+  
+  // Passkey
+  Future<Map<String, dynamic>> passkeyRegisterStart();
+  Future<void> passkeyRegisterFinish(Map<String, dynamic> data);
+  Future<Map<String, dynamic>> passkeyLoginStart(String email);
+  Future<AuthTokenEntity> passkeyLoginFinish(Map<String, dynamic> data);
 }
 

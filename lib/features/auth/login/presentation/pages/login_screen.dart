@@ -312,6 +312,26 @@ class _LoginScreenBodyState extends State<_LoginScreenBody>
               isLoading: isLoading,
               onTap: () => context.read<AuthCubit>().signInWithFacebook(),
             ),
+            const SizedBox(width: 16),
+            AuthSocialButton(
+              icon: Icons.fingerprint_rounded,
+              color: Colors.black87,
+              isLoading: isLoading,
+              onTap: () {
+                final email = _emailController.text.trim();
+                if (email.isNotEmpty) {
+                  context.read<AuthCubit>().signInWithPasskey(email);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Vui lòng nhập email trước để dùng Passkey'),
+                      backgroundColor: Colors.orange[800],
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+            ),
           ],
         ),
       ],

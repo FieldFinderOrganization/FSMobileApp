@@ -41,7 +41,32 @@ class _ProfileBody extends StatelessWidget {
       value: SystemUiOverlayStyle.dark,
       child: BlocListener<AuthCubit, AuthState>(
         listener: (context, state) {
-          if (state is AuthInitial) {
+          if (state is AuthPasskeyRegistered) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Đăng ký Passkey thành công!'), backgroundColor: Colors.green),
+            );
+          } else if (state is AuthPasskeyRegisterFailure) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Lỗi: ${state.message}'), backgroundColor: Colors.red),
+            );
+          } else if (state is AuthLoading) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Row(
+                  children: [
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    ),
+                    SizedBox(width: 12),
+                    Text('Đang xử lý...'),
+                  ],
+                ),
+                duration: Duration(seconds: 1),
+              ),
+            );
+          } else if (state is AuthInitial) {
             // Reset all feature-specific states for clean account switching
             context.read<HomeCubit>().reset();
             context.read<ProductCubit>().reset();
@@ -454,6 +479,13 @@ class _ProfileBody extends StatelessWidget {
             onTap: () {},
           ),
           _ActionRow(
+            icon: Icons.fingerprint_rounded,
+            label: 'Đăng ký Passkey bảo mật',
+            onTap: () {
+              context.read<AuthCubit>().registerPasskey();
+            },
+          ),
+          _ActionRow(
             icon: Icons.vpn_key_outlined,
             label: 'Đổi mật khẩu',
             onTap: () {
@@ -616,45 +648,48 @@ class _ActionRow extends StatelessWidget {
       children: [
         if (!isFirst)
           const Divider(height: 1, indent: 56, color: Color(0xFFF0F0F0)),
-        InkWell(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            onTap();
-          },
-          borderRadius: BorderRadius.vertical(
-            top: isFirst ? const Radius.circular(16) : Radius.zero,
-            bottom: isLast ? const Radius.circular(16) : Radius.zero,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F5),
-                    borderRadius: BorderRadius.circular(10),
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onTap();
+            },
+            borderRadius: BorderRadius.vertical(
+              top: isFirst ? const Radius.circular(16) : Radius.zero,
+              bottom: isLast ? const Radius.circular(16) : Radius.zero,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F5F5),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, size: 18, color: AppColors.textGrey),
                   ),
-                  child: Icon(icon, size: 18, color: AppColors.textGrey),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textDark,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textDark,
+                      ),
                     ),
                   ),
-                ),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  size: 20,
-                  color: AppColors.textGrey,
-                ),
-              ],
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    size: 20,
+                    color: AppColors.textGrey,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

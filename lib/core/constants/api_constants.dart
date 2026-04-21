@@ -15,7 +15,12 @@ class ApiConstants {
   static const String sendActivationEmail = '/auth/send-activation-email';
   static const String resetPasswordOtp = '/users/reset-password-otp';
   static const String sendResetOtp = '/users/forgot-password-otp';
-
+  
+  // Passkey endpoints
+  static const String passkeyRegisterStart = '/auth/passkey/register/start';
+  static const String passkeyRegisterFinish = '/auth/passkey/register/finish';
+  static const String passkeyLoginStart = '/auth/passkey/login/start';
+  static const String passkeyLoginFinish = '/auth/passkey/login/finish';
   // Home screen endpoints
   static const String products = '/products';
   static const String topProducts = '/products/top-selling';
