@@ -18,6 +18,8 @@ import 'change_password_screen.dart';
 import 'provider_management_screen.dart';
 import '../../../admin/presentation/cubit/admin_dashboard_cubit.dart';
 import '../../../admin/presentation/pages/admin_shell.dart';
+import '../../../discount/presentation/cubit/my_wallet_cubit.dart';
+import '../../../discount/presentation/pages/my_wallet_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final UserEntity user;
@@ -437,6 +439,21 @@ class _ProfileBody extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (_) => OrderHistoryScreen(userId: user.userId),
+                ),
+              );
+            },
+          ),
+          _ActionRow(
+            icon: Icons.local_offer_outlined,
+            label: 'Voucher của tôi',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (ctx) => BlocProvider.value(
+                    value: context.read<MyWalletCubit>(),
+                    child: MyWalletScreen(userId: user.userId),
+                  ),
                 ),
               );
             },

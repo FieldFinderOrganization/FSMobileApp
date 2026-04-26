@@ -32,7 +32,7 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
 
   // Semantic Colors cho Trạng thái
   static const _kSuccess = Color(0xFF10B981); // Xanh lá - Thành công
-  static const _kDanger = Color(0xFFEF4444);  // Đỏ - Đã hủy
+  static const _kDanger = Color(0xFFEF4444); // Đỏ - Đã hủy
   static const _kWarning = Color(0xFFF59E0B); // Cam - Chờ TT
 
   AdminBookingListModel? _page;
@@ -82,27 +82,38 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
 
   Future<void> _load({int page = 0}) async {
     final currentFetchId = ++_fetchId;
-    setState(() { _loading = true; _error = null; _currentPage = page; });
-    
+    setState(() {
+      _loading = true;
+      _error = null;
+      _currentPage = page;
+    });
+
     try {
       final fmt = DateFormat('yyyy-MM-dd');
       final result = await widget.datasource.getAdminBookings(
-        page: page, size: 10, status: _selectedStatus,
-        startDate: _filterStartDate != null ? fmt.format(_filterStartDate!) : null,
+        page: page,
+        size: 10,
+        status: _selectedStatus,
+        startDate: _filterStartDate != null
+            ? fmt.format(_filterStartDate!)
+            : null,
         endDate: _filterEndDate != null ? fmt.format(_filterEndDate!) : null,
         minPrice: _filterMinPrice,
         maxPrice: _filterMaxPrice,
       );
-      
+
       if (!mounted || currentFetchId != _fetchId) return;
-      setState(() { 
-        _page = result; 
-        _loading = false; 
-        _lastUpdated = DateTime.now(); 
+      setState(() {
+        _page = result;
+        _loading = false;
+        _lastUpdated = DateTime.now();
       });
     } catch (e) {
       if (!mounted || currentFetchId != _fetchId) return;
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
@@ -139,30 +150,51 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
       await showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Chọn số lượng xuất', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: options.map((opt) => ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(opt['label'] as String, style: GoogleFonts.inter(fontSize: 13)),
-            leading: Radio<int>(
-              value: opt['size'] as int,
-              groupValue: chosenSize,
-              activeColor: const Color(0xFF4454A0),
-              onChanged: (v) { chosenSize = v; Navigator.pop(ctx); },
-            ),
-            onTap: () { chosenSize = opt['size'] as int; Navigator.pop(ctx); },
-          )).toList(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Huỷ', style: GoogleFonts.inter(color: Colors.grey.shade600)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-        ],
-      ),
-    );
+          title: Text(
+            'Chọn số lượng xuất',
+            style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: options
+                .map(
+                  (opt) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      opt['label'] as String,
+                      style: GoogleFonts.inter(fontSize: 13),
+                    ),
+                    leading: Radio<int>(
+                      value: opt['size'] as int,
+                      groupValue: chosenSize,
+                      activeColor: const Color(0xFF4454A0),
+                      onChanged: (v) {
+                        chosenSize = v;
+                        Navigator.pop(ctx);
+                      },
+                    ),
+                    onTap: () {
+                      chosenSize = opt['size'] as int;
+                      Navigator.pop(ctx);
+                    },
+                  ),
+                )
+                .toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(
+                'Huỷ',
+                style: GoogleFonts.inter(color: Colors.grey.shade600),
+              ),
+            ),
+          ],
+        ),
+      );
     } // end else
     if (chosenSize == null) return;
 
@@ -170,68 +202,116 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
     try {
       final fmt2 = DateFormat('yyyy-MM-dd');
       final exportData = await widget.datasource.getAdminBookings(
-        page: 0, size: chosenSize!, status: _selectedStatus,
-        startDate: _filterStartDate != null ? fmt2.format(_filterStartDate!) : null,
+        page: 0,
+        size: chosenSize!,
+        status: _selectedStatus,
+        startDate: _filterStartDate != null
+            ? fmt2.format(_filterStartDate!)
+            : null,
         endDate: _filterEndDate != null ? fmt2.format(_filterEndDate!) : null,
         minPrice: _filterMinPrice,
         maxPrice: _filterMaxPrice,
       );
-      final font     = await PdfGoogleFonts.notoSansRegular();
+      final font = await PdfGoogleFonts.notoSansRegular();
       final boldFont = await PdfGoogleFonts.notoSansBold();
-      final currFmt  = NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
-      final dateFmt  = DateFormat('dd/MM/yyyy');
-      final now      = DateTime.now();
-      final stats    = _bookingStats;
-      final items    = exportData.content;
+      final currFmt = NumberFormat.currency(
+        locale: 'vi_VN',
+        symbol: '₫',
+        decimalDigits: 0,
+      );
+      final dateFmt = DateFormat('dd/MM/yyyy');
+      final now = DateTime.now();
+      final stats = _bookingStats;
+      final items = exportData.content;
 
       final pdf = pw.Document();
-      pdf.addPage(pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        theme: pw.ThemeData.withFont(base: font, bold: boldFont),
-        build: (ctx) => [
-          pw.Header(level: 0, child: pw.Text('Báo cáo Đặt sân',
-              style: pw.TextStyle(font: boldFont, fontSize: 22))),
-          pw.Text('Xuất ngày: ${dateFmt.format(now)}', style: pw.TextStyle(font: font)),
-          pw.Text('Số bản ghi xuất: ${items.length}', style: pw.TextStyle(font: font)),
-          pw.SizedBox(height: 16),
-          if (stats != null) ...[
-            pw.Header(level: 1, text: 'Tổng quan'),
-            pw.Bullet(text: 'Tổng đơn: ${stats.total}', style: pw.TextStyle(font: font)),
-            pw.Bullet(text: 'Thành công: ${stats.confirmed}', style: pw.TextStyle(font: font)),
-            pw.Bullet(text: 'Chờ TT: ${stats.pending}', style: pw.TextStyle(font: font)),
-            pw.Bullet(text: 'Đã hủy: ${stats.canceled}', style: pw.TextStyle(font: font)),
-            pw.SizedBox(height: 16),
-          ],
-          if (items.isNotEmpty) ...[
-            pw.Header(level: 1, text: 'Danh sách đặt sân'),
-            pw.Table.fromTextArray(
-              headers: ['Người đặt', 'Sân', 'Ngày', 'Giá', 'Trạng thái'],
-              data: items.map((b) => [
-                b.userName, b.pitchName, b.bookingDate,
-                currFmt.format(b.totalPrice), b.status,
-              ]).toList(),
-              headerStyle: pw.TextStyle(font: boldFont, fontSize: 9),
-              cellStyle: pw.TextStyle(font: font, fontSize: 8),
-              headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          theme: pw.ThemeData.withFont(base: font, bold: boldFont),
+          build: (ctx) => [
+            pw.Header(
+              level: 0,
+              child: pw.Text(
+                'Báo cáo Đặt sân',
+                style: pw.TextStyle(font: boldFont, fontSize: 22),
+              ),
             ),
+            pw.Text(
+              'Xuất ngày: ${dateFmt.format(now)}',
+              style: pw.TextStyle(font: font),
+            ),
+            pw.Text(
+              'Số bản ghi xuất: ${items.length}',
+              style: pw.TextStyle(font: font),
+            ),
+            pw.SizedBox(height: 16),
+            if (stats != null) ...[
+              pw.Header(level: 1, text: 'Tổng quan'),
+              pw.Bullet(
+                text: 'Tổng đơn: ${stats.total}',
+                style: pw.TextStyle(font: font),
+              ),
+              pw.Bullet(
+                text: 'Thành công: ${stats.confirmed}',
+                style: pw.TextStyle(font: font),
+              ),
+              pw.Bullet(
+                text: 'Chờ TT: ${stats.pending}',
+                style: pw.TextStyle(font: font),
+              ),
+              pw.Bullet(
+                text: 'Đã hủy: ${stats.canceled}',
+                style: pw.TextStyle(font: font),
+              ),
+              pw.SizedBox(height: 16),
+            ],
+            if (items.isNotEmpty) ...[
+              pw.Header(level: 1, text: 'Danh sách đặt sân'),
+              pw.Table.fromTextArray(
+                headers: ['Người đặt', 'Sân', 'Ngày', 'Giá', 'Trạng thái'],
+                data: items
+                    .map(
+                      (b) => [
+                        b.userName,
+                        b.pitchName,
+                        b.bookingDate,
+                        currFmt.format(b.totalPrice),
+                        b.status,
+                      ],
+                    )
+                    .toList(),
+                headerStyle: pw.TextStyle(font: boldFont, fontSize: 9),
+                cellStyle: pw.TextStyle(font: font, fontSize: 8),
+                headerDecoration: const pw.BoxDecoration(
+                  color: PdfColors.grey300,
+                ),
+              ),
+            ],
           ],
-        ],
-      ));
+        ),
+      );
 
-      final bytes    = await pdf.save();
-      final fileName = 'admin_dat_san_${DateFormat('yyyyMMdd').format(now)}.pdf';
-      final tempDir  = await getTemporaryDirectory();
-      final file     = File('${tempDir.path}/$fileName');
+      final bytes = await pdf.save();
+      final fileName =
+          'admin_dat_san_${DateFormat('yyyyMMdd').format(now)}.pdf';
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/$fileName');
       await file.writeAsBytes(bytes);
       if (mounted) {
-        await Share.shareXFiles(
-          [XFile(file.path, mimeType: 'application/pdf')],
-          subject: fileName,
-        );
+        await Share.shareXFiles([
+          XFile(file.path, mimeType: 'application/pdf'),
+        ], subject: fileName);
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi xuất PDF: $e'), backgroundColor: Colors.red));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi xuất PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isExporting = false);
     }
@@ -245,14 +325,20 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
   }
 
   bool get _hasActiveFilter =>
-      _filterStartDate != null || _filterEndDate != null ||
-      _filterMinPrice != null || _filterMaxPrice != null;
+      _filterStartDate != null ||
+      _filterEndDate != null ||
+      _filterMinPrice != null ||
+      _filterMaxPrice != null;
 
   void _showFilterSheet() {
     DateTime? tempStart = _filterStartDate;
-    DateTime? tempEnd   = _filterEndDate;
-    final minCtrl = TextEditingController(text: _filterMinPrice?.toStringAsFixed(0) ?? '');
-    final maxCtrl = TextEditingController(text: _filterMaxPrice?.toStringAsFixed(0) ?? '');
+    DateTime? tempEnd = _filterEndDate;
+    final minCtrl = TextEditingController(
+      text: _filterMinPrice?.toStringAsFixed(0) ?? '',
+    );
+    final maxCtrl = TextEditingController(
+      text: _filterMaxPrice?.toStringAsFixed(0) ?? '',
+    );
     final dateFmt = DateFormat('dd/MM/yyyy');
 
     showModalBottomSheet(
@@ -261,175 +347,276 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         final bottomPad = MediaQuery.of(ctx).padding.bottom;
-        return StatefulBuilder(builder: (ctx, setSheet) {
-          return Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-            child: Container(
-              padding: EdgeInsets.fromLTRB(24, 24, 24, bottomPad + 24),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        return StatefulBuilder(
+          builder: (ctx, setSheet) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40, height: 4,
-                      decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text('Bộ lọc nâng cao', style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w800, color: _kTextMain)),
-                  const SizedBox(height: 20),
-                  Text('Khoảng thời gian', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: _kTextMuted)),
-                  const SizedBox(height: 10),
-                  GestureDetector(
-                    onTap: () async {
-                      final range = await showDateRangePicker(
-                        context: ctx,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime.now(),
-                        initialDateRange: (tempStart != null && tempEnd != null)
-                            ? DateTimeRange(start: tempStart!, end: tempEnd!)
-                            : null,
-                        builder: (ctx, child) => Theme(
-                          data: ThemeData.light().copyWith(colorScheme: const ColorScheme.light(primary: _kPrimary)),
-                          child: child!,
+              child: Container(
+                padding: EdgeInsets.fromLTRB(24, 24, 24, bottomPad + 24),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
                         ),
-                      );
-                      if (range != null) {
-                        setSheet(() { tempStart = range.start; tempEnd = range.end; });
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: (tempStart != null) ? _kPrimary : Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.calendar_today_outlined, size: 16, color: (tempStart != null) ? _kPrimary : _kTextMuted),
-                          const SizedBox(width: 10),
-                          Text(
-                            tempStart != null && tempEnd != null
-                                ? '${dateFmt.format(tempStart!)} — ${dateFmt.format(tempEnd!)}'
-                                : 'Chọn khoảng ngày',
-                            style: GoogleFonts.inter(
-                              fontSize: 13,
-                              color: tempStart != null ? _kTextMain : _kTextMuted,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const Spacer(),
-                          if (tempStart != null)
-                            GestureDetector(
-                              onTap: () => setSheet(() { tempStart = null; tempEnd = null; }),
-                              child: Icon(Icons.close, size: 16, color: Colors.grey.shade400),
-                            ),
-                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text('Khoảng giá (₫)', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: _kTextMuted)),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: minCtrl,
-                          keyboardType: TextInputType.number,
-                          style: GoogleFonts.inter(fontSize: 13),
-                          decoration: InputDecoration(
-                            hintText: 'Từ',
-                            hintStyle: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade400),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey.shade300),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Bộ lọc nâng cao',
+                      style: GoogleFonts.inter(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: _kTextMain,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Khoảng thời gian',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: _kTextMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    GestureDetector(
+                      onTap: () async {
+                        final range = await showDateRangePicker(
+                          context: ctx,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now(),
+                          initialDateRange:
+                              (tempStart != null && tempEnd != null)
+                              ? DateTimeRange(start: tempStart!, end: tempEnd!)
+                              : null,
+                          builder: (ctx, child) => Theme(
+                            data: ThemeData.light().copyWith(
+                              colorScheme: const ColorScheme.light(
+                                primary: _kPrimary,
+                              ),
                             ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            child: child!,
+                          ),
+                        );
+                        if (range != null) {
+                          setSheet(() {
+                            tempStart = range.start;
+                            tempEnd = range.end;
+                          });
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: (tempStart != null)
+                                ? _kPrimary
+                                : Colors.grey.shade300,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today_outlined,
+                              size: 16,
+                              color: (tempStart != null)
+                                  ? _kPrimary
+                                  : _kTextMuted,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              tempStart != null && tempEnd != null
+                                  ? '${dateFmt.format(tempStart!)} — ${dateFmt.format(tempEnd!)}'
+                                  : 'Chọn khoảng ngày',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: tempStart != null
+                                    ? _kTextMain
+                                    : _kTextMuted,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const Spacer(),
+                            if (tempStart != null)
+                              GestureDetector(
+                                onTap: () => setSheet(() {
+                                  tempStart = null;
+                                  tempEnd = null;
+                                }),
+                                child: Icon(
+                                  Icons.close,
+                                  size: 16,
+                                  color: Colors.grey.shade400,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Khoảng giá (₫)',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: _kTextMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: minCtrl,
+                            keyboardType: TextInputType.number,
+                            style: GoogleFonts.inter(fontSize: 13),
+                            decoration: InputDecoration(
+                              hintText: 'Từ',
+                              hintStyle: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: Colors.grey.shade400,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text('—', style: GoogleFonts.inter(color: _kTextMuted)),
-                      ),
-                      Expanded(
-                        child: TextField(
-                          controller: maxCtrl,
-                          keyboardType: TextInputType.number,
-                          style: GoogleFonts.inter(fontSize: 13),
-                          decoration: InputDecoration(
-                            hintText: 'Đến',
-                            hintStyle: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade400),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey.shade300),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text(
+                            '—',
+                            style: GoogleFonts.inter(color: _kTextMuted),
+                          ),
+                        ),
+                        Expanded(
+                          child: TextField(
+                            controller: maxCtrl,
+                            keyboardType: TextInputType.number,
+                            style: GoogleFonts.inter(fontSize: 13),
+                            decoration: InputDecoration(
+                              hintText: 'Đến',
+                              hintStyle: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: Colors.grey.shade400,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
+                              ),
                             ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 28),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              setSheet(() {
+                                tempStart = null;
+                                tempEnd = null;
+                              });
+                              minCtrl.clear();
+                              maxCtrl.clear();
+                            },
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(
+                              'Đặt lại',
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 28),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {
-                            setSheet(() { tempStart = null; tempEnd = null; });
-                            minCtrl.clear(); maxCtrl.clear();
-                          },
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                _filterStartDate = tempStart;
+                                _filterEndDate = tempEnd;
+                                _filterMinPrice = double.tryParse(minCtrl.text);
+                                _filterMaxPrice = double.tryParse(maxCtrl.text);
+                                _currentPage = 0;
+                              });
+                              Navigator.pop(ctx);
+                              _load(page: 0);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _kPrimary,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: Text(
+                              'Áp dụng',
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
-                          child: Text('Đặt lại', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              _filterStartDate = tempStart;
-                              _filterEndDate   = tempEnd;
-                              _filterMinPrice  = double.tryParse(minCtrl.text);
-                              _filterMaxPrice  = double.tryParse(maxCtrl.text);
-                              _currentPage = 0;
-                            });
-                            Navigator.pop(ctx);
-                            _load(page: 0);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _kPrimary,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            elevation: 0,
-                          ),
-                          child: Text('Áp dụng', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.white)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        });
+            );
+          },
+        );
       },
     );
   }
@@ -444,7 +631,7 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
         physics: const BouncingScrollPhysics(),
         slivers: [
           _buildAppBar(),
-          
+
           if (_showSearch)
             SliverToBoxAdapter(
               child: Padding(
@@ -453,7 +640,13 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(14),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 3))],
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.06),
+                        blurRadius: 12,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
                   child: TextField(
                     controller: _searchCtrl,
@@ -462,16 +655,29 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
                     style: GoogleFonts.inter(fontSize: 14),
                     decoration: InputDecoration(
                       hintText: 'Tìm người đặt hoặc tên sân...',
-                      hintStyle: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade400),
-                      prefixIcon: const Icon(Icons.search, size: 20, color: _kPrimary),
+                      hintStyle: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: Colors.grey.shade400,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        size: 20,
+                        color: _kPrimary,
+                      ),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
                               icon: const Icon(Icons.clear, size: 18),
-                              onPressed: () { _searchCtrl.clear(); _onSearch(''); },
+                              onPressed: () {
+                                _searchCtrl.clear();
+                                _onSearch('');
+                              },
                             )
                           : null,
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                     ),
                   ),
                 ),
@@ -490,15 +696,19 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
               ],
             ),
           ),
-          
+
           if (_loading)
-            const SliverFillRemaining(child: Center(child: CircularProgressIndicator(color: _kPrimary)))
+            const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator(color: _kPrimary)),
+            )
           else if (_error != null)
-            SliverFillRemaining(child: Center(child: Text(_error!, style: const TextStyle(color: _kDanger))))
+            SliverFillRemaining(
+              child: Center(
+                child: Text(_error!, style: const TextStyle(color: _kDanger)),
+              ),
+            )
           else
-            SliverToBoxAdapter(
-              child: _buildTransactionList(bottomPadding),
-            ),
+            SliverToBoxAdapter(child: _buildTransactionList(bottomPadding)),
         ],
       ),
     );
@@ -513,19 +723,36 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
       elevation: 0,
       centerTitle: false,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
+        icon: const Icon(
+          Icons.arrow_back_ios_new,
+          color: Colors.white,
+          size: 18,
+        ),
         onPressed: () => Navigator.pop(context),
       ),
-      title: Text('Quản lý Đặt sân',
-          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+      title: Text(
+        'Quản lý Đặt sân',
+        style: GoogleFonts.inter(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
+      ),
       titleSpacing: 0,
       actions: [
         IconButton(
           tooltip: 'Tìm kiếm',
-          icon: Icon(_showSearch ? Icons.search_off_rounded : Icons.search_rounded, color: Colors.white, size: 22),
+          icon: Icon(
+            _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+            color: Colors.white,
+            size: 22,
+          ),
           onPressed: () => setState(() {
             _showSearch = !_showSearch;
-            if (!_showSearch) { _searchCtrl.clear(); _onSearch(''); }
+            if (!_showSearch) {
+              _searchCtrl.clear();
+              _onSearch('');
+            }
           }),
         ),
         Stack(
@@ -533,34 +760,56 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
           children: [
             IconButton(
               tooltip: 'Lọc nâng cao',
-              icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 22),
+              icon: const Icon(
+                Icons.tune_rounded,
+                color: Colors.white,
+                size: 22,
+              ),
               onPressed: _showFilterSheet,
             ),
             if (_hasActiveFilter)
               Positioned(
-                top: 8, right: 8,
+                top: 8,
+                right: 8,
                 child: Container(
-                  width: 8, height: 8,
-                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
           ],
         ),
         _isExporting
-            ? const Padding(padding: EdgeInsets.symmetric(horizontal: 14),
-                child: SizedBox(width: 20, height: 20,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)))
+            ? const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 14),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                ),
+              )
             : IconButton(
                 tooltip: 'Xuất PDF',
-                icon: const Icon(Icons.picture_as_pdf_outlined, color: Colors.white, size: 22),
-                onPressed: _exportPdf),
+                icon: const Icon(
+                  Icons.picture_as_pdf_outlined,
+                  color: Colors.white,
+                  size: 22,
+                ),
+                onPressed: _exportPdf,
+              ),
         const SizedBox(width: 4),
       ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [_kPrimary, _kPrimaryEnd], 
+              colors: [_kPrimary, _kPrimaryEnd],
               begin: Alignment.topRight,
               end: Alignment.bottomLeft,
             ),
@@ -568,14 +817,19 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
           child: Stack(
             children: [
               Positioned(
-                right: -30, top: -20,
+                right: -30,
+                top: -20,
                 child: Container(
-                  width: 160, height: 160,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.06)),
+                  width: 160,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.06),
+                  ),
                 ),
               ),
               Positioned(
-                left: 56, 
+                left: 56,
                 bottom: 6,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -583,19 +837,33 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
                     StreamBuilder(
                       stream: Stream.periodic(const Duration(seconds: 1)),
                       builder: (context, snapshot) {
-                        return Text(_getTimeAgo(),
-                          style: GoogleFonts.inter(fontSize: 13, color: Colors.white.withOpacity(0.80), fontWeight: FontWeight.w400));
-                      }
+                        return Text(
+                          _getTimeAgo(),
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: Colors.white.withOpacity(0.80),
+                            fontWeight: FontWeight.w400,
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(width: 4),
                     Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: _loading ? null : () => _load(page: _currentPage),
+                        onTap: _loading
+                            ? null
+                            : () => _load(page: _currentPage),
                         borderRadius: BorderRadius.circular(20),
                         child: Padding(
                           padding: const EdgeInsets.all(6.0),
-                          child: Icon(Icons.sync_rounded, size: 16, color: Colors.white.withOpacity(_loading ? 0.4 : 0.9)),
+                          child: Icon(
+                            Icons.sync_rounded,
+                            size: 16,
+                            color: Colors.white.withOpacity(
+                              _loading ? 0.4 : 0.9,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -626,15 +894,19 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
           _buildStatusChip('Chờ TT', 'PENDING'),
           const SizedBox(width: 8),
           _buildStatusChip('Đã hủy', 'CANCELED'),
-          
+
           // Dấu gạch chia cách
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Container(width: 1.5, color: Colors.grey.shade300),
           ),
-          
+
           // Nhóm Option Hành động (Mở bottom sheet)
-          _buildActionChip(label: 'Thời gian & Giá', icon: Icons.tune_rounded, onTap: _showFilterSheet),
+          _buildActionChip(
+            label: 'Thời gian & Giá',
+            icon: Icons.tune_rounded,
+            onTap: _showFilterSheet,
+          ),
         ],
       ),
     );
@@ -655,16 +927,38 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
         decoration: BoxDecoration(
           color: isActive ? _kPrimary : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isActive ? _kPrimary : Colors.grey.shade300, width: 1),
-          boxShadow: isActive ? [BoxShadow(color: _kPrimary.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 2))] : null,
+          border: Border.all(
+            color: isActive ? _kPrimary : Colors.grey.shade300,
+            width: 1,
+          ),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: _kPrimary.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         alignment: Alignment.center,
-        child: Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: isActive ? Colors.white : _kTextMain)),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isActive ? Colors.white : _kTextMain,
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildActionChip({required String label, required IconData icon, required VoidCallback onTap}) {
+  Widget _buildActionChip({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -680,9 +974,20 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
           children: [
             Icon(icon, size: 14, color: _kTextMuted),
             const SizedBox(width: 6),
-            Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: _kTextMain)),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: _kTextMain,
+              ),
+            ),
             const SizedBox(width: 2),
-            Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: _kTextMuted),
+            Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 16,
+              color: _kTextMuted,
+            ),
           ],
         ),
       ),
@@ -694,9 +999,9 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
     if (_bookingStats == null) return const SizedBox();
 
     final int confirmed = _bookingStats!.confirmed;
-    final int canceled  = _bookingStats!.canceled;
-    final int pending   = _bookingStats!.pending;
-    final int total     = _bookingStats!.total;
+    final int canceled = _bookingStats!.canceled;
+    final int pending = _bookingStats!.pending;
+    final int total = _bookingStats!.total;
     if (total == 0) return const SizedBox();
 
     // Tỉ lệ và màu label thay đổi theo tab đang chọn
@@ -705,53 +1010,89 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
     final Color rateColor;
     final List<Widget> barSegments;
     final List<Widget> legendItems;
-    const _kRest = Color(0xFFE5E7EB); // xám nhạt cho phần "còn lại"
+    const kRest = Color(0xFFE5E7EB); // xám nhạt cho phần "còn lại"
 
     switch (_selectedStatus) {
       case 'CONFIRMED':
         rateLabel = 'Tỉ lệ thành công';
-        rate      = (confirmed / total) * 100;
+        rate = (confirmed / total) * 100;
         rateColor = _kSuccess;
         barSegments = [
-          if (confirmed > 0) Expanded(flex: confirmed, child: Container(color: _kSuccess)),
-          if (total - confirmed > 0) Expanded(flex: total - confirmed, child: Container(color: _kRest)),
+          if (confirmed > 0)
+            Expanded(
+              flex: confirmed,
+              child: Container(color: _kSuccess),
+            ),
+          if (total - confirmed > 0)
+            Expanded(
+              flex: total - confirmed,
+              child: Container(color: kRest),
+            ),
         ];
         legendItems = [
           _buildLegendItem('Thành công', confirmed, _kSuccess),
-          _buildLegendItem('Tổng đơn', total, _kRest),
+          _buildLegendItem('Tổng đơn', total, kRest),
         ];
       case 'PENDING':
         rateLabel = 'Tỉ lệ Chờ TT';
-        rate      = (pending / total) * 100;
+        rate = (pending / total) * 100;
         rateColor = _kWarning;
         barSegments = [
-          if (pending > 0) Expanded(flex: pending, child: Container(color: _kWarning)),
-          if (total - pending > 0) Expanded(flex: total - pending, child: Container(color: _kRest)),
+          if (pending > 0)
+            Expanded(
+              flex: pending,
+              child: Container(color: _kWarning),
+            ),
+          if (total - pending > 0)
+            Expanded(
+              flex: total - pending,
+              child: Container(color: kRest),
+            ),
         ];
         legendItems = [
           _buildLegendItem('Chờ TT', pending, _kWarning),
-          _buildLegendItem('Tổng đơn', total, _kRest),
+          _buildLegendItem('Tổng đơn', total, kRest),
         ];
       case 'CANCELED':
         rateLabel = 'Tỉ lệ đã hủy';
-        rate      = (canceled / total) * 100;
+        rate = (canceled / total) * 100;
         rateColor = _kDanger;
         barSegments = [
-          if (canceled > 0) Expanded(flex: canceled, child: Container(color: _kDanger)),
-          if (total - canceled > 0) Expanded(flex: total - canceled, child: Container(color: _kRest)),
+          if (canceled > 0)
+            Expanded(
+              flex: canceled,
+              child: Container(color: _kDanger),
+            ),
+          if (total - canceled > 0)
+            Expanded(
+              flex: total - canceled,
+              child: Container(color: kRest),
+            ),
         ];
         legendItems = [
           _buildLegendItem('Đã hủy', canceled, _kDanger),
-          _buildLegendItem('Tổng đơn', total, _kRest),
+          _buildLegendItem('Tổng đơn', total, kRest),
         ];
       default:
         rateLabel = 'Tỉ lệ hoàn thành';
-        rate      = (confirmed / total) * 100;
+        rate = (confirmed / total) * 100;
         rateColor = _kSuccess;
         barSegments = [
-          if (confirmed > 0) Expanded(flex: confirmed, child: Container(color: _kSuccess)),
-          if (pending > 0)   Expanded(flex: pending,   child: Container(color: _kWarning)),
-          if (canceled > 0)  Expanded(flex: canceled,  child: Container(color: _kDanger)),
+          if (confirmed > 0)
+            Expanded(
+              flex: confirmed,
+              child: Container(color: _kSuccess),
+            ),
+          if (pending > 0)
+            Expanded(
+              flex: pending,
+              child: Container(color: _kWarning),
+            ),
+          if (canceled > 0)
+            Expanded(
+              flex: canceled,
+              child: Container(color: _kDanger),
+            ),
         ];
         legendItems = [
           _buildLegendItem('Thành công', confirmed, _kSuccess),
@@ -767,7 +1108,13 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
-          boxShadow: [BoxShadow(color: _kTextMain.withOpacity(0.03), blurRadius: 24, offset: const Offset(0, 8))],
+          boxShadow: [
+            BoxShadow(
+              color: _kTextMain.withOpacity(0.03),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -775,18 +1122,28 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(rateLabel, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: _kTextMuted)),
-                Text('${rate.toStringAsFixed(1)}%',
-                  style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w900, color: rateColor)),
+                Text(
+                  rateLabel,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: _kTextMuted,
+                  ),
+                ),
+                Text(
+                  '${rate.toStringAsFixed(1)}%',
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: rateColor,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: SizedBox(
-                height: 12,
-                child: Row(children: barSegments),
-              ),
+              child: SizedBox(height: 12, child: Row(children: barSegments)),
             ),
             const SizedBox(height: 16),
             Row(
@@ -802,9 +1159,20 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
   Widget _buildLegendItem(String label, int count, Color color) {
     return Row(
       children: [
-        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
         const SizedBox(width: 6),
-        Text('$count $label', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: _kTextMain)),
+        Text(
+          '$count $label',
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: _kTextMain,
+          ),
+        ),
       ],
     );
   }
@@ -813,21 +1181,24 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
   Widget _buildTransactionList(double bottomPadding) {
     var items = _page?.content ?? [];
     int displayTotal = _page?.totalElements ?? 0;
-    
+
     // Lọc local nếu API không filter (dự phòng)
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
-      final filteredLocally = items.where((p) => 
-        p.userName.toLowerCase().contains(q) || 
-        p.pitchName.toLowerCase().contains(q)
-      ).toList();
-      
+      final filteredLocally = items
+          .where(
+            (p) =>
+                p.userName.toLowerCase().contains(q) ||
+                p.pitchName.toLowerCase().contains(q),
+          )
+          .toList();
+
       if (filteredLocally.length != items.length) {
         items = filteredLocally;
         displayTotal = items.length;
       }
     }
-    
+
     return Padding(
       // Ép padding đáy để không dính thanh Navigation
       padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPadding + 32),
@@ -835,7 +1206,13 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
-          boxShadow: [BoxShadow(color: _kTextMain.withOpacity(0.03), blurRadius: 24, offset: const Offset(0, 8))],
+          boxShadow: [
+            BoxShadow(
+              color: _kTextMain.withOpacity(0.03),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -845,38 +1222,69 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Lịch sử Giao dịch',
-                      style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w800, color: _kTextMain)),
+                  Text(
+                    'Lịch sử Giao dịch',
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: _kTextMain,
+                    ),
+                  ),
                   if (_page != null)
-                    Text('$displayTotal đơn',
-                        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: _kTextMuted)),
+                    Text(
+                      '$displayTotal đơn',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: _kTextMuted,
+                      ),
+                    ),
                 ],
               ),
             ),
             const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F5)),
-            
-            ...items.asMap().entries.map((e) => _buildTransactionRow(e.value, e.key == items.length - 1)),
-            
+
+            ...items.asMap().entries.map(
+              (e) => _buildTransactionRow(e.value, e.key == items.length - 1),
+            ),
+
             if (items.isEmpty)
               Padding(
                 padding: const EdgeInsets.all(40),
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.search_off_rounded, size: 36, color: Colors.grey.shade300),
+                      Icon(
+                        Icons.search_off_rounded,
+                        size: 36,
+                        color: Colors.grey.shade300,
+                      ),
                       const SizedBox(height: 8),
-                      Text('Không tìm thấy đơn đặt sân', style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade400)),
+                      Text(
+                        'Không tìm thấy đơn đặt sân',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: Colors.grey.shade400,
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
 
             // Pagination Area
-            if (_page != null && _page!.totalPages > 1 && displayTotal > 10) ...[
+            if (_page != null &&
+                _page!.totalPages > 1 &&
+                displayTotal > 10) ...[
               const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F5)),
               Padding(
                 padding: const EdgeInsets.all(20),
-                child: buildAdminPaginationBar(_currentPage, _page!.totalPages, (p) => _load(page: p), _kPrimary),
+                child: buildAdminPaginationBar(
+                  _currentPage,
+                  _page!.totalPages,
+                  (p) => _load(page: p),
+                  _kPrimary,
+                ),
               ),
             ],
           ],
@@ -888,8 +1296,13 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
   Widget _buildTransactionRow(AdminBookingItem item, bool isLast) {
     Color statusColor = _kWarning;
     String statusLabel = 'Chờ TT';
-    if (item.status == 'CONFIRMED') { statusColor = _kSuccess; statusLabel = 'Thành công'; }
-    else if (item.status == 'CANCELED') { statusColor = _kDanger; statusLabel = 'Đã hủy'; }
+    if (item.status == 'CONFIRMED') {
+      statusColor = _kSuccess;
+      statusLabel = 'Thành công';
+    } else if (item.status == 'CANCELED') {
+      statusColor = _kDanger;
+      statusLabel = 'Đã hủy';
+    }
 
     return Column(
       children: [
@@ -907,48 +1320,102 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
                   border: Border.all(color: Colors.grey.shade200, width: 1),
                 ),
                 alignment: Alignment.center,
-                child: Text(item.userName.isNotEmpty ? item.userName[0].toUpperCase() : '?',
-                  style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: _kPrimary)),
+                child: Text(
+                  item.userName.isNotEmpty
+                      ? item.userName[0].toUpperCase()
+                      : '?',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: _kPrimary,
+                  ),
+                ),
               ),
               const SizedBox(width: 14),
-              
+
               // Thông tin giao dịch
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item.userName,
-                        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: _kTextMain),
-                        maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text(
+                      item.userName,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: _kTextMain,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     const SizedBox(height: 3),
-                    Text(item.pitchName,
-                        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: _kTextMuted),
-                        maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text(
+                      item.pitchName,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: _kTextMuted,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     const SizedBox(height: 2),
-                    Text(item.bookingDate,
-                        style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w400, color: _kTextMuted)),
+                    Text(
+                      item.bookingDate,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w400,
+                        color: _kTextMuted,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              
+
               // Số tiền & Trạng thái
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(_fmtPrice(item.totalPrice),
-                      style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w800, color: _kTextMain, letterSpacing: -0.5)),
+                  Text(
+                    _fmtPrice(item.totalPrice),
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: _kTextMain,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-                    child: Text(statusLabel, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: statusColor)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      statusLabel,
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: statusColor,
+                      ),
+                    ),
                   ),
                 ],
               ),
             ],
           ),
         ),
-        if (!isLast) const Divider(height: 1, indent: 80, endIndent: 24, color: Color(0xFFF0F0F5)),
+        if (!isLast)
+          const Divider(
+            height: 1,
+            indent: 80,
+            endIndent: 24,
+            color: Color(0xFFF0F0F5),
+          ),
       ],
     );
   }

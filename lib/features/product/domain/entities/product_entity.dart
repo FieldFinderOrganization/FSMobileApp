@@ -14,6 +14,7 @@ class ProductEntity {
   final List<String> tags;
   final int totalSold;
   final List<ProductVariantEntity> variants;
+  final List<String>? appliedDiscountCodes;
 
   const ProductEntity({
     required this.id,
@@ -29,7 +30,10 @@ class ProductEntity {
     required this.tags,
     required this.totalSold,
     this.variants = const [],
+    this.appliedDiscountCodes,
   });
 
   bool get isOnSale => salePercent != null && salePercent! > 0;
+  bool get hasPersonalizedDiscount =>
+      appliedDiscountCodes != null && appliedDiscountCodes!.isNotEmpty;
 }

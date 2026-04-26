@@ -5,7 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../auth/login/presentation/bloc/auth_cubit.dart';
-import '../../../auth/login/presentation/bloc/auth_state.dart';
 import '../../../chat/presentation/pages/user_chat_screen.dart';
 import '../cubit/pitch_detail_cubit.dart';
 import '../cubit/pitch_detail_state.dart';
@@ -807,13 +806,15 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
               ),
             )
           else ...[
-            ...(_showAllReviews ? reviews : reviews.take(5).toList())
-                .map((r) => _buildReviewCard(r)),
+            ...(_showAllReviews ? reviews : reviews.take(5).toList()).map(
+              (r) => _buildReviewCard(r),
+            ),
             if (reviews.length > 5)
               Padding(
                 padding: const EdgeInsets.only(top: 8, bottom: 4),
                 child: GestureDetector(
-                  onTap: () => setState(() => _showAllReviews = !_showAllReviews),
+                  onTap: () =>
+                      setState(() => _showAllReviews = !_showAllReviews),
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1039,14 +1040,17 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
         ],
       ),
       child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            20, 12, 20,
-            12 + MediaQuery.of(context).viewPadding.bottom,
-          ),
-          child: Row(
-            children: [
-              // Chat button
-              Builder(builder: (context) {
+        padding: EdgeInsets.fromLTRB(
+          20,
+          12,
+          20,
+          12 + MediaQuery.of(context).viewPadding.bottom,
+        ),
+        child: Row(
+          children: [
+            // Chat button
+            Builder(
+              builder: (context) {
                 final authState = context.watch<AuthCubit>().state;
                 final currentUserId = authState.currentUser?.userId ?? '';
                 final providerUserId = widget.pitch.providerUserId ?? '';
@@ -1074,137 +1078,160 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                       height: 52,
                       decoration: BoxDecoration(
                         border: Border.all(
-                            color: AppColors.primaryRed, width: 1.5),
+                          color: AppColors.primaryRed,
+                          width: 1.5,
+                        ),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Icon(Icons.chat_bubble_outline_rounded,
-                          color: AppColors.primaryRed, size: 22),
+                      child: const Icon(
+                        Icons.chat_bubble_outline_rounded,
+                        color: AppColors.primaryRed,
+                        size: 22,
+                      ),
                     ),
                   ),
                 );
-              }),
-              // Price display
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Tổng thanh toán',
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      color: AppColors.textGrey,
-                    ),
+              },
+            ),
+            // Price display
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Tổng thanh toán',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: AppColors.textGrey,
                   ),
-                  RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: '${widget.pitch.price.toStringAsFixed(0)}k',
-                          style: GoogleFonts.inter(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.primaryRed,
-                          ),
+                ),
+                RichText(
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: '${widget.pitch.price.toStringAsFixed(0)}k',
+                        style: GoogleFonts.inter(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primaryRed,
                         ),
-                        TextSpan(
-                          text: '/giờ',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: AppColors.textGrey,
-                          ),
+                      ),
+                      TextSpan(
+                        text: '/giờ',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AppColors.textGrey,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(width: 16),
-              // Book button
-              Expanded(
-                child: ScaleTransition(
-                  scale: _fabScaleAnimation,
-                  child: Builder(builder: (context) {
+                ),
+              ],
+            ),
+            const SizedBox(width: 16),
+            // Book button
+            Expanded(
+              child: ScaleTransition(
+                scale: _fabScaleAnimation,
+                child: Builder(
+                  builder: (context) {
                     final authState = context.watch<AuthCubit>().state;
                     final currentUserId = authState.currentUser?.userId ?? '';
                     final providerUserId = widget.pitch.providerUserId ?? '';
-                    final isOwner = providerUserId.isNotEmpty && providerUserId == currentUserId;
+                    final isOwner =
+                        providerUserId.isNotEmpty &&
+                        providerUserId == currentUserId;
                     return GestureDetector(
-                    onTap: () {
-                      HapticFeedback.mediumImpact();
-                      if (isOwner) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Bạn không thể đặt sân của chính mình',
-                              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                      onTap: () {
+                        HapticFeedback.mediumImpact();
+                        if (isOwner) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Bạn không thể đặt sân của chính mình',
+                                style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              backgroundColor: Colors.orange.shade700,
+                              behavior: SnackBarBehavior.floating,
                             ),
-                            backgroundColor: Colors.orange.shade700,
-                            behavior: SnackBarBehavior.floating,
+                          );
+                          return;
+                        }
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => BookingScreen(
+                              pitch: widget.pitch,
+                              selectedDate: _selectedDate,
+                            ),
                           ),
                         );
-                        return;
-                      }
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => BookingScreen(
-                            pitch: widget.pitch,
-                            selectedDate: _selectedDate,
+                      },
+                      child: Container(
+                        height: 52,
+                        decoration: BoxDecoration(
+                          gradient: isOwner
+                              ? null
+                              : const LinearGradient(
+                                  colors: [
+                                    Color(0xFF9B0A2E),
+                                    Color(0xFF7B0323),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                          color: isOwner ? const Color(0xFFEEEEEE) : null,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: isOwner
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: AppColors.primaryRed.withValues(
+                                      alpha: 0.4,
+                                    ),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                        ),
+                        child: Center(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isOwner
+                                    ? Icons.block_rounded
+                                    : Icons.calendar_month_rounded,
+                                color: isOwner
+                                    ? AppColors.textGrey
+                                    : Colors.white,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                isOwner ? 'Sân của bạn' : 'Đặt lịch ngay',
+                                style: GoogleFonts.inter(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: isOwner
+                                      ? AppColors.textGrey
+                                      : Colors.white,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      );
-                    },
-                    child: Container(
-                      height: 52,
-                      decoration: BoxDecoration(
-                        gradient: isOwner
-                            ? null
-                            : const LinearGradient(
-                                colors: [Color(0xFF9B0A2E), Color(0xFF7B0323)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                        color: isOwner ? const Color(0xFFEEEEEE) : null,
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: isOwner
-                            ? null
-                            : [
-                                BoxShadow(
-                                  color: AppColors.primaryRed.withValues(alpha: 0.4),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
                       ),
-                      child: Center(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isOwner ? Icons.block_rounded : Icons.calendar_month_rounded,
-                              color: isOwner ? AppColors.textGrey : Colors.white,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              isOwner ? 'Sân của bạn' : 'Đặt lịch ngay',
-                              style: GoogleFonts.inter(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: isOwner ? AppColors.textGrey : Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                  }),
+                    );
+                  },
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
     );
   }
 }

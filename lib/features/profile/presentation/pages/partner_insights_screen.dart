@@ -24,17 +24,23 @@ const _kPalette = [
 
 Color _statusColor(String s) {
   switch (s.toUpperCase()) {
-    case 'CONFIRMED': return const Color(0xFF10B981);
-    case 'CANCELED':  return const Color(0xFFEF4444);
-    default:          return const Color(0xFFF59E0B);
+    case 'CONFIRMED':
+      return const Color(0xFF10B981);
+    case 'CANCELED':
+      return const Color(0xFFEF4444);
+    default:
+      return const Color(0xFFF59E0B);
   }
 }
 
 String _statusLabel(String s) {
   switch (s.toUpperCase()) {
-    case 'CONFIRMED': return 'Hoàn thành';
-    case 'CANCELED':  return 'Đã hủy';
-    default:          return 'Chờ duyệt';
+    case 'CONFIRMED':
+      return 'Hoàn thành';
+    case 'CANCELED':
+      return 'Đã hủy';
+    default:
+      return 'Chờ duyệt';
   }
 }
 // ──────────────────────────────────────────────────────────────────────────────
@@ -66,7 +72,11 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen>
   List<int> _slotUsage = List.filled(24, 0);
   Map<String, Map<String, dynamic>> _customerMetrics = {};
 
-  final _currFmt = NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
+  final _currFmt = NumberFormat.currency(
+    locale: 'vi_VN',
+    symbol: '₫',
+    decimalDigits: 0,
+  );
   final _compactFmt = NumberFormat.compact(locale: 'vi_VN');
 
   @override
@@ -87,9 +97,13 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen>
   }
 
   void _processData() {
-    _paidBookings = widget.bookings.where((b) =>
-        b.status.toUpperCase() == 'CONFIRMED' &&
-        b.paymentStatus.toUpperCase() == 'PAID').toList();
+    _paidBookings = widget.bookings
+        .where(
+          (b) =>
+              b.status.toUpperCase() == 'CONFIRMED' &&
+              b.paymentStatus.toUpperCase() == 'PAID',
+        )
+        .toList();
 
     _dailyRevenue = {};
     _dailyBookings = {};
@@ -114,16 +128,15 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen>
       }
 
       final userId = b.userId;
-      final current = _customerMetrics[userId] ?? {
-        'name': b.userName,
-        'bookings': 0,
-        'spend': 0.0,
-      };
+      final current =
+          _customerMetrics[userId] ??
+          {'name': b.userName, 'bookings': 0, 'spend': 0.0};
       current['bookings'] = (current['bookings'] as int) + 1;
       if (status == 'CONFIRMED' && b.paymentStatus.toUpperCase() == 'PAID') {
         current['spend'] = (current['spend'] as double) + b.totalPrice;
         _dailyRevenue[date] = (_dailyRevenue[date] ?? 0) + b.totalPrice;
-        _pitchRevenue[b.pitchName] = (_pitchRevenue[b.pitchName] ?? 0) + b.totalPrice;
+        _pitchRevenue[b.pitchName] =
+            (_pitchRevenue[b.pitchName] ?? 0) + b.totalPrice;
       }
       _customerMetrics[userId] = current;
     }
@@ -136,13 +149,20 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen>
       appBar: AppBar(
         title: Text(
           'Phân tích Đối tác',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: AppColors.textDark),
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w700,
+            color: AppColors.textDark,
+          ),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textDark, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.textDark,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         bottom: PreferredSize(
@@ -154,12 +174,21 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen>
               labelColor: AppColors.primaryRed,
               unselectedLabelColor: AppColors.textGrey,
               indicator: UnderlineTabIndicator(
-                borderSide: const BorderSide(color: AppColors.primaryRed, width: 3),
+                borderSide: const BorderSide(
+                  color: AppColors.primaryRed,
+                  width: 3,
+                ),
                 borderRadius: BorderRadius.circular(2),
               ),
               indicatorSize: TabBarIndicatorSize.label,
-              labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13),
-              unselectedLabelStyle: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 13),
+              labelStyle: GoogleFonts.inter(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+              unselectedLabelStyle: GoogleFonts.inter(
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+              ),
               tabs: const [
                 Tab(text: 'Doanh thu'),
                 Tab(text: 'Đặt sân'),
@@ -185,18 +214,35 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen>
   // ─── Revenue tab ─────────────────────────────────────────────────────────────
   Widget _buildRevenueTab() {
     final totalRevenue = _paidBookings.fold(0.0, (s, b) => s + b.totalPrice);
-    final avgRevenue = _paidBookings.isEmpty ? 0.0 : totalRevenue / _paidBookings.length;
+    final avgRevenue = _paidBookings.isEmpty
+        ? 0.0
+        : totalRevenue / _paidBookings.length;
 
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(16, 20, 16, 20 + MediaQuery.of(context).padding.bottom),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        20,
+        16,
+        20 + MediaQuery.of(context).padding.bottom,
+      ),
       child: Column(
         children: [
-          _KpiRow(items: [
-            _KpiItem(label: 'Tổng doanh thu', value: _currFmt.format(totalRevenue),
-                icon: Icons.account_balance_wallet_rounded, color: const Color(0xFF10B981)),
-            _KpiItem(label: 'Trung bình / đơn', value: _currFmt.format(avgRevenue),
-                icon: Icons.receipt_long_rounded, color: const Color(0xFF6366F1)),
-          ]),
+          _KpiRow(
+            items: [
+              _KpiItem(
+                label: 'Tổng doanh thu',
+                value: _currFmt.format(totalRevenue),
+                icon: Icons.account_balance_wallet_rounded,
+                color: const Color(0xFF10B981),
+              ),
+              _KpiItem(
+                label: 'Trung bình / đơn',
+                value: _currFmt.format(avgRevenue),
+                icon: Icons.receipt_long_rounded,
+                color: const Color(0xFF6366F1),
+              ),
+            ],
+          ),
           const SizedBox(height: 20),
           _ChartCard(
             title: 'Xu hướng doanh thu',
@@ -225,15 +271,30 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen>
     final rate = total == 0 ? 0.0 : confirmed / total * 100;
 
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(16, 20, 16, 20 + MediaQuery.of(context).padding.bottom),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        20,
+        16,
+        20 + MediaQuery.of(context).padding.bottom,
+      ),
       child: Column(
         children: [
-          _KpiRow(items: [
-            _KpiItem(label: 'Tổng đơn', value: '$total đơn',
-                icon: Icons.event_note_rounded, color: const Color(0xFF0EA5E9)),
-            _KpiItem(label: 'Tỉ lệ hoàn thành', value: '${rate.toStringAsFixed(1)}%',
-                icon: Icons.verified_rounded, color: const Color(0xFF10B981)),
-          ]),
+          _KpiRow(
+            items: [
+              _KpiItem(
+                label: 'Tổng đơn',
+                value: '$total đơn',
+                icon: Icons.event_note_rounded,
+                color: const Color(0xFF0EA5E9),
+              ),
+              _KpiItem(
+                label: 'Tỉ lệ hoàn thành',
+                value: '${rate.toStringAsFixed(1)}%',
+                icon: Icons.verified_rounded,
+                color: const Color(0xFF10B981),
+              ),
+            ],
+          ),
           const SizedBox(height: 20),
           _ChartCard(
             title: 'Xu hướng đặt sân',
@@ -248,7 +309,9 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen>
             title: 'Trạng thái đơn',
             subtitle: 'Phân bổ tổng quan',
             child: _DonutChart(
-              data: _statusDistribution.map((k, v) => MapEntry(k, v.toDouble())),
+              data: _statusDistribution.map(
+                (k, v) => MapEntry(k, v.toDouble()),
+              ),
               isStatus: true,
             ),
           ),
@@ -272,7 +335,12 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen>
       ..sort((a, b) => b.value.compareTo(a.value));
 
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(16, 20, 16, 20 + MediaQuery.of(context).padding.bottom),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        20,
+        16,
+        20 + MediaQuery.of(context).padding.bottom,
+      ),
       child: Column(
         children: [
           _ChartCard(
@@ -281,7 +349,9 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen>
             child: Column(
               children: List.generate(sortedByBookings.length, (i) {
                 final entry = sortedByBookings[i];
-                final ratio = totalBookings == 0 ? 0.0 : entry.value / totalBookings;
+                final ratio = totalBookings == 0
+                    ? 0.0
+                    : entry.value / totalBookings;
                 final color = _kPalette[i % _kPalette.length];
                 return _RankedProgressBar(
                   rank: i + 1,
@@ -318,7 +388,10 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen>
           children: [
             Icon(Icons.people_outline, size: 48, color: AppColors.textGrey),
             SizedBox(height: 12),
-            Text('Chưa có dữ liệu khách hàng', style: TextStyle(color: AppColors.textGrey)),
+            Text(
+              'Chưa có dữ liệu khách hàng',
+              style: TextStyle(color: AppColors.textGrey),
+            ),
           ],
         ),
       );
@@ -327,7 +400,12 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen>
     final maxSpend = (sorted.first['spend'] as double);
 
     return ListView.builder(
-      padding: EdgeInsets.fromLTRB(16, 20, 16, 20 + MediaQuery.of(context).padding.bottom),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        20,
+        16,
+        20 + MediaQuery.of(context).padding.bottom,
+      ),
       itemCount: sorted.length,
       itemBuilder: (context, index) {
         final c = sorted[index];
@@ -348,7 +426,11 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen>
             color: Colors.white,
             borderRadius: BorderRadius.circular(_kCardRadius),
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 16, offset: const Offset(0, 4)),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
             ],
           ),
           child: Column(
@@ -367,8 +449,19 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen>
                     ),
                     child: Center(
                       child: isTop
-                          ? Icon(Icons.emoji_events_rounded, color: badgeColor[index], size: 20)
-                          : Text('${index + 1}', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textGrey)),
+                          ? Icon(
+                              Icons.emoji_events_rounded,
+                              color: badgeColor[index],
+                              size: 20,
+                            )
+                          : Text(
+                              '${index + 1}',
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                                color: AppColors.textGrey,
+                              ),
+                            ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -376,23 +469,41 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(c['name'] as String,
-                            style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15)),
-                        Text('$bookings lượt đặt',
-                            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textGrey)),
+                        Text(
+                          c['name'] as String,
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                        Text(
+                          '$bookings lượt đặt',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: AppColors.textGrey,
+                          ),
+                        ),
                       ],
                     ),
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(_currFmt.format(spend),
-                          style: GoogleFonts.inter(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15,
-                              color: const Color(0xFF10B981))),
-                      Text('tổng chi',
-                          style: GoogleFonts.inter(fontSize: 11, color: AppColors.textGrey)),
+                      Text(
+                        _currFmt.format(spend),
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                          color: const Color(0xFF10B981),
+                        ),
+                      ),
+                      Text(
+                        'tổng chi',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: AppColors.textGrey,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -405,7 +516,9 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen>
                   value: ratio,
                   backgroundColor: const Color(0xFFF0F0F0),
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    isTop ? badgeColor[index] : const Color(0xFF6366F1).withValues(alpha: 0.6),
+                    isTop
+                        ? badgeColor[index]
+                        : const Color(0xFF6366F1).withValues(alpha: 0.6),
                   ),
                   minHeight: 6,
                 ),
@@ -424,7 +537,12 @@ class _KpiItem {
   final String value;
   final IconData icon;
   final Color color;
-  const _KpiItem({required this.label, required this.value, required this.icon, required this.color});
+  const _KpiItem({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
 }
 
 class _KpiRow extends StatelessWidget {
@@ -443,7 +561,11 @@ class _KpiRow extends StatelessWidget {
               color: Colors.white,
               borderRadius: BorderRadius.circular(_kCardRadius),
               boxShadow: [
-                BoxShadow(color: item.color.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, 4)),
+                BoxShadow(
+                  color: item.color.withValues(alpha: 0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
               ],
             ),
             child: Column(
@@ -458,14 +580,26 @@ class _KpiRow extends StatelessWidget {
                   child: Icon(item.icon, color: item.color, size: 20),
                 ),
                 const SizedBox(height: 12),
-                Text(item.label,
-                    style: GoogleFonts.inter(fontSize: 11, color: AppColors.textGrey, fontWeight: FontWeight.w500)),
+                Text(
+                  item.label,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: AppColors.textGrey,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
-                  child: Text(item.value,
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 18, color: AppColors.textDark)),
+                  child: Text(
+                    item.value,
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                      color: AppColors.textDark,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -482,7 +616,11 @@ class _ChartCard extends StatelessWidget {
   final String subtitle;
   final Widget child;
 
-  const _ChartCard({required this.title, required this.subtitle, required this.child});
+  const _ChartCard({
+    required this.title,
+    required this.subtitle,
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -492,17 +630,33 @@ class _ChartCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(_kCardRadius),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 20, offset: const Offset(0, 6)),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.textDark)),
+          Text(
+            title,
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+              color: AppColors.textDark,
+            ),
+          ),
           const SizedBox(height: 2),
-          Text(subtitle,
-              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textGrey, fontWeight: FontWeight.w500)),
+          Text(
+            subtitle,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: AppColors.textGrey,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           const SizedBox(height: 24),
           child,
         ],
@@ -516,7 +670,11 @@ class _AreaLineChart extends StatefulWidget {
   final Map<String, double> data;
   final Color color;
   final bool isCurrency;
-  const _AreaLineChart({required this.data, required this.color, this.isCurrency = false});
+  const _AreaLineChart({
+    required this.data,
+    required this.color,
+    this.isCurrency = false,
+  });
 
   @override
   State<_AreaLineChart> createState() => _AreaLineChartState();
@@ -559,7 +717,8 @@ class _AreaLineChartState extends State<_AreaLineChart> {
             show: true,
             drawVerticalLine: false,
             horizontalInterval: maxY / 4,
-            getDrawingHorizontalLine: (_) => FlLine(color: Colors.grey.shade100, strokeWidth: 1),
+            getDrawingHorizontalLine: (_) =>
+                FlLine(color: Colors.grey.shade100, strokeWidth: 1),
           ),
           borderData: FlBorderData(show: false),
           titlesData: FlTitlesData(
@@ -570,14 +729,23 @@ class _AreaLineChartState extends State<_AreaLineChart> {
                 interval: maxY / 4,
                 getTitlesWidget: (v, _) => Padding(
                   padding: const EdgeInsets.only(right: 6),
-                  child: Text(_fmt(v),
-                      style: GoogleFonts.inter(fontSize: 10, color: AppColors.textGrey),
-                      textAlign: TextAlign.right),
+                  child: Text(
+                    _fmt(v),
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      color: AppColors.textGrey,
+                    ),
+                    textAlign: TextAlign.right,
+                  ),
                 ),
               ),
             ),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
@@ -591,8 +759,13 @@ class _AreaLineChartState extends State<_AreaLineChart> {
                   final d = DateTime.tryParse(keys[i]);
                   return Padding(
                     padding: const EdgeInsets.only(top: 6),
-                    child: Text(d != null ? DateFormat('dd/MM').format(d) : '',
-                        style: GoogleFonts.inter(fontSize: 10, color: AppColors.textGrey)),
+                    child: Text(
+                      d != null ? DateFormat('dd/MM').format(d) : '',
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        color: AppColors.textGrey,
+                      ),
+                    ),
                   );
                 },
               ),
@@ -601,8 +774,11 @@ class _AreaLineChartState extends State<_AreaLineChart> {
           lineTouchData: LineTouchData(
             handleBuiltInTouches: true,
             touchCallback: (event, response) {
-              if (response?.lineBarSpots != null && response!.lineBarSpots!.isNotEmpty) {
-                setState(() => _touchedIndex = response.lineBarSpots!.first.spotIndex);
+              if (response?.lineBarSpots != null &&
+                  response!.lineBarSpots!.isNotEmpty) {
+                setState(
+                  () => _touchedIndex = response.lineBarSpots!.first.spotIndex,
+                );
               } else if (event is FlTapUpEvent || event is FlLongPressEnd) {
                 setState(() => _touchedIndex = null);
               }
@@ -610,24 +786,44 @@ class _AreaLineChartState extends State<_AreaLineChart> {
             getTouchedSpotIndicator: (barData, spotIndexes) {
               return spotIndexes.map((i) {
                 return TouchedSpotIndicatorData(
-                  FlLine(color: widget.color.withValues(alpha: 0.4), strokeWidth: 1.5, dashArray: [4, 4]),
-                  FlDotData(show: true, getDotPainter: (_, __, ___, ____) =>
-                      FlDotCirclePainter(radius: 6, color: Colors.white, strokeWidth: 2.5, strokeColor: widget.color)),
+                  FlLine(
+                    color: widget.color.withValues(alpha: 0.4),
+                    strokeWidth: 1.5,
+                    dashArray: [4, 4],
+                  ),
+                  FlDotData(
+                    show: true,
+                    getDotPainter: (_, _, _, _) => FlDotCirclePainter(
+                      radius: 6,
+                      color: Colors.white,
+                      strokeWidth: 2.5,
+                      strokeColor: widget.color,
+                    ),
+                  ),
                 );
               }).toList();
             },
             touchTooltipData: LineTouchTooltipData(
               getTooltipColor: (_) => AppColors.textDark,
               tooltipRoundedRadius: 10,
-              tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              tooltipPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
               getTooltipItems: (spots) => spots.map((s) {
                 final i = s.spotIndex;
                 final dateStr = i < keys.length ? keys[i] : '';
                 final d = DateTime.tryParse(dateStr);
-                final dateLabel = d != null ? DateFormat('dd/MM/yyyy').format(d) : dateStr;
+                final dateLabel = d != null
+                    ? DateFormat('dd/MM/yyyy').format(d)
+                    : dateStr;
                 return LineTooltipItem(
                   '$dateLabel\n${_fmt(s.y)}',
-                  GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12),
+                  GoogleFonts.inter(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                  ),
                 );
               }).toList(),
             ),
@@ -642,7 +838,7 @@ class _AreaLineChartState extends State<_AreaLineChart> {
               isStrokeCapRound: true,
               dotData: FlDotData(
                 show: spots.length <= 14,
-                getDotPainter: (spot, _, __, i) {
+                getDotPainter: (spot, _, _, i) {
                   final isTouched = i == _touchedIndex;
                   return FlDotCirclePainter(
                     radius: isTouched ? 6 : 3,
@@ -655,7 +851,10 @@ class _AreaLineChartState extends State<_AreaLineChart> {
               belowBarData: BarAreaData(
                 show: true,
                 gradient: LinearGradient(
-                  colors: [widget.color.withValues(alpha: 0.25), widget.color.withValues(alpha: 0.0)],
+                  colors: [
+                    widget.color.withValues(alpha: 0.25),
+                    widget.color.withValues(alpha: 0.0),
+                  ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
@@ -673,7 +872,11 @@ class _DonutChart extends StatefulWidget {
   final Map<String, double> data;
   final bool isStatus;
   final bool isCurrency;
-  const _DonutChart({required this.data, this.isStatus = false, this.isCurrency = false});
+  const _DonutChart({
+    required this.data,
+    this.isStatus = false,
+    this.isCurrency = false,
+  });
 
   @override
   State<_DonutChart> createState() => _DonutChartState();
@@ -731,8 +934,13 @@ class _DonutChartState extends State<_DonutChart> {
                       setState(() {
                         if (event is FlTapDownEvent) {
                           if (pieTouchResponse?.touchedSection != null &&
-                              pieTouchResponse!.touchedSection!.touchedSectionIndex != -1) {
-                            final index = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                              pieTouchResponse!
+                                      .touchedSection!
+                                      .touchedSectionIndex !=
+                                  -1) {
+                            final index = pieTouchResponse
+                                .touchedSection!
+                                .touchedSectionIndex;
                             _touchedIndex = _touchedIndex == index ? -1 : index;
                           } else {
                             _touchedIndex = -1;
@@ -747,10 +955,22 @@ class _DonutChartState extends State<_DonutChart> {
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(fmtCenter,
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.textDark)),
-                  Text(centerLabel,
-                      style: GoogleFonts.inter(fontSize: 11, color: AppColors.textGrey, fontWeight: FontWeight.w500)),
+                  Text(
+                    fmtCenter,
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                  Text(
+                    centerLabel,
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: AppColors.textGrey,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -780,13 +1000,20 @@ class _DonutChartState extends State<_DonutChart> {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                  horizontal: 12,
+                ),
                 margin: const EdgeInsets.only(bottom: 6),
                 decoration: BoxDecoration(
-                  color: isTouched ? color.withValues(alpha: 0.1) : Colors.transparent,
+                  color: isTouched
+                      ? color.withValues(alpha: 0.1)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isTouched ? color.withValues(alpha: 0.3) : Colors.transparent,
+                    color: isTouched
+                        ? color.withValues(alpha: 0.3)
+                        : Colors.transparent,
                     width: 1,
                   ),
                 ),
@@ -795,29 +1022,53 @@ class _DonutChartState extends State<_DonutChart> {
                     Container(
                       width: 10,
                       height: 10,
-                      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: Text(label,
-                          style: GoogleFonts.inter(
-                            fontSize: 13, 
-                            fontWeight: isTouched ? FontWeight.w800 : FontWeight.w600, 
-                            color: isTouched ? AppColors.textDark : AppColors.textGrey
-                          ),
-                          overflow: TextOverflow.ellipsis),
+                      child: Text(
+                        label,
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: isTouched
+                              ? FontWeight.w800
+                              : FontWeight.w600,
+                          color: isTouched
+                              ? AppColors.textDark
+                              : AppColors.textGrey,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    Text(valStr,
-                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                    Text(
+                      valStr,
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textDark,
+                      ),
+                    ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: color.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Text('${pct.toStringAsFixed(1)}%',
-                          style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+                      child: Text(
+                        '${pct.toStringAsFixed(1)}%',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: color,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -860,7 +1111,8 @@ class _PeakHourChartState extends State<_PeakHourChart> {
           gridData: FlGridData(
             show: true,
             drawVerticalLine: false,
-            getDrawingHorizontalLine: (_) => FlLine(color: Colors.grey.shade100, strokeWidth: 1),
+            getDrawingHorizontalLine: (_) =>
+                FlLine(color: Colors.grey.shade100, strokeWidth: 1),
           ),
           borderData: FlBorderData(show: false),
           titlesData: FlTitlesData(
@@ -872,15 +1124,24 @@ class _PeakHourChartState extends State<_PeakHourChart> {
                   if (v % 1 != 0 || v == 0) return const SizedBox.shrink();
                   return Padding(
                     padding: const EdgeInsets.only(right: 4),
-                    child: Text('${v.toInt()}',
-                        style: GoogleFonts.inter(fontSize: 10, color: AppColors.textGrey),
-                        textAlign: TextAlign.right),
+                    child: Text(
+                      '${v.toInt()}',
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        color: AppColors.textGrey,
+                      ),
+                      textAlign: TextAlign.right,
+                    ),
                   );
                 },
               ),
             ),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
@@ -889,8 +1150,13 @@ class _PeakHourChartState extends State<_PeakHourChart> {
                   if (i % 3 != 0) return const SizedBox.shrink();
                   return Padding(
                     padding: const EdgeInsets.only(top: 6),
-                    child: Text('${i}h',
-                        style: GoogleFonts.inter(fontSize: 10, color: AppColors.textGrey)),
+                    child: Text(
+                      '${i}h',
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        color: AppColors.textGrey,
+                      ),
+                    ),
                   );
                 },
               ),
@@ -913,10 +1179,17 @@ class _PeakHourChartState extends State<_PeakHourChart> {
             touchTooltipData: BarTouchTooltipData(
               getTooltipColor: (_) => AppColors.textDark,
               tooltipRoundedRadius: 10,
-              tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              getTooltipItem: (group, _, rod, __) => BarTooltipItem(
+              tooltipPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+              getTooltipItem: (group, _, rod, _) => BarTooltipItem(
                 '${group.x}:00 – ${group.x + 1}:00\n${rod.toY.toInt()} lượt đặt',
-                GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12),
+                GoogleFonts.inter(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
               ),
             ),
           ),
@@ -940,7 +1213,9 @@ class _PeakHourChartState extends State<_PeakHourChart> {
                           end: Alignment.topCenter,
                         ),
                   width: 9,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(5)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(5),
+                  ),
                   backDrawRodData: BackgroundBarChartRodData(
                     show: true,
                     toY: chartMax,
@@ -949,7 +1224,10 @@ class _PeakHourChartState extends State<_PeakHourChart> {
                 ),
               ],
               // _touchedIndex corresponds to the index of this group in the 0..18 list
-              showingTooltipIndicators: (_touchedIndex == null && isPeak) || _touchedIndex == index ? [0] : [],
+              showingTooltipIndicators:
+                  (_touchedIndex == null && isPeak) || _touchedIndex == index
+                  ? [0]
+                  : [],
             );
           }),
         ),
@@ -994,21 +1272,45 @@ class _RankedProgressBar extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Center(
-                  child: Text('$rank',
-                      style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, color: color)),
+                  child: Text(
+                    '$rank',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: color,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(label,
-                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark),
-                    overflow: TextOverflow.ellipsis),
+                child: Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              Text('$count $unit',
-                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+              Text(
+                '$count $unit',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textDark,
+                ),
+              ),
               const SizedBox(width: 8),
-              Text('${(ratio * 100).toStringAsFixed(1)}%',
-                  style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+              Text(
+                '${(ratio * 100).toStringAsFixed(1)}%',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -1031,7 +1333,11 @@ class _RankedProgressBar extends StatelessWidget {
                     ),
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
-                      BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 4, offset: const Offset(0, 2)),
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.3),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
                     ],
                   ),
                 ),
@@ -1054,7 +1360,10 @@ Widget _emptyState() {
         children: [
           Icon(Icons.bar_chart_rounded, size: 40, color: AppColors.textGrey),
           SizedBox(height: 8),
-          Text('Chưa có dữ liệu', style: TextStyle(color: AppColors.textGrey, fontSize: 13)),
+          Text(
+            'Chưa có dữ liệu',
+            style: TextStyle(color: AppColors.textGrey, fontSize: 13),
+          ),
         ],
       ),
     ),

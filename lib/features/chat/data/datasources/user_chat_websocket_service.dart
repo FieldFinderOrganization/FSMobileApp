@@ -95,7 +95,7 @@ class UserChatWebSocketService {
         'receiverId': receiverId,
         'content': content,
         'type': type,
-        if (imageUrl != null) 'imageUrl': imageUrl,
+        'imageUrl': ?imageUrl,
       }),
     );
   }

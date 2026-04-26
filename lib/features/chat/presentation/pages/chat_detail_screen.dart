@@ -98,7 +98,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       },
       builder: (context, state) {
         if (state is! ChatSessionOpen) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         final session = state.session;
@@ -110,8 +112,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             backgroundColor: Colors.white,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                  color: Color(0xFF1F2937), size: 20),
+              icon: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: Color(0xFF1F2937),
+                size: 20,
+              ),
               onPressed: () => Navigator.pop(context),
             ),
             title: Column(
@@ -129,8 +134,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 ),
                 Text(
                   'Chat AI',
-                  style: GoogleFonts.inter(
-                      fontSize: 11, color: Colors.grey),
+                  style: GoogleFonts.inter(fontSize: 11, color: Colors.grey),
                 ),
               ],
             ),
@@ -163,16 +167,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                                   msg.aiData != null &&
                                   msg.aiData!['products'] != null)
                                 _ProductList(
-                                    products: (msg.aiData!['products']
-                                        as List<dynamic>)
-                                        .cast<Map<String, dynamic>>()),
+                                  products:
+                                      (msg.aiData!['products'] as List<dynamic>)
+                                          .cast<Map<String, dynamic>>(),
+                                ),
                               if (!msg.isUser &&
                                   msg.aiData != null &&
                                   msg.aiData!['matchedPitches'] != null)
                                 _PitchList(
-                                    pitches: (msg.aiData!['matchedPitches']
-                                            as List<dynamic>)
-                                        .cast<Map<String, dynamic>>()),
+                                  pitches:
+                                      (msg.aiData!['matchedPitches']
+                                              as List<dynamic>)
+                                          .cast<Map<String, dynamic>>(),
+                                ),
                               if (!msg.isUser &&
                                   msg.aiData != null &&
                                   msg.aiData!['showImage'] == true &&
@@ -218,14 +225,21 @@ class _WelcomeHint extends StatelessWidget {
                 color: const Color(0xFFFEE2E2),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Icon(Icons.smart_toy_outlined,
-                  color: Color(0xFFDC2626), size: 30),
+              child: const Icon(
+                Icons.smart_toy_outlined,
+                color: Color(0xFFDC2626),
+                size: 30,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
               'Xin chào! Tôi có thể giúp bạn tìm sân bóng, gợi ý sản phẩm hoặc tìm kiếm bằng hình ảnh.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 14, color: Colors.grey, height: 1.5),
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: Colors.grey,
+                height: 1.5,
+              ),
             ),
           ],
         ),
@@ -260,7 +274,7 @@ class _PitchList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (pitches.isEmpty) return const SizedBox.shrink();
-    
+
     return SizedBox(
       height: 210,
       child: ListView.builder(
@@ -276,13 +290,14 @@ class _PitchList extends StatelessWidget {
             environment: raw['environment'] as String? ?? 'OUTDOOR',
             price: (raw['price'] as num?)?.toDouble() ?? 0,
             description: raw['description'] as String? ?? '',
-            imageUrls: (raw['imageUrls'] as List<dynamic>?)
+            imageUrls:
+                (raw['imageUrls'] as List<dynamic>?)
                     ?.map((e) => e.toString())
                     .toList() ??
                 const [],
             address: raw['address'] as String? ?? '',
           );
-          
+
           return Container(
             width: 250,
             margin: const EdgeInsets.only(right: 12),
@@ -293,7 +308,6 @@ class _PitchList extends StatelessWidget {
     );
   }
 }
-
 
 class _TypingIndicator extends StatelessWidget {
   const _TypingIndicator();
@@ -317,8 +331,10 @@ class _TypingIndicator extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('AI đang trả lời',
-                style: GoogleFonts.inter(fontSize: 13, color: Colors.grey)),
+            Text(
+              'AI đang trả lời',
+              style: GoogleFonts.inter(fontSize: 13, color: Colors.grey),
+            ),
             const SizedBox(width: 6),
             const SizedBox(
               width: 16,
@@ -355,8 +371,9 @@ class _CheckoutButton extends StatelessWidget {
           backgroundColor: AppColors.primaryRed,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       ),
     );
@@ -381,7 +398,8 @@ class _CheckoutButton extends StatelessWidget {
       brand: product['brand'] as String? ?? '',
       imageUrl: product['imageUrl'] as String? ?? '',
       size: selectedSize,
-      unitPrice: (product['salePrice'] as num?)?.toDouble() ??
+      unitPrice:
+          (product['salePrice'] as num?)?.toDouble() ??
           (product['price'] as num?)?.toDouble() ??
           0,
       originalPrice: (product['price'] as num?)?.toDouble() ?? 0,
@@ -391,9 +409,7 @@ class _CheckoutButton extends StatelessWidget {
 
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => CheckoutScreen(items: [item]),
-      ),
+      MaterialPageRoute(builder: (_) => CheckoutScreen(items: [item])),
     );
   }
 }
@@ -418,7 +434,8 @@ class _InputBar extends StatelessWidget {
         left: 12,
         right: 12,
         top: 10,
-        bottom: MediaQuery.of(context).viewInsets.bottom +
+        bottom:
+            MediaQuery.of(context).viewInsets.bottom +
             MediaQuery.of(context).padding.bottom +
             12,
       ),
@@ -450,8 +467,10 @@ class _InputBar extends StatelessWidget {
                 hintStyle: GoogleFonts.inter(color: Colors.grey, fontSize: 14),
                 filled: true,
                 fillColor: const Color(0xFFF9FAFB),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),
                   borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
@@ -478,7 +497,11 @@ class _InputBar extends StatelessWidget {
                 color: isLoading ? Colors.grey : AppColors.primaryRed,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+              child: const Icon(
+                Icons.send_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
             ),
           ),
         ],
@@ -506,8 +529,9 @@ class _BookPitchButton extends StatelessWidget {
           backgroundColor: AppColors.primaryRed,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       ),
     );
@@ -528,13 +552,14 @@ class _BookPitchButton extends StatelessWidget {
       environment: raw['environment'] as String? ?? 'OUTDOOR',
       price: (raw['price'] as num?)?.toDouble() ?? 0,
       description: raw['description'] as String? ?? '',
-      imageUrls: (raw['imageUrls'] as List<dynamic>?)
+      imageUrls:
+          (raw['imageUrls'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],
       address: raw['address'] as String? ?? '',
     );
-    
+
     final bookingDateStr = aiData['bookingDate'] as String?;
     if (bookingDateStr != null) {
       DateTime? bDate;
@@ -620,16 +645,22 @@ class _SingleProductImage extends StatelessWidget {
                           child: Image.network(
                             imageUrl,
                             fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => const Center(
-                              child: Icon(Icons.broken_image,
-                                  color: Colors.grey, size: 48),
+                            errorBuilder: (_, _, _) => const Center(
+                              child: Icon(
+                                Icons.broken_image,
+                                color: Colors.grey,
+                                size: 48,
+                              ),
                             ),
                           ),
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close,
-                            color: Colors.white, size: 30),
+                        icon: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 30,
+                        ),
                         onPressed: () => Navigator.pop(context),
                       ),
                     ],
@@ -638,18 +669,22 @@ class _SingleProductImage extends StatelessWidget {
               );
             },
             child: ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
               child: Image.network(
                 imageUrl,
                 height: 200,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (_, _, _) => Container(
                   height: 200,
                   color: const Color(0xFFF3F4F6),
                   child: const Center(
-                    child: Icon(Icons.image_outlined,
-                        color: Colors.grey, size: 48),
+                    child: Icon(
+                      Icons.image_outlined,
+                      color: Colors.grey,
+                      size: 48,
+                    ),
                   ),
                 ),
               ),
@@ -712,4 +747,3 @@ class _SingleProductImage extends StatelessWidget {
     );
   }
 }
-

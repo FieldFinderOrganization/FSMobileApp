@@ -34,6 +34,11 @@ import 'features/chat/data/datasources/chat_local_datasource.dart';
 import 'features/chat/presentation/cubit/chat_cubit.dart';
 import 'features/admin/data/datasources/admin_statistics_datasource.dart';
 import 'features/admin/presentation/cubit/admin_dashboard_cubit.dart';
+import 'features/discount/data/datasources/discount_remote_data_source.dart';
+import 'features/discount/data/repositories/discount_repository_impl.dart';
+import 'features/discount/domain/repositories/discount_repository.dart';
+import 'features/discount/presentation/cubit/my_wallet_cubit.dart';
+import 'features/discount/presentation/cubit/admin_discount_cubit.dart';
 import 'features/welcome/presentation/pages/welcome_screen.dart';
 
 
@@ -72,6 +77,9 @@ void main() async {
   final aiChatDatasource = AIChatRemoteDatasource(dioClient);
   final adminStatisticsDatasource = AdminStatisticsDatasource(dioClient: dioClient);
 
+  final discountDatasource = DiscountRemoteDataSource(dioClient.dio);
+  final discountRepository = DiscountRepositoryImpl(discountDatasource);
+
   runApp(
     MultiRepositoryProvider(
       providers: [
@@ -83,6 +91,7 @@ void main() async {
         RepositoryProvider<ProviderRepository>.value(value: providerRepository),
         RepositoryProvider<PitchRepository>.value(value: pitchRepository),
         RepositoryProvider<BookingRepository>.value(value: bookingRepository),
+        RepositoryProvider<DiscountRepository>.value(value: discountRepository),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -109,6 +118,12 @@ void main() async {
           ),
           BlocProvider<AdminDashboardCubit>(
             create: (context) => AdminDashboardCubit(datasource: adminStatisticsDatasource),
+          ),
+          BlocProvider<MyWalletCubit>(
+            create: (context) => MyWalletCubit(repository: discountRepository),
+          ),
+          BlocProvider<AdminDiscountCubit>(
+            create: (context) => AdminDiscountCubit(repository: discountRepository),
           ),
         ],
         child: const MyApp(),

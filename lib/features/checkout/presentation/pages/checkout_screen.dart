@@ -13,6 +13,8 @@ import '../../../product/presentation/cubit/product_cubit.dart';
 import '../../../pitch/data/datasources/payment_remote_datasource.dart';
 import '../../domain/entities/checkout_item_entity.dart';
 import '../../../order/presentation/pages/order_history_screen.dart';
+import '../../../discount/data/datasources/discount_remote_data_source.dart';
+import '../../../discount/domain/entities/user_discount_entity.dart';
 import 'shop_payment_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -26,32 +28,77 @@ class CheckoutScreen extends StatefulWidget {
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
   String _paymentMethod = 'cash'; // 'cash' | 'transfer'
-  final TextEditingController _promoController = TextEditingController();
-  final double _discount = 0.0;
   final TextEditingController _addressController = TextEditingController();
+  List<UserDiscountEntity> _walletVouchers = [];
+  UserDiscountEntity? _selectedVoucher;
+  bool _walletLoading = false;
 
   final _currencyFormat = NumberFormat('#,###', 'vi_VN');
 
   @override
   void dispose() {
-    _promoController.dispose();
     _addressController.dispose();
     super.dispose();
   }
 
   double get _subtotal => widget.items.fold(0, (sum, i) => sum + i.totalPrice);
-  double get _total => _subtotal - _discount;
 
-  void _applyPromo() {
-    // Stub — backend chưa có API promo
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Mã không hợp lệ hoặc đã hết hạn.',
-          style: GoogleFonts.inter(color: Colors.white),
-        ),
-        backgroundColor: AppColors.primaryRed,
-        behavior: SnackBarBehavior.floating,
+  double get _discountAmount {
+    if (_selectedVoucher == null || !_selectedVoucher!.isAvailable) return 0;
+    final v = _selectedVoucher!;
+    if (v.scope != 'GLOBAL') return 0;
+    if (v.minOrderValue != null && _subtotal < v.minOrderValue!) return 0;
+    double d = v.isPercentage ? _subtotal * v.value / 100 : v.value;
+    if (v.maxDiscountAmount != null && d > v.maxDiscountAmount!) {
+      d = v.maxDiscountAmount!;
+    }
+    return d.clamp(0, _subtotal);
+  }
+
+  double get _total => _subtotal - _discountAmount;
+
+  List<String> get _discountCodes =>
+      _selectedVoucher != null ? [_selectedVoucher!.discountCode] : [];
+
+  Future<void> _loadWallet(String userId) async {
+    setState(() => _walletLoading = true);
+    try {
+      final dioClient = context.read<DioClient>();
+      final ds = DiscountRemoteDataSource(dioClient.dio);
+      final vouchers = await ds.getWallet(userId);
+      setState(() {
+        _walletVouchers = vouchers.where((v) => v.isAvailable).toList();
+      });
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _walletLoading = false);
+    }
+  }
+
+  Future<void> _openVoucherSheet(String userId) async {
+    if (_walletVouchers.isEmpty && !_walletLoading) {
+      await _loadWallet(userId);
+    }
+    if (!mounted) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _VoucherBottomSheet(
+        vouchers: _walletVouchers,
+        selected: _selectedVoucher,
+        subtotal: _subtotal,
+        onSelect: (v) {
+          setState(() => _selectedVoucher = v);
+          Navigator.pop(context);
+        },
+        onClear: () {
+          setState(() => _selectedVoucher = null);
+          Navigator.pop(context);
+        },
       ),
     );
   }
@@ -108,7 +155,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 },
               )
               .toList(),
-          'discountCodes': <String>[],
+          'discountCodes': _discountCodes,
         });
 
         final orderId = orderData['orderId'] as int;
@@ -165,7 +212,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 },
               )
               .toList(),
-          'discountCodes': <String>[],
+          'discountCodes': _discountCodes,
         });
 
         if (!mounted) return;
@@ -565,62 +612,132 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   // ── Mã khuyến mãi ───────────────────────────────────────────────────────
 
   Widget _buildPromoSection() {
+    final authState = context.read<AuthCubit>().state;
+    final userId = authState.currentUser?.userId ?? '';
+
     return _buildCard(
       title: 'Mã khuyến mãi',
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _promoController,
-              style: GoogleFonts.inter(fontSize: 14, color: AppColors.textDark),
-              decoration: InputDecoration(
-                hintText: 'Nhập mã khuyến mãi',
-                hintStyle: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: AppColors.textGrey,
+      child: _selectedVoucher == null
+          ? GestureDetector(
+              onTap: () => _openVoucherSheet(userId),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 14,
                 ),
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                border: OutlineInputBorder(
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Colors.grey.shade300,
+                    style: BorderStyle.solid,
+                  ),
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: AppColors.primaryRed),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.local_offer_outlined,
+                      size: 18,
+                      color: AppColors.textGrey,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Chọn voucher từ ví của bạn',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: AppColors.textGrey,
+                        ),
+                      ),
+                    ),
+                    if (_walletLoading)
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    else
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.textGrey,
+                      ),
+                  ],
                 ),
               ),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryRed.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: AppColors.primaryRed.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.local_offer_rounded,
+                        size: 16,
+                        color: AppColors.primaryRed,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _selectedVoucher!.discountCode,
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                                color: AppColors.primaryRed,
+                              ),
+                            ),
+                            Text(
+                              _selectedVoucher!.description,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                color: AppColors.primaryRed.withValues(
+                                  alpha: 0.7,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => setState(() => _selectedVoucher = null),
+                        child: const Icon(
+                          Icons.close_rounded,
+                          size: 18,
+                          color: AppColors.primaryRed,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () => _openVoucherSheet(userId),
+                  child: Text(
+                    'Đổi voucher khác',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: AppColors.primaryRed,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(width: 10),
-          ElevatedButton(
-            onPressed: _applyPromo,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryRed,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              elevation: 0,
-            ),
-            child: Text(
-              'Áp dụng',
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -715,8 +832,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           const SizedBox(height: 10),
           _buildSummaryRow(
             'Giảm giá',
-            _discount > 0 ? '- ${_currencyFormat.format(_discount)}đ' : '0đ',
-            valueColor: _discount > 0 ? Colors.green.shade700 : null,
+            _discountAmount > 0
+                ? '- ${_currencyFormat.format(_discountAmount)}đ'
+                : (_selectedVoucher != null &&
+                      _selectedVoucher!.scope != 'GLOBAL')
+                ? 'Áp dụng sau'
+                : '0đ',
+            valueColor: _discountAmount > 0 ? Colors.green.shade700 : null,
           ),
           const SizedBox(height: 10),
           _buildSummaryRow(
@@ -850,6 +972,198 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
           const SizedBox(height: 14),
           child,
+        ],
+      ),
+    );
+  }
+}
+
+class _VoucherBottomSheet extends StatelessWidget {
+  final List<UserDiscountEntity> vouchers;
+  final UserDiscountEntity? selected;
+  final double subtotal;
+  final ValueChanged<UserDiscountEntity> onSelect;
+  final VoidCallback onClear;
+
+  const _VoucherBottomSheet({
+    required this.vouchers,
+    required this.selected,
+    required this.subtotal,
+    required this.onSelect,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final currFmt = NumberFormat.currency(
+      locale: 'vi_VN',
+      symbol: '₫',
+      decimalDigits: 0,
+    );
+    final dateFmt = DateFormat('dd/MM/yyyy');
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      maxChildSize: 0.9,
+      minChildSize: 0.4,
+      expand: false,
+      builder: (_, controller) => Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 10),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Chọn voucher',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (selected != null)
+                  TextButton(
+                    onPressed: onClear,
+                    child: Text(
+                      'Bỏ chọn',
+                      style: GoogleFonts.inter(
+                        color: AppColors.primaryRed,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: vouchers.isEmpty
+                ? Center(
+                    child: Text(
+                      'Bạn chưa có voucher nào có thể dùng',
+                      style: GoogleFonts.inter(color: Colors.grey),
+                    ),
+                  )
+                : ListView.separated(
+                    controller: controller,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: vouchers.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    itemBuilder: (_, i) {
+                      final v = vouchers[i];
+                      final isSelected =
+                          selected?.discountCode == v.discountCode;
+                      final eligible =
+                          v.minOrderValue == null ||
+                          subtotal >= v.minOrderValue!;
+                      return GestureDetector(
+                        onTap: eligible ? () => onSelect(v) : null,
+                        child: Opacity(
+                          opacity: eligible ? 1.0 : 0.5,
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.primaryRed.withValues(alpha: 0.05)
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isSelected
+                                    ? AppColors.primaryRed
+                                    : const Color(0xFFEEEEEE),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 60,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryRed,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      v.displayValue,
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.inter(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        v.discountCode,
+                                        style: GoogleFonts.inter(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        v.description,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      if (v.minOrderValue != null &&
+                                          v.minOrderValue! > 0)
+                                        Text(
+                                          eligible
+                                              ? 'Đủ điều kiện áp dụng'
+                                              : 'Tối thiểu ${currFmt.format(v.minOrderValue)}',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 11,
+                                            color: eligible
+                                                ? Colors.green
+                                                : Colors.orange,
+                                          ),
+                                        ),
+                                      Text(
+                                        'HSD: ${dateFmt.format(v.endDate)}',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 11,
+                                          color: Colors.grey[500],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (isSelected)
+                                  const Icon(
+                                    Icons.check_circle_rounded,
+                                    color: AppColors.primaryRed,
+                                    size: 22,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
         ],
       ),
     );

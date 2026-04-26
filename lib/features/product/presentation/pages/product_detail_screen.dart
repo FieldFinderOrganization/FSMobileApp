@@ -164,6 +164,11 @@ class _ProductContent extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     _PriceRow(product: product),
+                    if (product.hasPersonalizedDiscount) ...[
+                      const SizedBox(height: 8),
+                      _PersonalizedDiscountBadge(
+                          codes: product.appliedDiscountCodes!),
+                    ],
                     const SizedBox(height: 20),
                     _SizeSelector(
                       variants: product.variants,
@@ -897,6 +902,49 @@ class _BottomBar extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _PersonalizedDiscountBadge extends StatelessWidget {
+  final List<String> codes;
+
+  const _PersonalizedDiscountBadge({required this.codes});
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 6,
+      runSpacing: 4,
+      children: codes
+          .map(
+            (code) => Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                    color: Colors.green.withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.local_offer_rounded,
+                      size: 12, color: Colors.green),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Áp mã $code',
+                    style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: Colors.green.shade700,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+          )
+          .toList(),
     );
   }
 }

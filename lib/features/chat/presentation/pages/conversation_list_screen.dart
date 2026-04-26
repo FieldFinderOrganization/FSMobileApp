@@ -31,7 +31,8 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
   Widget build(BuildContext context) {
     return BlocBuilder<ConversationListCubit, ConversationListState>(
       builder: (context, state) {
-        if (state is ConversationListLoading || state is ConversationListInitial) {
+        if (state is ConversationListLoading ||
+            state is ConversationListInitial) {
           return const Center(
             child: CircularProgressIndicator(color: AppColors.primaryRed),
           );
@@ -41,17 +42,26 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.error_outline, color: AppColors.textGrey, size: 40),
+                const Icon(
+                  Icons.error_outline,
+                  color: AppColors.textGrey,
+                  size: 40,
+                ),
                 const SizedBox(height: 8),
-                Text(state.message,
-                    style: GoogleFonts.inter(color: AppColors.textGrey),
-                    textAlign: TextAlign.center),
+                Text(
+                  state.message,
+                  style: GoogleFonts.inter(color: AppColors.textGrey),
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 12),
                 TextButton(
-                  onPressed: () =>
-                      context.read<ConversationListCubit>().load(widget.currentUserId),
-                  child: const Text('Thử lại',
-                      style: TextStyle(color: AppColors.primaryRed)),
+                  onPressed: () => context.read<ConversationListCubit>().load(
+                    widget.currentUserId,
+                  ),
+                  child: const Text(
+                    'Thử lại',
+                    style: TextStyle(color: AppColors.primaryRed),
+                  ),
                 ),
               ],
             ),
@@ -63,13 +73,16 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
           }
           return RefreshIndicator(
             color: AppColors.primaryRed,
-            onRefresh: () =>
-                context.read<ConversationListCubit>().refresh(),
+            onRefresh: () => context.read<ConversationListCubit>().refresh(),
             child: ListView.separated(
               padding: EdgeInsets.fromLTRB(
-                  0, 8, 0, 8 + MediaQuery.of(context).padding.bottom),
+                0,
+                8,
+                0,
+                8 + MediaQuery.of(context).padding.bottom,
+              ),
               itemCount: state.conversations.length,
-              separatorBuilder: (_, __) => const Divider(height: 1, indent: 76),
+              separatorBuilder: (_, _) => const Divider(height: 1, indent: 76),
               itemBuilder: (context, index) {
                 return _ConversationTile(
                   conversation: state.conversations[index],
@@ -85,7 +98,9 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
   }
 
   void _openChat(BuildContext context, ConversationModel conv) {
-    context.read<ConversationListCubit>().markConversationRead(conv.otherUserId);
+    context.read<ConversationListCubit>().markConversationRead(
+      conv.otherUserId,
+    );
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -132,8 +147,9 @@ class _ConversationTile extends StatelessWidget {
                         child: Text(
                           conversation.otherUserName,
                           style: GoogleFonts.inter(
-                            fontWeight:
-                                hasUnread ? FontWeight.w700 : FontWeight.w600,
+                            fontWeight: hasUnread
+                                ? FontWeight.w700
+                                : FontWeight.w600,
                             fontSize: 15,
                             color: const Color(0xFF1F2937),
                           ),
@@ -188,7 +204,9 @@ class _ConversationTile extends StatelessWidget {
                         Container(
                           margin: const EdgeInsets.only(left: 8),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 2),
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.primaryRed,
                             borderRadius: BorderRadius.circular(10),
@@ -239,8 +257,9 @@ class _Avatar extends StatelessWidget {
         CircleAvatar(
           radius: 26,
           backgroundColor: AppColors.primaryRed.withValues(alpha: 0.12),
-          backgroundImage:
-              imageUrl != null && imageUrl!.isNotEmpty ? NetworkImage(imageUrl!) : null,
+          backgroundImage: imageUrl != null && imageUrl!.isNotEmpty
+              ? NetworkImage(imageUrl!)
+              : null,
           child: imageUrl == null || imageUrl!.isEmpty
               ? Text(
                   name.isNotEmpty ? name[0].toUpperCase() : '?',
@@ -285,8 +304,11 @@ class _EmptyConversations extends StatelessWidget {
               color: AppColors.primaryRed.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.chat_bubble_outline_rounded,
-                size: 36, color: AppColors.primaryRed),
+            child: const Icon(
+              Icons.chat_bubble_outline_rounded,
+              size: 36,
+              color: AppColors.primaryRed,
+            ),
           ),
           const SizedBox(height: 20),
           Text(

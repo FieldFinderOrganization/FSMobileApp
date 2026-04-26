@@ -23,6 +23,8 @@ import 'admin_pitches_screen.dart';
 import 'admin_rating_screen.dart';
 import 'admin_revenue_screen.dart';
 import 'admin_users_screen.dart';
+import '../../../discount/presentation/cubit/admin_discount_cubit.dart';
+import '../../../discount/presentation/pages/admin_discount_list_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   final UserEntity user;
@@ -78,7 +80,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       listener: (context, state) {
         // Cập nhật lại thời gian khi Cubit tải xong dữ liệu thành công
         if (state is AdminDashboardLoaded) {
-          _lastUpdated = DateTime.now(); 
+          _lastUpdated = DateTime.now();
         }
       },
       builder: (context, state) {
@@ -144,17 +146,21 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         children: [
           const Icon(Icons.error_outline, color: _kNegative, size: 48),
           const SizedBox(height: 16),
-          Text(message,
-              style: GoogleFonts.inter(
-                  fontSize: 14, color: Colors.grey.shade600)),
+          Text(
+            message,
+            style: GoogleFonts.inter(fontSize: 14, color: Colors.grey.shade600),
+          ),
           const SizedBox(height: 16),
           ElevatedButton(
-            style:
-                ElevatedButton.styleFrom(backgroundColor: AppColors.primaryRed),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryRed,
+            ),
             onPressed: () =>
                 context.read<AdminDashboardCubit>().loadDashboard(),
-            child:
-                Text('Thử lại', style: GoogleFonts.inter(color: Colors.white)),
+            child: Text(
+              'Thử lại',
+              style: GoogleFonts.inter(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -174,15 +180,24 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 24),
-                _buildKpiGrid(state.overview, state.revenueData, state.pitchesByType),
+                _buildKpiGrid(
+                  state.overview,
+                  state.revenueData,
+                  state.pitchesByType,
+                ),
                 const SizedBox(height: 24),
                 _buildRevenueChart(
-                    state.revenueData, state.overview, state.selectedTimeRange),
+                  state.revenueData,
+                  state.overview,
+                  state.selectedTimeRange,
+                ),
                 const SizedBox(height: 20),
                 _buildBarChart(state.bookingsByDay),
                 const SizedBox(height: 16),
                 _buildDonutChart(
-                    state.pitchesByType, state.overview.totalPitches),
+                  state.pitchesByType,
+                  state.overview.totalPitches,
+                ),
                 const SizedBox(height: 20),
                 _buildProductSection(state.productStatistics),
                 const SizedBox(height: 20),
@@ -233,7 +248,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     Text(
                       'Xin chào,',
                       style: GoogleFonts.inter(
-                          fontSize: 13, color: Colors.white.withOpacity(0.7)),
+                        fontSize: 13,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
                     ),
                     Text(
                       widget.user.name,
@@ -259,10 +276,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       color: Colors.white.withOpacity(0.15),
                       shape: BoxShape.circle,
                       border: Border.all(
-                          color: Colors.white.withOpacity(0.25), width: 1),
+                        color: Colors.white.withOpacity(0.25),
+                        width: 1,
+                      ),
                     ),
-                    child: const Icon(Icons.notifications_outlined,
-                        color: Colors.white, size: 22),
+                    child: const Icon(
+                      Icons.notifications_outlined,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                   ),
                 ),
               ),
@@ -278,10 +300,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         color: Colors.white.withOpacity(0.15),
                         shape: BoxShape.circle,
                         border: Border.all(
-                            color: Colors.white.withOpacity(0.25), width: 1),
+                          color: Colors.white.withOpacity(0.25),
+                          width: 1,
+                        ),
                       ),
-                      child: const Icon(Icons.menu_rounded,
-                          color: Colors.white, size: 22),
+                      child: const Icon(
+                        Icons.menu_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
                     ),
                   ),
                 ),
@@ -297,15 +324,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               Text(
                 dateStr,
                 style: GoogleFonts.inter(
-                    fontSize: 12, color: Colors.white.withOpacity(0.6)),
+                  fontSize: 12,
+                  color: Colors.white.withOpacity(0.6),
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6),
                 child: Container(
-                  width: 4, height: 4,
+                  width: 4,
+                  height: 4,
                   decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.4),
-                      shape: BoxShape.circle),
+                    color: Colors.white.withOpacity(0.4),
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
               Row(
@@ -317,11 +348,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       return Text(
                         _getTimeAgo(),
                         style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: Colors.white.withOpacity(0.9),
-                            fontWeight: FontWeight.w500),
+                          fontSize: 12,
+                          color: Colors.white.withOpacity(0.9),
+                          fontWeight: FontWeight.w500,
+                        ),
                       );
-                    }
+                    },
                   ),
                   const SizedBox(width: 2),
                   Material(
@@ -349,26 +381,50 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           Row(
             children: [
               Expanded(
-                  child: _buildGlassStat(
-                      revenue, 'Doanh thu', Icons.trending_up,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(
-                            builder: (_) => AdminRevenueScreen(
-                              overview: overview,
-                              revenueData: state.revenueData,
-                              datasource: ds,
-                            ))))),
+                child: _buildGlassStat(
+                  revenue,
+                  'Doanh thu',
+                  Icons.trending_up,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AdminRevenueScreen(
+                        overview: overview,
+                        revenueData: state.revenueData,
+                        datasource: ds,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(width: 10),
               Expanded(
-                  child: _buildGlassStat('${overview.totalUsers}', 'Người dùng',
-                      Icons.people_outline,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(
-                            builder: (_) => AdminUsersScreen(datasource: ds))))),
+                child: _buildGlassStat(
+                  '${overview.totalUsers}',
+                  'Người dùng',
+                  Icons.people_outline,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AdminUsersScreen(datasource: ds),
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(width: 10),
               Expanded(
-                  child: _buildGlassStat('${overview.bookingsTodayCount}',
-                      'Đặt sân HN', Icons.calendar_today_outlined,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(
-                            builder: (_) => AdminBookingsScreen(datasource: ds))))),
+                child: _buildGlassStat(
+                  '${overview.bookingsTodayCount}',
+                  'Đặt sân HN',
+                  Icons.calendar_today_outlined,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AdminBookingsScreen(datasource: ds),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ],
@@ -376,8 +432,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  Widget _buildGlassStat(String value, String label, IconData icon,
-      {VoidCallback? onTap}) {
+  Widget _buildGlassStat(
+    String value,
+    String label,
+    IconData icon, {
+    VoidCallback? onTap,
+  }) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: BackdropFilter(
@@ -394,7 +454,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.13),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.22), width: 1),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.22),
+                  width: 1,
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,9 +479,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   Text(
                     label,
                     style: GoogleFonts.inter(
-                        fontSize: 10,
-                        color: Colors.white.withOpacity(0.65),
-                        height: 1),
+                      fontSize: 10,
+                      color: Colors.white.withOpacity(0.65),
+                      height: 1,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -433,17 +497,25 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   // ─── KPI GRID ─────────────────────────────────────────────────────────────
 
-  Widget _buildKpiGrid(AdminOverviewModel overview,
-      List<RevenuePointModel> revenueData, List<PitchTypeModel> pitchTypes) {
+  Widget _buildKpiGrid(
+    AdminOverviewModel overview,
+    List<RevenuePointModel> revenueData,
+    List<PitchTypeModel> pitchTypes,
+  ) {
     final sparkSpots = _revenueToSpots(revenueData);
 
     String pct(double v) {
       final formatted = v.toStringAsFixed(1);
-      if (formatted == '0.0' || formatted == '-0.0') return ''; // Nếu là 0 thì trả về chuỗi rỗng
+      if (formatted == '0.0' || formatted == '-0.0')
+        return ''; // Nếu là 0 thì trả về chuỗi rỗng
       return '${v > 0 ? '+' : ''}$formatted%';
     }
-    Color changeColor(double v) =>
-        v > 0 ? _kTealMint : v < 0 ? _kCoralPink : Colors.grey.shade400;
+
+    Color changeColor(double v) => v > 0
+        ? _kTealMint
+        : v < 0
+        ? _kCoralPink
+        : Colors.grey.shade400;
     bool isPos(double v) => v > 0;
 
     final ds = context.read<AdminDashboardCubit>().datasource;
@@ -453,7 +525,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return Column(
       children: [
         GestureDetector(
-          onTap: () => push(AdminRevenueScreen(overview: overview, revenueData: revenueData, datasource: ds)),
+          onTap: () => push(
+            AdminRevenueScreen(
+              overview: overview,
+              revenueData: revenueData,
+              datasource: ds,
+            ),
+          ),
           child: _buildLargeKpiCard(
             title: 'Tổng doanh thu',
             value: _formatRevenue(overview.totalRevenue),
@@ -487,7 +565,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: GestureDetector(
-                onTap: () => push(AdminPitchesScreen(datasource: ds, pitchTypeData: pitchTypes)),
+                onTap: () => push(
+                  AdminPitchesScreen(datasource: ds, pitchTypeData: pitchTypes),
+                ),
                 child: _buildRingKpiCard(
                   title: 'Sân hoạt động',
                   value: _formatNumber(overview.totalPitches),
@@ -543,6 +623,33 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             accentColor: _kWarning,
           ),
         ),
+        const SizedBox(height: 12),
+        BlocBuilder<AdminDiscountCubit, AdminDiscountState>(
+          builder: (context, discState) {
+            final activeCount = discState.status == AdminDiscountStatus.success
+                ? discState.discounts
+                      .where((d) => d.effectiveStatus == 'ACTIVE')
+                      .length
+                : null;
+            return GestureDetector(
+              onTap: () => push(
+                BlocProvider.value(
+                  value: context.read<AdminDiscountCubit>(),
+                  child: const AdminDiscountListScreen(),
+                ),
+              ),
+              child: _buildCompactKpiCard(
+                title: 'Mã khuyến mãi',
+                value: activeCount != null ? _formatNumber(activeCount) : '—',
+                change: 'đang hoạt động',
+                changeColor: _kTealMint,
+                icon: Icons.local_offer_outlined,
+                accentColor: _kCoralPink,
+                sparklineSpots: const [],
+              ),
+            );
+          },
+        ),
       ],
     );
   }
@@ -594,16 +701,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   Text(
                     title,
                     style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade600),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade600,
+                    ),
                   ),
                 ],
               ),
               if (change.isNotEmpty)
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: changeColor.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(20),
@@ -627,15 +737,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               Text(
                 value,
                 style: GoogleFonts.inter(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.black87,
-                    height: 1,
-                    letterSpacing: -1),
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.black87,
+                  height: 1,
+                  letterSpacing: -1,
+                ),
               ),
               if (sparklineSpots.isNotEmpty)
-                _buildSparkline(sparklineSpots, accentColor,
-                    barWidth: 2, height: 36),
+                _buildSparkline(
+                  sparklineSpots,
+                  accentColor,
+                  barWidth: 2,
+                  height: 36,
+                ),
             ],
           ),
           if (hasBreakdown) ...[
@@ -697,18 +812,24 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: GoogleFonts.inter(
-                        fontSize: 10,
-                        color: Colors.grey.shade500,
-                        fontWeight: FontWeight.w500)),
-                Text(value,
-                    style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black87),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    color: Colors.grey.shade500,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
@@ -755,17 +876,22 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 child: Icon(icon, color: accentColor, size: 18),
               ),
               if (sparklineSpots.isNotEmpty)
-                _buildSparkline(sparklineSpots, accentColor,
-                    barWidth: 1.5, height: 24),
+                _buildSparkline(
+                  sparklineSpots,
+                  accentColor,
+                  barWidth: 1.5,
+                  height: 24,
+                ),
             ],
           ),
           const SizedBox(height: 16),
           Text(
             title,
             style: GoogleFonts.inter(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey.shade500),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade500,
+            ),
           ),
           const SizedBox(height: 4),
           Row(
@@ -776,10 +902,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 child: Text(
                   value,
                   style: GoogleFonts.inter(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.black87,
-                      height: 1),
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black87,
+                    height: 1,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -836,7 +963,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   color: accentColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon ?? Icons.bar_chart_outlined, size: 18, color: accentColor),
+                child: Icon(
+                  icon ?? Icons.bar_chart_outlined,
+                  size: 18,
+                  color: accentColor,
+                ),
               ),
             ],
           ),
@@ -844,9 +975,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           Text(
             title,
             style: GoogleFonts.inter(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey.shade500),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade500,
+            ),
           ),
           const SizedBox(height: 4),
           Row(
@@ -857,10 +989,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 child: Text(
                   value,
                   style: GoogleFonts.inter(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.black87,
-                      height: 1),
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black87,
+                    height: 1,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -907,25 +1040,34 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               color: accentColor.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.pending_actions_outlined,
-                color: accentColor, size: 18),
+            child: Icon(
+              Icons.pending_actions_outlined,
+              color: accentColor,
+              size: 18,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Đơn hàng Chờ TT',
-                    style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade500)),
-                Text(value,
-                    style: GoogleFonts.inter(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.black87,
-                        height: 1.1)),
+                Text(
+                  'Đơn hàng Chờ TT',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: GoogleFonts.inter(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.black87,
+                    height: 1.1,
+                  ),
+                ),
               ],
             ),
           ),
@@ -935,19 +1077,26 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               color: accentColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Text('Xem tất cả →',
-                style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: accentColor)),
+            child: Text(
+              'Xem tất cả →',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: accentColor,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSparkline(List<FlSpot> spots, Color color,
-      {double barWidth = 1.5, double height = 28}) {
+  Widget _buildSparkline(
+    List<FlSpot> spots,
+    Color color, {
+    double barWidth = 1.5,
+    double height = 28,
+  }) {
     return SizedBox(
       width: 50,
       height: height,
@@ -983,11 +1132,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   // ─── REVENUE CHART ────────────────────────────────────────────────────────
 
-  Widget _buildRevenueChart(List<RevenuePointModel> data,
-      AdminOverviewModel overview, int selectedRange) {
+  Widget _buildRevenueChart(
+    List<RevenuePointModel> data,
+    AdminOverviewModel overview,
+    int selectedRange,
+  ) {
     final spots = _revenueToSpots(data);
     final periodTotal = data.fold(0.0, (sum, r) => sum + r.revenue);
-    final total = _formatRevenue(selectedRange == 3 ? overview.totalRevenue : periodTotal);
+    final total = _formatRevenue(
+      selectedRange == 3 ? overview.totalRevenue : periodTotal,
+    );
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
@@ -1008,9 +1162,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           Text(
             'Hiệu suất doanh thu',
             style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: Colors.black87),
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: Colors.black87,
+            ),
           ),
           const SizedBox(height: 2),
           Row(
@@ -1019,7 +1174,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 child: Text(
                   'Cập nhật lần cuối: hôm nay',
                   style: GoogleFonts.inter(
-                      fontSize: 11, color: Colors.grey.shade400),
+                    fontSize: 11,
+                    color: Colors.grey.shade400,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -1041,14 +1198,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               Text(
                 total,
                 style: GoogleFonts.inter(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.black87),
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.black87,
+                ),
               ),
               const SizedBox(width: 8),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: overview.revenueChangePercent >= 0
                       ? _kPositive.withOpacity(0.12)
@@ -1073,8 +1233,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             height: 200,
             child: spots.isEmpty
                 ? Center(
-                    child: Text('Chưa có dữ liệu',
-                        style: GoogleFonts.inter(color: Colors.grey)))
+                    child: Text(
+                      'Chưa có dữ liệu',
+                      style: GoogleFonts.inter(color: Colors.grey),
+                    ),
+                  )
                 : LineChart(
                     LineChartData(
                       minY: 0,
@@ -1090,62 +1253,82 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       titlesData: FlTitlesData(
                         show: true,
                         rightTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false)),
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
                         topTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false)),
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
                         bottomTitles: AxisTitles(
                           sideTitles: SideTitles(
                             showTitles: true,
                             reservedSize: 22,
-                            interval: 1, 
+                            interval: 1,
                             getTitlesWidget: (value, meta) {
                               final index = value.toInt() - 1;
                               final total = data.length;
-                              if (index < 0 || index >= total) return const SizedBox();
+                              if (index < 0 || index >= total)
+                                return const SizedBox();
 
                               // Thuật toán: Chia mảng dữ liệu ra thành khoảng 5 khúc
                               int step = (total / 5).ceil();
                               if (step < 1) step = 1;
 
                               // CHỈ hiển thị nhãn nếu là: Điểm ĐẦU, Điểm CUỐI, hoặc nằm đúng vào bước nhảy (step)
-                              bool isVisible = (index == 0) || (index == total - 1) || (index % step == 0);
-                              
-                              if (!isVisible) return const SizedBox(); // Ẩn các mốc còn lại để có khoảng trống
+                              bool isVisible =
+                                  (index == 0) ||
+                                  (index == total - 1) ||
+                                  (index % step == 0);
+
+                              if (!isVisible)
+                                return const SizedBox(); // Ẩn các mốc còn lại để có khoảng trống
 
                               String labelText = '';
                               final now = DateTime.now();
                               final stepsBack = total - 1 - index;
-                              
-                              if (selectedRange == 0) { 
+
+                              if (selectedRange == 0) {
                                 // 1 Tuần: Dùng T2, T3... CN cho siêu gọn
-                                final date = now.subtract(Duration(days: stepsBack));
+                                final date = now.subtract(
+                                  Duration(days: stepsBack),
+                                );
                                 int weekday = date.weekday;
-                                labelText = weekday == 7 ? 'CN' : 'T${weekday + 1}';
-                              } 
-                              else if (selectedRange == 1) { 
+                                labelText = weekday == 7
+                                    ? 'CN'
+                                    : 'T${weekday + 1}';
+                              } else if (selectedRange == 1) {
                                 // 1 Tháng: Ngày/Tháng (VD: 15/4)
-                                final date = now.subtract(Duration(days: stepsBack));
+                                final date = now.subtract(
+                                  Duration(days: stepsBack),
+                                );
                                 labelText = '${date.day}/${date.month}';
-                              } 
-                              else if (selectedRange == 2) { 
+                              } else if (selectedRange == 2) {
                                 // 1 Năm: Tháng (VD: Th1, Th4, Th7...)
                                 int m = now.month - stepsBack;
-                                while (m <= 0) m += 12;
+                                while (m <= 0) {
+                                  m += 12;
+                                }
                                 labelText = 'Th$m';
-                              } 
-                              else { 
+                              } else {
                                 // Tất cả: Ánh xạ đều mốc thời gian từ 1/1/2025 đến ngày hiện tại
                                 DateTime startDate = DateTime(2025, 1, 1);
-                                int totalDays = now.difference(startDate).inDays;
-                                
+                                int totalDays = now
+                                    .difference(startDate)
+                                    .inDays;
+
                                 // Tính phần trăm vị trí hiện tại và quy ra ngày thực tế
-                                double percent = total <= 1 ? 1.0 : index / (total - 1);
-                                DateTime mappedDate = startDate.add(Duration(days: (totalDays * percent).round()));
-                                
+                                double percent = total <= 1
+                                    ? 1.0
+                                    : index / (total - 1);
+                                DateTime mappedDate = startDate.add(
+                                  Duration(days: (totalDays * percent).round()),
+                                );
+
                                 // Hiển thị dạng Tháng/Năm (VD: 6/25, 3/26) để không bị lặp lại "2025 2025"
-                                String shortYear = mappedDate.year.toString().substring(2);
+                                String shortYear = mappedDate.year
+                                    .toString()
+                                    .substring(2);
                                 labelText = '${mappedDate.month}/$shortYear';
-                                
+
                                 // MẸO: Nếu bạn THỰC SỰ CHỈ MUỐN HIỆN SỐ 2025, 2026 thì xóa 2 dòng trên và dùng dòng dưới:
                                 // labelText = '${mappedDate.year}';
                               }
@@ -1155,7 +1338,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                 child: Text(
                                   labelText,
                                   style: GoogleFonts.inter(
-                                    color: Colors.grey.shade500, // Đậm màu lên một chút cho dễ nhìn
+                                    color: Colors
+                                        .grey
+                                        .shade500, // Đậm màu lên một chút cho dễ nhìn
                                     fontSize: 10,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -1172,7 +1357,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                               return Text(
                                 '${(value / 1000000).toStringAsFixed(0)}tr',
                                 style: GoogleFonts.inter(
-                                    color: Colors.grey.shade400, fontSize: 10),
+                                  color: Colors.grey.shade400,
+                                  fontSize: 10,
+                                ),
                               );
                             },
                           ),
@@ -1185,13 +1372,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           getTooltipColor: (_) => _kHeroDark,
                           tooltipRoundedRadius: 8,
                           getTooltipItems: (spots) => spots
-                              .map((spot) => LineTooltipItem(
-                                    _formatRevenue(spot.y),
-                                    GoogleFonts.inter(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600),
-                                  ))
+                              .map(
+                                (spot) => LineTooltipItem(
+                                  _formatRevenue(spot.y),
+                                  GoogleFonts.inter(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              )
                               .toList(),
                         ),
                       ),
@@ -1269,25 +1459,37 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Đặt sân theo ngày',
-              style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black87)),
+          Text(
+            'Đặt sân theo ngày',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
+            ),
+          ),
           const SizedBox(height: 2),
-          Text('7 ngày gần nhất',
-              style: GoogleFonts.inter(
-                  fontSize: 11, color: Colors.grey.shade400)),
+          Text(
+            '7 ngày gần nhất',
+            style: GoogleFonts.inter(fontSize: 11, color: Colors.grey.shade400),
+          ),
           const SizedBox(height: 14),
           SizedBox(
             height: 160,
             child: data.isEmpty
                 ? Center(
-                    child: Text('Chưa có dữ liệu',
-                        style: GoogleFonts.inter(color: Colors.grey)))
+                    child: Text(
+                      'Chưa có dữ liệu',
+                      style: GoogleFonts.inter(color: Colors.grey),
+                    ),
+                  )
                 : BarChart(
                     BarChartData(
-                      maxY: data.isEmpty ? 10 : data.map((e) => e.count.toDouble()).reduce(math.max) * 1.25,
+                      maxY: data.isEmpty
+                          ? 10
+                          : data
+                                    .map((e) => e.count.toDouble())
+                                    .reduce(math.max) *
+                                1.25,
                       barGroups: data.asMap().entries.map((e) {
                         final i = e.key;
                         final item = e.value;
@@ -1303,8 +1505,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                               color: isActive
                                   ? _kDeepIndigo
                                   : (hasData
-                                      ? _kDeepIndigo.withOpacity(0.2)
-                                      : Colors.grey.shade100),
+                                        ? _kDeepIndigo.withOpacity(0.2)
+                                        : Colors.grey.shade100),
                             ),
                           ],
                         );
@@ -1313,16 +1515,21 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         show: true,
                         drawVerticalLine: false,
                         getDrawingHorizontalLine: (_) => const FlLine(
-                            color: Color(0xFFF0F0F5), strokeWidth: 1),
+                          color: Color(0xFFF0F0F5),
+                          strokeWidth: 1,
+                        ),
                       ),
                       borderData: FlBorderData(show: false),
                       titlesData: FlTitlesData(
                         leftTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false)),
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
                         rightTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false)),
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
                         topTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false)),
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
                         bottomTitles: AxisTitles(
                           sideTitles: SideTitles(
                             showTitles: true,
@@ -1337,8 +1544,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                 child: Text(
                                   data[idx].dayLabel,
                                   style: GoogleFonts.inter(
-                                      color: Colors.grey.shade400,
-                                      fontSize: 10),
+                                    color: Colors.grey.shade400,
+                                    fontSize: 10,
+                                  ),
                                 ),
                               );
                             },
@@ -1358,12 +1566,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         },
                         touchTooltipData: BarTouchTooltipData(
                           getTooltipColor: (_) => _kHeroDark,
-                          getTooltipItem: (group, _, rod, __) => BarTooltipItem(
+                          getTooltipItem: (group, _, rod, _) => BarTooltipItem(
                             '${rod.toY.toInt()} đặt sân',
                             GoogleFonts.inter(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600),
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
@@ -1423,28 +1632,40 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Phân bố loại sân',
-                      style: GoogleFonts.inter(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.black87)),
-                  Text('Tổng $totalPitches',
-                      style: GoogleFonts.inter(
-                          fontSize: 12, color: Colors.grey.shade400)),
+                  Text(
+                    'Phân bố loại sân',
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  Text(
+                    'Tổng $totalPitches',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: Colors.grey.shade400,
+                    ),
+                  ),
                 ],
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF3F4F6),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text('Hiện tại',
-                    style: GoogleFonts.inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade600)),
+                child: Text(
+                  'Hiện tại',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
               ),
             ],
           ),
@@ -1453,8 +1674,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Text('Chưa có dữ liệu',
-                    style: GoogleFonts.inter(color: Colors.grey)),
+                child: Text(
+                  'Chưa có dữ liệu',
+                  style: GoogleFonts.inter(color: Colors.grey),
+                ),
               ),
             )
           else
@@ -1479,7 +1702,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         Center(
                           child: AnimatedSwitcher(
                             duration: const Duration(milliseconds: 200),
-                            child: _touchedDonutIndex != null &&
+                            child:
+                                _touchedDonutIndex != null &&
                                     _touchedDonutIndex! < data.length
                                 ? Column(
                                     key: ValueKey(_touchedDonutIndex),
@@ -1490,8 +1714,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                         style: GoogleFonts.inter(
                                           fontSize: 22,
                                           fontWeight: FontWeight.w900,
-                                          color: _kDonutColors[
-                                              _touchedDonutIndex! %
+                                          color:
+                                              _kDonutColors[_touchedDonutIndex! %
                                                   _kDonutColors.length],
                                           height: 1,
                                         ),
@@ -1500,9 +1724,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                       Text(
                                         data[_touchedDonutIndex!].type,
                                         style: GoogleFonts.inter(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.grey.shade500),
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.grey.shade500,
+                                        ),
                                       ),
                                     ],
                                   )
@@ -1523,8 +1748,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                       Text(
                                         'Tổng sân',
                                         style: GoogleFonts.inter(
-                                            fontSize: 11,
-                                            color: Colors.grey.shade400),
+                                          fontSize: 11,
+                                          color: Colors.grey.shade400,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -1553,7 +1779,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           duration: const Duration(milliseconds: 180),
                           margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 10),
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                           decoration: BoxDecoration(
                             color: isActive
                                 ? color.withOpacity(0.09)
@@ -1571,7 +1799,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                       color: color.withOpacity(0.18),
                                       blurRadius: 8,
                                       offset: const Offset(0, 3),
-                                    )
+                                    ),
                                   ]
                                 : null,
                           ),
@@ -1646,16 +1874,22 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Sản phẩm',
-                  style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.black87)),
-              Text('Xem tất cả →',
-                  style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primaryRed)),
+              Text(
+                'Sản phẩm',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black87,
+                ),
+              ),
+              Text(
+                'Xem tất cả →',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryRed,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -1681,30 +1915,39 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          Text('Top sản phẩm bán chạy',
-              style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black87)),
+          Text(
+            'Top sản phẩm bán chạy',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
+            ),
+          ),
           const SizedBox(height: 10),
           if (data.topProducts.isEmpty)
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text('Chưa có dữ liệu',
-                    style: GoogleFonts.inter(color: Colors.grey)),
+                child: Text(
+                  'Chưa có dữ liệu',
+                  style: GoogleFonts.inter(color: Colors.grey),
+                ),
               ),
             )
           else
             ...data.topProducts.asMap().entries.map(
-                (e) => _buildTopProductRow(e.key + 1, e.value)),
+              (e) => _buildTopProductRow(e.key + 1, e.value),
+            ),
           if (data.byCategory.isNotEmpty) ...[
             const SizedBox(height: 20),
-            Text('Phân bố theo danh mục',
-                style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87)),
+            Text(
+              'Phân bố theo danh mục',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
             const SizedBox(height: 12),
             _buildCategoryBars(data.byCategory, data.totalProducts),
           ],
@@ -1735,18 +1978,25 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(value,
-                    style: GoogleFonts.inter(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.black87),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-                Text(label,
-                    style: GoogleFonts.inter(
-                        fontSize: 11, color: Colors.grey.shade500),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
+                Text(
+                  value,
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black87,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: Colors.grey.shade500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
@@ -1759,10 +2009,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final rankColor = rank == 1
         ? const Color(0xFFFFD700)
         : rank == 2
-            ? const Color(0xFFC0C0C0)
-            : rank == 3
-                ? const Color(0xFFCD7F32)
-                : Colors.grey.shade300;
+        ? const Color(0xFFC0C0C0)
+        : rank == 3
+        ? const Color(0xFFCD7F32)
+        : Colors.grey.shade300;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -1773,11 +2023,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             height: 26,
             decoration: BoxDecoration(color: rankColor, shape: BoxShape.circle),
             child: Center(
-              child: Text('$rank',
-                  style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      color: rank <= 3 ? Colors.white : Colors.grey.shade600)),
+              child: Text(
+                '$rank',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: rank <= 3 ? Colors.white : Colors.grey.shade600,
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 10),
@@ -1789,7 +2042,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     width: 40,
                     height: 40,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _buildProductPlaceholder(),
+                    errorBuilder: (_, _, _) => _buildProductPlaceholder(),
                   )
                 : _buildProductPlaceholder(),
           ),
@@ -1798,24 +2051,32 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(product.name,
-                    style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87),
-                    overflow: TextOverflow.ellipsis),
-                Text('Đã bán: ${_formatNumber(product.totalSold)}',
-                    style: GoogleFonts.inter(
-                        fontSize: 11, color: Colors.grey.shade500)),
+                Text(
+                  product.name,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  'Đã bán: ${_formatNumber(product.totalSold)}',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
               ],
             ),
           ),
           Text(
             _formatRevenue(product.totalRevenue),
             style: GoogleFonts.inter(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primaryRed),
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primaryRed,
+            ),
           ),
         ],
       ),
@@ -1830,8 +2091,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         color: Colors.grey.shade100,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Icon(Icons.inventory_2_outlined,
-          color: Colors.grey.shade400, size: 20),
+      child: Icon(
+        Icons.inventory_2_outlined,
+        color: Colors.grey.shade400,
+        size: 20,
+      ),
     );
   }
 
@@ -1856,15 +2120,21 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(e.value.category,
-                      style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black87)),
                   Text(
-                      '${e.value.count} SP · ${(pct * 100).toStringAsFixed(0)}%',
-                      style: GoogleFonts.inter(
-                          fontSize: 11, color: Colors.grey.shade500)),
+                    e.value.category,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  Text(
+                    '${e.value.count} SP · ${(pct * 100).toStringAsFixed(0)}%',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 4),
@@ -1906,16 +2176,22 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Hoạt động gần đây',
-                  style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.black87)),
-              Text('Xem tất cả →',
-                  style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primaryRed)),
+              Text(
+                'Hoạt động gần đây',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black87,
+                ),
+              ),
+              Text(
+                'Xem tất cả →',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryRed,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -1923,8 +2199,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Text('Chưa có hoạt động',
-                    style: GoogleFonts.inter(color: Colors.grey)),
+                child: Text(
+                  'Chưa có hoạt động',
+                  style: GoogleFonts.inter(color: Colors.grey),
+                ),
               ),
             )
           else
@@ -1950,9 +2228,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               child: Text(
                 item.userInitials,
                 style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
@@ -1964,25 +2243,36 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(item.userName,
-                          style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis),
+                      child: Text(
+                        item.userName,
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     _buildStatusPill(item.status),
                   ],
                 ),
                 const SizedBox(height: 2),
-                Text(item.description,
-                    style: GoogleFonts.inter(
-                        fontSize: 12, color: Colors.grey.shade500)),
-                Text(item.timeAgo,
-                    style: GoogleFonts.inter(
-                        fontSize: 11, color: Colors.grey.shade400)),
+                Text(
+                  item.description,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+                Text(
+                  item.timeAgo,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: Colors.grey.shade400,
+                  ),
+                ),
               ],
             ),
           ),
@@ -1996,24 +2286,36 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
-          color: bg, borderRadius: BorderRadius.circular(20)),
-      child: Text(label,
-          style: GoogleFonts.inter(
-              fontSize: 11, fontWeight: FontWeight.w600, color: fg)),
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: fg,
+        ),
+      ),
     );
   }
 
   (String, Color, Color) _statusStyle(String status) {
     switch (status.toUpperCase()) {
       case 'CONFIRMED':
-        return ('Xác nhận', _kPositive.withOpacity(0.12),
-            const Color(0xFF16A34A));
+        return (
+          'Xác nhận',
+          _kPositive.withOpacity(0.12),
+          const Color(0xFF16A34A),
+        );
       case 'CANCELED':
-        return ('Đã hủy', _kNegative.withOpacity(0.12),
-            const Color(0xFFDC2626));
+        return (
+          'Đã hủy',
+          _kNegative.withOpacity(0.12),
+          const Color(0xFFDC2626),
+        );
       default:
-        return ('Chờ TT', _kWarning.withOpacity(0.12),
-            const Color(0xFFD97706));
+        return ('Chờ TT', _kWarning.withOpacity(0.12), const Color(0xFFD97706));
     }
   }
 

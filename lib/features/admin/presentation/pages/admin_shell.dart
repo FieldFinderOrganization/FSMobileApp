@@ -12,6 +12,8 @@ import 'admin_dashboard_screen.dart';
 import 'admin_orders_screen.dart';
 import 'admin_pitches_screen.dart';
 import 'admin_users_screen.dart';
+import '../../../discount/presentation/cubit/admin_discount_cubit.dart';
+import '../../../discount/presentation/pages/admin_discount_list_screen.dart';
 
 class AdminShell extends StatefulWidget {
   final UserEntity user;
@@ -23,12 +25,13 @@ class AdminShell extends StatefulWidget {
 }
 
 class _AdminShellState extends State<AdminShell> {
-  int _selectedIndex = 0;
+  final int _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
     context.read<AdminDashboardCubit>().loadDashboard();
+    context.read<AdminDiscountCubit>().loadDiscounts();
   }
 
   @override
@@ -81,24 +84,39 @@ class _AdminShellState extends State<AdminShell> {
         return AdminDashboardScreen(user: widget.user);
       case 1:
         return Center(
-            child: Text('Tính năng Người dùng đang phát triển',
-                style: GoogleFonts.inter()));
+          child: Text(
+            'Tính năng Người dùng đang phát triển',
+            style: GoogleFonts.inter(),
+          ),
+        );
       case 2:
         return Center(
-            child: Text('Tính năng Sân bóng đang phát triển',
-                style: GoogleFonts.inter()));
+          child: Text(
+            'Tính năng Sân bóng đang phát triển',
+            style: GoogleFonts.inter(),
+          ),
+        );
       case 3:
         return Center(
-            child: Text('Tính năng Khu vực đang phát triển',
-                style: GoogleFonts.inter()));
+          child: Text(
+            'Tính năng Khu vực đang phát triển',
+            style: GoogleFonts.inter(),
+          ),
+        );
       case 4:
         return Center(
-            child: Text('Tính năng Đặt sân đang phát triển',
-                style: GoogleFonts.inter()));
+          child: Text(
+            'Tính năng Đặt sân đang phát triển',
+            style: GoogleFonts.inter(),
+          ),
+        );
       case 5:
         return Center(
-            child: Text('Tính năng Đơn hàng đang phát triển',
-                style: GoogleFonts.inter()));
+          child: Text(
+            'Tính năng Đơn hàng đang phát triển',
+            style: GoogleFonts.inter(),
+          ),
+        );
       default:
         return const SizedBox();
     }
@@ -123,23 +141,70 @@ class _AdminShellState extends State<AdminShell> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildDrawerHeader(),
-                const Divider(height: 1, thickness: 1, color: Color(0xFF2A2A4A)),
+                const Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: Color(0xFF2A2A4A),
+                ),
                 const SizedBox(height: 12),
-                _buildDrawerItem(0, 'Tổng quan', Icons.space_dashboard_outlined,
-                    onTap: () => Navigator.pop(context)),
-                _buildDrawerItem(1, 'Người dùng', Icons.people_outline,
-                    onTap: () => _pushScreen(AdminUsersScreen(datasource: cubit.datasource))),
-                _buildDrawerItem(2, 'Sân bóng', Icons.sports_soccer_outlined,
-                    onTap: () => _pushScreen(AdminPitchesScreen(
-                          datasource: cubit.datasource,
-                          pitchTypeData: loaded?.pitchesByType ?? [],
-                        ))),
-                _buildDrawerItem(4, 'Đặt sân', Icons.calendar_today_outlined,
-                    onTap: () => _pushScreen(AdminBookingsScreen(datasource: cubit.datasource))),
-                _buildDrawerItem(5, 'Đơn hàng', Icons.receipt_long_outlined,
-                    onTap: () => _pushScreen(AdminOrdersScreen(datasource: cubit.datasource))),
+                _buildDrawerItem(
+                  0,
+                  'Tổng quan',
+                  Icons.space_dashboard_outlined,
+                  onTap: () => Navigator.pop(context),
+                ),
+                _buildDrawerItem(
+                  1,
+                  'Người dùng',
+                  Icons.people_outline,
+                  onTap: () => _pushScreen(
+                    AdminUsersScreen(datasource: cubit.datasource),
+                  ),
+                ),
+                _buildDrawerItem(
+                  2,
+                  'Sân bóng',
+                  Icons.sports_soccer_outlined,
+                  onTap: () => _pushScreen(
+                    AdminPitchesScreen(
+                      datasource: cubit.datasource,
+                      pitchTypeData: loaded?.pitchesByType ?? [],
+                    ),
+                  ),
+                ),
+                _buildDrawerItem(
+                  4,
+                  'Đặt sân',
+                  Icons.calendar_today_outlined,
+                  onTap: () => _pushScreen(
+                    AdminBookingsScreen(datasource: cubit.datasource),
+                  ),
+                ),
+                _buildDrawerItem(
+                  5,
+                  'Đơn hàng',
+                  Icons.receipt_long_outlined,
+                  onTap: () => _pushScreen(
+                    AdminOrdersScreen(datasource: cubit.datasource),
+                  ),
+                ),
+                _buildDrawerItem(
+                  6,
+                  'Mã khuyến mãi',
+                  Icons.local_offer_outlined,
+                  onTap: () => _pushScreen(
+                    BlocProvider.value(
+                      value: context.read<AdminDiscountCubit>(),
+                      child: const AdminDiscountListScreen(),
+                    ),
+                  ),
+                ),
                 const Spacer(),
-                const Divider(height: 1, thickness: 1, color: Color(0xFF2A2A4A)),
+                const Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: Color(0xFF2A2A4A),
+                ),
                 _buildBackToAppItem(),
                 _buildLogoutItem(),
               ],
@@ -182,17 +247,19 @@ class _AdminShellState extends State<AdminShell> {
           const SizedBox(height: 4),
           Text(
             widget.user.name,
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              color: Colors.white60,
-            ),
+            style: GoogleFonts.inter(fontSize: 13, color: Colors.white60),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDrawerItem(int index, String title, IconData icon, {VoidCallback? onTap}) {
+  Widget _buildDrawerItem(
+    int index,
+    String title,
+    IconData icon, {
+    VoidCallback? onTap,
+  }) {
     final isSelected = _selectedIndex == index;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
@@ -208,7 +275,8 @@ class _AdminShellState extends State<AdminShell> {
             borderRadius: BorderRadius.circular(12),
             border: isSelected
                 ? const Border(
-                    left: BorderSide(color: AppColors.primaryRed, width: 3))
+                    left: BorderSide(color: AppColors.primaryRed, width: 3),
+                  )
                 : null,
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
@@ -224,8 +292,7 @@ class _AdminShellState extends State<AdminShell> {
                 title,
                 style: GoogleFonts.inter(
                   fontSize: 15,
-                  fontWeight:
-                      isSelected ? FontWeight.w700 : FontWeight.w500,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   color: isSelected ? Colors.white : Colors.white54,
                 ),
               ),
@@ -248,8 +315,11 @@ class _AdminShellState extends State<AdminShell> {
         },
         child: Row(
           children: [
-            const Icon(Icons.arrow_back_ios_new_rounded,
-                color: Colors.white54, size: 20),
+            const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: Colors.white54,
+              size: 20,
+            ),
             const SizedBox(width: 14),
             Text(
               'Quay lại app chính',
@@ -274,8 +344,7 @@ class _AdminShellState extends State<AdminShell> {
         },
         child: Row(
           children: [
-            const Icon(Icons.logout,
-                color: Color(0xFFEF4444), size: 22),
+            const Icon(Icons.logout, color: Color(0xFFEF4444), size: 22),
             const SizedBox(width: 14),
             Text(
               'Đăng xuất',

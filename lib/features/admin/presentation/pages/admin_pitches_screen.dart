@@ -34,7 +34,7 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
   static const _kPrimaryEnd = Color(0xFF9E91D1);
   static const _kSecondary = Color(0xFF7C6FCD);
   static const _kTeal = Color(0xFF0D9988);
-  static const _kBackground = Color(0xFFF4F6FB); 
+  static const _kBackground = Color(0xFFF4F6FB);
   static const _kTextMain = Color(0xFF1A1D2E);
   static const _kTextMuted = Color(0xFF8A8F9F);
 
@@ -44,7 +44,7 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
   bool _loading = true;
   String? _error;
   int _currentPage = 0;
-  
+
   // Biến lưu thời gian cập nhật
   DateTime _lastUpdated = DateTime.now();
 
@@ -52,14 +52,15 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
   bool _showSearch = false;
   String _searchQuery = '';
   final _searchCtrl = TextEditingController();
-  
+
   // Biến chống lỗi đua mạng (Race Condition) và hạn chế spam API
   Timer? _debounce;
   int _fetchId = 0;
   bool _isExporting = false;
 
   // Filter state
-  String? _filterType; // null | 'FIVE_A_SIDE' | 'SEVEN_A_SIDE' | 'ELEVEN_A_SIDE'
+  String?
+  _filterType; // null | 'FIVE_A_SIDE' | 'SEVEN_A_SIDE' | 'ELEVEN_A_SIDE'
   String? _filterSort; // null | 'price_asc' | 'price_desc'
 
   @override
@@ -77,23 +78,34 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
 
   Future<void> _load({int page = 0}) async {
     final currentFetchId = ++_fetchId; // Đánh dấu ID cho request này
-    setState(() { _loading = true; _error = null; _currentPage = page; });
-    
+    setState(() {
+      _loading = true;
+      _error = null;
+      _currentPage = page;
+    });
+
     try {
       final result = await widget.datasource.getAdminPitches(
-        page: page, search: _searchQuery, type: _filterType, sort: _filterSort);
-      
+        page: page,
+        search: _searchQuery,
+        type: _filterType,
+        sort: _filterSort,
+      );
+
       // Nếu ID không khớp (nghĩa là đã có 1 request mới hơn được gửi đi), ta bỏ qua kết quả cũ này
       if (!mounted || currentFetchId != _fetchId) return;
-      
-      setState(() { 
-        _page = result; 
-        _loading = false; 
-        _lastUpdated = DateTime.now(); 
+
+      setState(() {
+        _page = result;
+        _loading = false;
+        _lastUpdated = DateTime.now();
       });
     } catch (e) {
       if (!mounted || currentFetchId != _fetchId) return;
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
@@ -101,10 +113,10 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
     setState(() {
       _searchQuery = q;
     });
-    
+
     // Xóa timer cũ nếu người dùng vẫn đang gõ liên tục
     if (_debounce?.isActive ?? false) _debounce!.cancel();
-    
+
     // Thiết lập độ trễ 500ms. Chỉ gọi API khi người dùng đã ngừng gõ nửa giây
     _debounce = Timer(const Duration(milliseconds: 500), () {
       _load(page: 0);
@@ -131,26 +143,47 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
       await showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text('Chọn số lượng xuất', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            'Chọn số lượng xuất',
+            style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            children: options.map((opt) => ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(opt['label'] as String, style: GoogleFonts.inter(fontSize: 13)),
-              leading: Radio<int>(
-                value: opt['size'] as int,
-                groupValue: chosenSize,
-                activeColor: _kPrimary,
-                onChanged: (v) { chosenSize = v; Navigator.pop(ctx); },
-              ),
-              onTap: () { chosenSize = opt['size'] as int; Navigator.pop(ctx); },
-            )).toList(),
+            children: options
+                .map(
+                  (opt) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      opt['label'] as String,
+                      style: GoogleFonts.inter(fontSize: 13),
+                    ),
+                    leading: Radio<int>(
+                      value: opt['size'] as int,
+                      groupValue: chosenSize,
+                      activeColor: _kPrimary,
+                      onChanged: (v) {
+                        chosenSize = v;
+                        Navigator.pop(ctx);
+                      },
+                    ),
+                    onTap: () {
+                      chosenSize = opt['size'] as int;
+                      Navigator.pop(ctx);
+                    },
+                  ),
+                )
+                .toList(),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: Text('Huỷ', style: GoogleFonts.inter(color: Colors.grey.shade600)),
+              child: Text(
+                'Huỷ',
+                style: GoogleFonts.inter(color: Colors.grey.shade600),
+              ),
             ),
           ],
         ),
@@ -161,56 +194,96 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
     setState(() => _isExporting = true);
     try {
       final exportData = await widget.datasource.getAdminPitches(
-        page: 0, size: chosenSize!, search: _searchQuery,
-        type: _filterType, sort: _filterSort,
+        page: 0,
+        size: chosenSize!,
+        search: _searchQuery,
+        type: _filterType,
+        sort: _filterSort,
       );
-      final font     = await PdfGoogleFonts.notoSansRegular();
+      final font = await PdfGoogleFonts.notoSansRegular();
       final boldFont = await PdfGoogleFonts.notoSansBold();
-      final currFmt  = NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
-      final dateFmt  = DateFormat('dd/MM/yyyy');
-      final now      = DateTime.now();
-      final items    = exportData.content;
+      final currFmt = NumberFormat.currency(
+        locale: 'vi_VN',
+        symbol: '₫',
+        decimalDigits: 0,
+      );
+      final dateFmt = DateFormat('dd/MM/yyyy');
+      final now = DateTime.now();
+      final items = exportData.content;
 
       final pdf = pw.Document();
-      pdf.addPage(pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        theme: pw.ThemeData.withFont(base: font, bold: boldFont),
-        build: (ctx) => [
-          pw.Header(level: 0, child: pw.Text('Báo cáo Sân hoạt động',
-              style: pw.TextStyle(font: boldFont, fontSize: 22))),
-          pw.Text('Xuất ngày: ${dateFmt.format(now)}', style: pw.TextStyle(font: font)),
-          pw.Text('Số bản ghi xuất: ${items.length} / $total', style: pw.TextStyle(font: font)),
-          pw.SizedBox(height: 16),
-          if (items.isNotEmpty) ...[
-            pw.Header(level: 1, text: 'Danh sách sân'),
-            pw.Table.fromTextArray(
-              headers: ['Tên sân', 'Loại', 'Nhà cung cấp', 'Giá', 'Môi trường'],
-              data: items.map((p) => [
-                p.name, p.type, p.providerName,
-                currFmt.format(p.price), p.environment,
-              ]).toList(),
-              headerStyle: pw.TextStyle(font: boldFont, fontSize: 9),
-              cellStyle: pw.TextStyle(font: font, fontSize: 8),
-              headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          theme: pw.ThemeData.withFont(base: font, bold: boldFont),
+          build: (ctx) => [
+            pw.Header(
+              level: 0,
+              child: pw.Text(
+                'Báo cáo Sân hoạt động',
+                style: pw.TextStyle(font: boldFont, fontSize: 22),
+              ),
             ),
+            pw.Text(
+              'Xuất ngày: ${dateFmt.format(now)}',
+              style: pw.TextStyle(font: font),
+            ),
+            pw.Text(
+              'Số bản ghi xuất: ${items.length} / $total',
+              style: pw.TextStyle(font: font),
+            ),
+            pw.SizedBox(height: 16),
+            if (items.isNotEmpty) ...[
+              pw.Header(level: 1, text: 'Danh sách sân'),
+              pw.Table.fromTextArray(
+                headers: [
+                  'Tên sân',
+                  'Loại',
+                  'Nhà cung cấp',
+                  'Giá',
+                  'Môi trường',
+                ],
+                data: items
+                    .map(
+                      (p) => [
+                        p.name,
+                        p.type,
+                        p.providerName,
+                        currFmt.format(p.price),
+                        p.environment,
+                      ],
+                    )
+                    .toList(),
+                headerStyle: pw.TextStyle(font: boldFont, fontSize: 9),
+                cellStyle: pw.TextStyle(font: font, fontSize: 8),
+                headerDecoration: const pw.BoxDecoration(
+                  color: PdfColors.grey300,
+                ),
+              ),
+            ],
           ],
-        ],
-      ));
+        ),
+      );
 
-      final bytes    = await pdf.save();
+      final bytes = await pdf.save();
       final fileName = 'admin_san_${DateFormat('yyyyMMdd').format(now)}.pdf';
-      final tempDir  = await getTemporaryDirectory();
-      final file     = File('${tempDir.path}/$fileName');
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/$fileName');
       await file.writeAsBytes(bytes);
       if (mounted) {
-        await Share.shareXFiles(
-          [XFile(file.path, mimeType: 'application/pdf')],
-          subject: fileName,
-        );
+        await Share.shareXFiles([
+          XFile(file.path, mimeType: 'application/pdf'),
+        ], subject: fileName);
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi xuất PDF: $e'), backgroundColor: Colors.red));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi xuất PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isExporting = false);
     }
@@ -237,120 +310,167 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         final bottomPad = MediaQuery.of(ctx).padding.bottom;
-        return StatefulBuilder(builder: (ctx, setSheet) {
-          return Container(
-            padding: EdgeInsets.fromLTRB(24, 24, 24, bottomPad + 24),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40, height: 4,
-                    decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+        return StatefulBuilder(
+          builder: (ctx, setSheet) {
+            return Container(
+              padding: EdgeInsets.fromLTRB(24, 24, 24, bottomPad + 24),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                Text('Bộ lọc', style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w800, color: _kTextMain)),
-                const SizedBox(height: 20),
-                Text('Loại sân', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: _kTextMuted)),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    {'label': 'Tất cả', 'value': null},
-                    {'label': 'Sân 5', 'value': 'FIVE_A_SIDE'},
-                    {'label': 'Sân 7', 'value': 'SEVEN_A_SIDE'},
-                    {'label': 'Sân 11', 'value': 'ELEVEN_A_SIDE'},
-                  ].map((opt) {
-                    final val = opt['value'] as String?;
-                    final selected = tempType == val;
-                    return ChoiceChip(
-                      label: Text(opt['label'] as String),
-                      selected: selected,
-                      checkmarkColor: Colors.white,
-                      selectedColor: _kPrimary,
-                      labelStyle: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: selected ? Colors.white : _kTextMain,
-                      ),
-                      onSelected: (_) => setSheet(() => tempType = val),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 20),
-                Text('Sắp xếp theo giá', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: _kTextMuted)),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    {'label': 'Mặc định', 'value': null},
-                    {'label': 'Giá tăng dần', 'value': 'price_asc'},
-                    {'label': 'Giá giảm dần', 'value': 'price_desc'},
-                  ].map((opt) {
-                    final val = opt['value'] as String?;
-                    final selected = tempSort == val;
-                    return ChoiceChip(
-                      label: Text(opt['label'] as String),
-                      selected: selected,
-                      checkmarkColor: Colors.white,
-                      selectedColor: _kPrimary,
-                      labelStyle: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: selected ? Colors.white : _kTextMain,
-                      ),
-                      onSelected: (_) => setSheet(() => tempSort = val),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 28),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () {
-                          setSheet(() { tempType = null; tempSort = null; });
-                        },
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: Text('Đặt lại', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-                      ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Bộ lọc',
+                    style: GoogleFonts.inter(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: _kTextMain,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            _filterType = tempType;
-                            _filterSort = tempSort;
-                            _currentPage = 0;
-                          });
-                          Navigator.pop(ctx);
-                          _load(page: 0);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _kPrimary,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          elevation: 0,
-                        ),
-                        child: Text('Áp dụng', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.white)),
-                      ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Loại sân',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: _kTextMuted,
                     ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        });
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    children:
+                        [
+                          {'label': 'Tất cả', 'value': null},
+                          {'label': 'Sân 5', 'value': 'FIVE_A_SIDE'},
+                          {'label': 'Sân 7', 'value': 'SEVEN_A_SIDE'},
+                          {'label': 'Sân 11', 'value': 'ELEVEN_A_SIDE'},
+                        ].map((opt) {
+                          final val = opt['value'];
+                          final selected = tempType == val;
+                          return ChoiceChip(
+                            label: Text(opt['label'] as String),
+                            selected: selected,
+                            checkmarkColor: Colors.white,
+                            selectedColor: _kPrimary,
+                            labelStyle: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: selected ? Colors.white : _kTextMain,
+                            ),
+                            onSelected: (_) => setSheet(() => tempType = val),
+                          );
+                        }).toList(),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Sắp xếp theo giá',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: _kTextMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    children:
+                        [
+                          {'label': 'Mặc định', 'value': null},
+                          {'label': 'Giá tăng dần', 'value': 'price_asc'},
+                          {'label': 'Giá giảm dần', 'value': 'price_desc'},
+                        ].map((opt) {
+                          final val = opt['value'];
+                          final selected = tempSort == val;
+                          return ChoiceChip(
+                            label: Text(opt['label'] as String),
+                            selected: selected,
+                            checkmarkColor: Colors.white,
+                            selectedColor: _kPrimary,
+                            labelStyle: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: selected ? Colors.white : _kTextMain,
+                            ),
+                            onSelected: (_) => setSheet(() => tempSort = val),
+                          );
+                        }).toList(),
+                  ),
+                  const SizedBox(height: 28),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            setSheet(() {
+                              tempType = null;
+                              tempSort = null;
+                            });
+                          },
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'Đặt lại',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              _filterType = tempType;
+                              _filterSort = tempSort;
+                              _currentPage = 0;
+                            });
+                            Navigator.pop(ctx);
+                            _load(page: 0);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _kPrimary,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            'Áp dụng',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
       },
     );
   }
@@ -371,7 +491,7 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
         physics: const BouncingScrollPhysics(),
         slivers: [
           _buildAppBar(),
-          
+
           // Thanh Tìm kiếm (Ẩn/Hiện)
           if (_showSearch)
             SliverToBoxAdapter(
@@ -381,7 +501,13 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(14),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 3))],
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.06),
+                        blurRadius: 12,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
                   child: TextField(
                     controller: _searchCtrl,
@@ -390,19 +516,31 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
                     style: GoogleFonts.inter(fontSize: 14),
                     decoration: InputDecoration(
                       hintText: 'Tìm theo tên sân hoặc nhà cung cấp...',
-                      hintStyle: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade400),
-                      prefixIcon: const Icon(Icons.search, size: 20, color: _kPrimary),
+                      hintStyle: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: Colors.grey.shade400,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        size: 20,
+                        color: _kPrimary,
+                      ),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
                               icon: const Icon(Icons.clear, size: 18),
                               onPressed: () {
                                 _searchCtrl.clear();
-                                _onSearch(''); // Sẽ tự clear và tự động load lại
+                                _onSearch(
+                                  '',
+                                ); // Sẽ tự clear và tự động load lại
                               },
                             )
                           : null,
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                     ),
                   ),
                 ),
@@ -418,15 +556,19 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
               ],
             ),
           ),
-          
+
           if (_loading)
-            const SliverFillRemaining(child: Center(child: CircularProgressIndicator(color: _kPrimary)))
+            const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator(color: _kPrimary)),
+            )
           else if (_error != null)
-            SliverFillRemaining(child: Center(child: Text(_error!, style: const TextStyle(color: Colors.red))))
+            SliverFillRemaining(
+              child: Center(
+                child: Text(_error!, style: const TextStyle(color: Colors.red)),
+              ),
+            )
           else
-            SliverToBoxAdapter(
-              child: _buildTableCard(bottomPadding),
-            ),
+            SliverToBoxAdapter(child: _buildTableCard(bottomPadding)),
         ],
       ),
     );
@@ -442,25 +584,35 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
       elevation: 0,
       centerTitle: false,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
+        icon: const Icon(
+          Icons.arrow_back_ios_new,
+          color: Colors.white,
+          size: 18,
+        ),
         onPressed: () => Navigator.pop(context),
       ),
-      title: Text('Sân hoạt động',
-          style: GoogleFonts.inter(
-              fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+      title: Text(
+        'Sân hoạt động',
+        style: GoogleFonts.inter(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
+      ),
       titleSpacing: 0,
       actions: [
         IconButton(
           tooltip: 'Tìm kiếm',
           icon: Icon(
             _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
-            color: Colors.white, size: 22,
+            color: Colors.white,
+            size: 22,
           ),
           onPressed: () => setState(() {
             _showSearch = !_showSearch;
-            if (!_showSearch) { 
-              _searchCtrl.clear(); 
-              _onSearch(''); 
+            if (!_showSearch) {
+              _searchCtrl.clear();
+              _onSearch('');
             }
           }),
         ),
@@ -469,34 +621,56 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
           children: [
             IconButton(
               tooltip: 'Lọc',
-              icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 22),
+              icon: const Icon(
+                Icons.tune_rounded,
+                color: Colors.white,
+                size: 22,
+              ),
               onPressed: _showFilterSheet,
             ),
             if (_filterType != null || _filterSort != null)
               Positioned(
-                top: 8, right: 8,
+                top: 8,
+                right: 8,
                 child: Container(
-                  width: 8, height: 8,
-                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
           ],
         ),
         _isExporting
-            ? const Padding(padding: EdgeInsets.symmetric(horizontal: 14),
-                child: SizedBox(width: 20, height: 20,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)))
+            ? const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 14),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                ),
+              )
             : IconButton(
                 tooltip: 'Xuất PDF',
-                icon: const Icon(Icons.picture_as_pdf_outlined, color: Colors.white, size: 22),
-                onPressed: _exportPdf),
+                icon: const Icon(
+                  Icons.picture_as_pdf_outlined,
+                  color: Colors.white,
+                  size: 22,
+                ),
+                onPressed: _exportPdf,
+              ),
         const SizedBox(width: 4),
       ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [_kPrimary, _kPrimaryEnd], 
+              colors: [_kPrimary, _kPrimaryEnd],
               begin: Alignment.topRight,
               end: Alignment.bottomLeft,
             ),
@@ -504,9 +678,11 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
           child: Stack(
             children: [
               Positioned(
-                right: -30, top: -20,
+                right: -30,
+                top: -20,
                 child: Container(
-                  width: 160, height: 160,
+                  width: 160,
+                  height: 160,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.white.withOpacity(0.06),
@@ -514,7 +690,7 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
                 ),
               ),
               Positioned(
-                left: 56, 
+                left: 56,
                 bottom: 6,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -530,20 +706,24 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
                             fontWeight: FontWeight.w400,
                           ),
                         );
-                      }
+                      },
                     ),
                     const SizedBox(width: 4),
                     Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: _loading ? null : () => _load(page: _currentPage),
+                        onTap: _loading
+                            ? null
+                            : () => _load(page: _currentPage),
                         borderRadius: BorderRadius.circular(20),
                         child: Padding(
                           padding: const EdgeInsets.all(6.0),
                           child: Icon(
-                            Icons.sync_rounded, 
-                            size: 16, 
-                            color: Colors.white.withOpacity(_loading ? 0.4 : 0.9)
+                            Icons.sync_rounded,
+                            size: 16,
+                            color: Colors.white.withOpacity(
+                              _loading ? 0.4 : 0.9,
+                            ),
                           ),
                         ),
                       ),
@@ -573,7 +753,11 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
-            BoxShadow(color: _kTextMain.withOpacity(0.03), blurRadius: 24, offset: const Offset(0, 8)),
+            BoxShadow(
+              color: _kTextMain.withOpacity(0.03),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
           ],
         ),
         child: Column(
@@ -582,16 +766,31 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Cơ cấu danh mục',
-                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w800, color: _kTextMain)),
+                Text(
+                  'Cơ cấu danh mục',
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: _kTextMain,
+                  ),
+                ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: _kBackground,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text('Tất cả',
-                      style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: _kTextMuted)),
+                  child: Text(
+                    'Tất cả',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: _kTextMuted,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -610,11 +809,24 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('${total.toInt()}',
-                              style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w900, color: _kTextMain, height: 1)),
+                          Text(
+                            '${total.toInt()}',
+                            style: GoogleFonts.inter(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              color: _kTextMain,
+                              height: 1,
+                            ),
+                          ),
                           const SizedBox(height: 2),
-                          Text('Tổng sân',
-                              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: _kTextMuted)),
+                          Text(
+                            'Tổng sân',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: _kTextMuted,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -625,17 +837,40 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
                   child: Column(
                     children: pts.asMap().entries.map((e) {
                       final color = _typeColors[e.key % _typeColors.length];
-                      final pct = total > 0 ? (e.value.count / total * 100).toStringAsFixed(1) : '0';
+                      final pct = total > 0
+                          ? (e.value.count / total * 100).toStringAsFixed(1)
+                          : '0';
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Row(
                           children: [
-                            Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
                             const SizedBox(width: 10),
-                            Expanded(child: Text(e.value.type,
-                                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.grey.shade700))),
-                            Text('${e.value.count}',
-                                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w800, color: _kTextMain)),
+                            Expanded(
+                              child: Text(
+                                e.value.type,
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '${e.value.count}',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: _kTextMain,
+                              ),
+                            ),
                           ],
                         ),
                       );
@@ -655,23 +890,26 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
   Widget _buildTableCard(double bottomPadding) {
     var items = _page?.content ?? [];
     int displayTotal = _page?.totalElements ?? 0;
-    
+
     // BACKUP: Lọc cục bộ tại App trong trường hợp API ở Backend chưa được thiết lập xử lý tham số `search`
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
-      final filteredLocally = items.where((p) => 
-        p.name.toLowerCase().contains(q) || 
-        p.providerName.toLowerCase().contains(q) ||
-        p.type.toLowerCase().contains(q)
-      ).toList();
-      
+      final filteredLocally = items
+          .where(
+            (p) =>
+                p.name.toLowerCase().contains(q) ||
+                p.providerName.toLowerCase().contains(q) ||
+                p.type.toLowerCase().contains(q),
+          )
+          .toList();
+
       // Nếu lọc cục bộ trả về kết quả khác list gốc -> Backend chưa chịu lọc -> Ép dùng kết quả lọc cục bộ
       if (filteredLocally.length != items.length) {
         items = filteredLocally;
         displayTotal = items.length; // Hiển thị số đếm cho chuẩn
       }
     }
-    
+
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPadding + 32),
       child: Container(
@@ -679,7 +917,11 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
-            BoxShadow(color: _kTextMain.withOpacity(0.03), blurRadius: 24, offset: const Offset(0, 8)),
+            BoxShadow(
+              color: _kTextMain.withOpacity(0.03),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
           ],
         ),
         child: Column(
@@ -690,37 +932,68 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Chi tiết Sân',
-                      style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w800, color: _kTextMain)),
+                  Text(
+                    'Chi tiết Sân',
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: _kTextMain,
+                    ),
+                  ),
                   if (_page != null)
-                    Text('$displayTotal kết quả',
-                        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: _kTextMuted)),
+                    Text(
+                      '$displayTotal kết quả',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: _kTextMuted,
+                      ),
+                    ),
                 ],
               ),
             ),
             const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F5)),
-            ...items.asMap().entries.map((e) => _buildRow(e.value, e.key == items.length - 1)),
-            
+            ...items.asMap().entries.map(
+              (e) => _buildRow(e.value, e.key == items.length - 1),
+            ),
+
             if (items.isEmpty)
               Padding(
                 padding: const EdgeInsets.all(40),
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.search_off_rounded, size: 36, color: Colors.grey.shade300),
+                      Icon(
+                        Icons.search_off_rounded,
+                        size: 36,
+                        color: Colors.grey.shade300,
+                      ),
                       const SizedBox(height: 8),
-                      Text('Không tìm thấy sân phù hợp', style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade400)),
+                      Text(
+                        'Không tìm thấy sân phù hợp',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: Colors.grey.shade400,
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
 
             // Pagination Area (Ẩn đi nếu kết quả tìm kiếm quá ít không chia nổi trang)
-            if (_page != null && _page!.totalPages > 1 && displayTotal > 10) ...[
+            if (_page != null &&
+                _page!.totalPages > 1 &&
+                displayTotal > 10) ...[
               const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F5)),
               Padding(
                 padding: const EdgeInsets.all(20),
-                child: buildAdminPaginationBar(_currentPage, _page!.totalPages, (p) => _load(page: p), _kPrimary),
+                child: buildAdminPaginationBar(
+                  _currentPage,
+                  _page!.totalPages,
+                  (p) => _load(page: p),
+                  _kPrimary,
+                ),
               ),
             ],
           ],
@@ -730,9 +1003,11 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
   }
 
   Widget _buildRow(AdminPitchItem pitch, bool isLast) {
-    final typeColor = pitch.type.contains('5') 
-        ? _kPrimary 
-        : pitch.type.contains('7') ? _kSecondary : _kTeal;
+    final typeColor = pitch.type.contains('5')
+        ? _kPrimary
+        : pitch.type.contains('7')
+        ? _kSecondary
+        : _kTeal;
 
     return Column(
       children: [
@@ -746,48 +1021,86 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
                 decoration: BoxDecoration(
                   color: typeColor.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: typeColor.withOpacity(0.1), width: 1),
+                  border: Border.all(
+                    color: typeColor.withOpacity(0.1),
+                    width: 1,
+                  ),
                 ),
-                child: Icon(Icons.sports_soccer_rounded, color: typeColor, size: 22),
+                child: Icon(
+                  Icons.sports_soccer_rounded,
+                  color: typeColor,
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 16),
-              
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(pitch.name,
-                        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: _kTextMain),
-                        maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text(
+                      pitch.name,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: _kTextMain,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(Icons.storefront_rounded, size: 12, color: Colors.grey.shade400),
+                        Icon(
+                          Icons.storefront_rounded,
+                          size: 12,
+                          color: Colors.grey.shade400,
+                        ),
                         const SizedBox(width: 4),
                         Expanded(
-                          child: Text(pitch.providerName,
-                              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: _kTextMuted),
-                              maxLines: 1, overflow: TextOverflow.ellipsis),
+                          child: Text(
+                            pitch.providerName,
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: _kTextMuted,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
                     ),
                   ],
                 ),
               ),
-              
+
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   _pill(pitch.type, typeColor),
                   const SizedBox(height: 6),
-                  Text(_fmtPrice(pitch.price),
-                      style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w800, color: _kTextMain, letterSpacing: -0.5)),
+                  Text(
+                    _fmtPrice(pitch.price),
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: _kTextMain,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
                 ],
               ),
             ],
           ),
         ),
-        if (!isLast) const Divider(height: 1, indent: 84, endIndent: 24, color: Color(0xFFF0F0F5)),
+        if (!isLast)
+          const Divider(
+            height: 1,
+            indent: 84,
+            endIndent: 24,
+            color: Color(0xFFF0F0F5),
+          ),
       ],
     );
   }
@@ -795,8 +1108,18 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
   Widget _pill(String text, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-      child: Text(text, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: color)),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.inter(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
     );
   }
 }
@@ -813,11 +1136,11 @@ class _DonutP extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final total = values.fold(0.0, (a, b) => a + b);
     if (total == 0) return;
-    
+
     final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) / 2;
     final rect = Rect.fromCircle(center: center, radius: radius);
-    
+
     final bgPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 12
@@ -827,13 +1150,19 @@ class _DonutP extends CustomPainter {
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 14
-      ..strokeCap = StrokeCap.round; 
-      
+      ..strokeCap = StrokeCap.round;
+
     double startAngle = -math.pi / 2;
     for (int i = 0; i < values.length; i++) {
       final sweep = 2 * math.pi * values[i] / total;
       paint.color = colors[i % colors.length];
-      canvas.drawArc(rect.deflate(7), startAngle + 0.05, sweep - 0.1, false, paint);
+      canvas.drawArc(
+        rect.deflate(7),
+        startAngle + 0.05,
+        sweep - 0.1,
+        false,
+        paint,
+      );
       startAngle += sweep;
     }
   }

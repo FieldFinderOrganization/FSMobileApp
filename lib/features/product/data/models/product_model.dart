@@ -32,6 +32,7 @@ class ProductModel extends ProductEntity {
     required super.tags,
     required super.totalSold,
     super.variants = const [],
+    super.appliedDiscountCodes,
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
@@ -57,6 +58,9 @@ class ProductModel extends ProductEntity {
               ?.map((e) => ProductVariantModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      appliedDiscountCodes: (json['appliedDiscountCodes'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList(),
     );
   }
 }
