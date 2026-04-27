@@ -40,6 +40,7 @@ import 'features/discount/domain/repositories/discount_repository.dart';
 import 'features/discount/presentation/cubit/my_wallet_cubit.dart';
 import 'features/discount/presentation/cubit/admin_discount_cubit.dart';
 import 'features/welcome/presentation/pages/welcome_screen.dart';
+import 'features/auth/login/presentation/bloc/auth_state.dart';
 
 
 void main() async {
@@ -132,16 +133,36 @@ void main() async {
   );
 }
 
+/// Key toàn cục để navigate từ bất kỳ đâu, không phụ thuộc BuildContext
+final _navigatorKey = GlobalKey<NavigatorState>();
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'FS Mobile App',
-      theme: ThemeData(primarySwatch: Colors.red, useMaterial3: true),
-      home: const WelcomeScreen(),
+    return BlocListener<AuthCubit, AuthState>(
+      listenWhen: (previous, current) =>
+          previous is! AuthInitial && current is AuthInitial,
+      listener: (ctx, state) {
+        // Reset state khi logout
+        ctx.read<HomeCubit>().reset();
+        ctx.read<CartCubit>().reset();
+        ctx.read<ProductCubit>().reset();
+
+        // Dùng navigatorKey — hoạt động dù đang ở màn hình nào
+        _navigatorKey.currentState?.pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+          (route) => false,
+        );
+      },
+      child: MaterialApp(
+        navigatorKey: _navigatorKey,
+        debugShowCheckedModeBanner: false,
+        title: 'FS Mobile App',
+        theme: ThemeData(primarySwatch: Colors.red, useMaterial3: true),
+        home: const WelcomeScreen(),
+      ),
     );
   }
 }

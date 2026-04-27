@@ -9,6 +9,15 @@ import '../cubit/admin_discount_cubit.dart';
 import 'admin_discount_form_screen.dart';
 import 'admin_assign_discount_screen.dart';
 
+// Palette — giống admin_users
+const _kPrimary = Color(0xFF4454A0);
+const _kPrimaryEnd = Color(0xFF9E91D1);
+const _kTeal = Color(0xFF059669);
+const _kAmber = Color(0xFFF59E0B);
+const _kGrey = Color(0xFF6B7280);
+const _kCoralPink = Color(0xFFE05FA3);
+const _kDeepIndigo = Color(0xFF3E54AC);
+
 class AdminDiscountListScreen extends StatefulWidget {
   const AdminDiscountListScreen({super.key});
 
@@ -18,15 +27,6 @@ class AdminDiscountListScreen extends StatefulWidget {
 }
 
 class _AdminDiscountListScreenState extends State<AdminDiscountListScreen> {
-  // Palette — giống admin_users
-  static const _kPrimary = Color(0xFF4454A0);
-  static const _kPrimaryEnd = Color(0xFF9E91D1);
-  static const _kTeal = Color(0xFF059669);
-  static const _kAmber = Color(0xFFF59E0B);
-  static const _kGrey = Color(0xFF6B7280);
-  static const _kCoralPink = Color(0xFFE05FA3);
-  static const _kDeepIndigo = Color(0xFF3E54AC);
-
   String _filterStatus = 'ALL'; // ALL | ACTIVE | INACTIVE | EXPIRED
   String _filterType = 'ALL'; // ALL | PERCENTAGE | FIXED_AMOUNT
   bool _showSearch = false;

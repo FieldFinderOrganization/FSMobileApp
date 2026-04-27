@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../features/auth/domain/entities/user_entity.dart';
+import '../../../../features/auth/login/presentation/bloc/auth_cubit.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../features/home/presentation/pages/main_shell.dart';
 import '../cubit/admin_dashboard_cubit.dart';
@@ -340,7 +341,8 @@ class _AdminShellState extends State<AdminShell> {
       padding: const EdgeInsets.all(24.0),
       child: GestureDetector(
         onTap: () {
-          // TODO: implement logout
+          Navigator.pop(context); // close drawer
+          context.read<AuthCubit>().logout();
         },
         child: Row(
           children: [

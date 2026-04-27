@@ -14,6 +14,8 @@ class CartItemModel extends CartItemEntity {
     required super.quantity,
     required super.stockAvailable,
     super.salePercent,
+    super.categoryId,
+    super.appliedDiscountCodes,
   });
 
   factory CartItemModel.fromJson(Map<String, dynamic> json) {
@@ -30,6 +32,11 @@ class CartItemModel extends CartItemEntity {
       quantity: (json['quantity'] as num?)?.toInt() ?? 0,
       stockAvailable: (json['stockAvailable'] as num?)?.toInt() ?? 0,
       salePercent: (json['salePercent'] as num?)?.toInt(),
+      categoryId: (json['categoryId'] as num?)?.toInt(),
+      appliedDiscountCodes: (json['appliedDiscountCodes'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
     );
   }
 }

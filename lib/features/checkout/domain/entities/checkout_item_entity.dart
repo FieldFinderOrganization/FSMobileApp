@@ -8,6 +8,8 @@ class CheckoutItemEntity {
   final double originalPrice;
   final int? salePercent;
   final int quantity;
+  final int? categoryId;
+  final List<String> autoAppliedCodes;
 
   const CheckoutItemEntity({
     required this.productId,
@@ -19,6 +21,8 @@ class CheckoutItemEntity {
     required this.originalPrice,
     this.salePercent,
     required this.quantity,
+    this.categoryId,
+    this.autoAppliedCodes = const [],
   });
 
   double get totalPrice => unitPrice * quantity;

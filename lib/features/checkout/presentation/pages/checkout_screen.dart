@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -30,10 +32,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   String _paymentMethod = 'cash'; // 'cash' | 'transfer'
   final TextEditingController _addressController = TextEditingController();
   List<UserDiscountEntity> _walletVouchers = [];
-  UserDiscountEntity? _selectedVoucher;
+  final List<UserDiscountEntity> _selectedVouchers = [];
   bool _walletLoading = false;
+  bool _autoApplied = false;
 
   final _currencyFormat = NumberFormat('#,###', 'vi_VN');
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-load wallet để có thể auto-tick mã pre-applied
+    final userId = context.read<AuthCubit>().state.currentUser?.userId;
+    if (userId != null) {
+      _loadWallet(userId).then((_) => _autoApplyPreCodes());
+    }
+  }
 
   @override
   void dispose() {
@@ -43,22 +56,129 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   double get _subtotal => widget.items.fold(0, (sum, i) => sum + i.totalPrice);
 
-  double get _discountAmount {
-    if (_selectedVoucher == null || !_selectedVoucher!.isAvailable) return 0;
-    final v = _selectedVoucher!;
-    if (v.scope != 'GLOBAL') return 0;
-    if (v.minOrderValue != null && _subtotal < v.minOrderValue!) return 0;
-    double d = v.isPercentage ? _subtotal * v.value / 100 : v.value;
+  /// Tính discount cho 1 mã trên 1 base amount (FIXED hoặc PERCENTAGE).
+  double _calcSingle(UserDiscountEntity v, double base) {
+    if (base <= 0) return 0;
+    double d = v.isPercentage ? base * v.value / 100 : v.value;
     if (v.maxDiscountAmount != null && d > v.maxDiscountAmount!) {
       d = v.maxDiscountAmount!;
     }
-    return d.clamp(0, _subtotal);
+    return d.clamp(0, base);
   }
 
-  double get _total => _subtotal - _discountAmount;
+  UserDiscountEntity? _selectedByScope(String scope) {
+    for (final v in _selectedVouchers) {
+      if (v.scope == scope) return v;
+    }
+    return null;
+  }
+
+  /// Tính tổng theo logic 2-pha: specific item-level → global trên subtotal sau specific.
+  /// Trả về (subAfterSpecific, totalSpecificDiscount, globalDiscount, finalTotal).
+  ({double subAfterSpecific, double specificDiscount, double globalDiscount, double finalTotal})
+      _computeBreakdown() {
+    double subAfterSpecific = 0;
+    double specificDiscount = 0;
+    for (final it in widget.items) {
+      double itemDiscount = 0;
+      for (final v in _selectedVouchers) {
+        bool match = false;
+        if (v.scope == 'SPECIFIC_PRODUCT' &&
+            v.applicableProductIds.contains(it.productId)) {
+          match = true;
+        } else if (v.scope == 'CATEGORY' &&
+            it.categoryId != null &&
+            v.applicableCategoryIds.contains(it.categoryId!)) {
+          match = true;
+        }
+        if (match) {
+          // Best-wins: chỉ giữ mã giảm cao nhất cho item này
+          itemDiscount = max(itemDiscount, _calcSingle(v, it.totalPrice));
+        }
+      }
+      specificDiscount += itemDiscount;
+      subAfterSpecific += (it.totalPrice - itemDiscount).clamp(0, it.totalPrice);
+    }
+
+    final global = _selectedByScope('GLOBAL');
+    double globalDiscount = 0;
+    if (global != null &&
+        (global.minOrderValue == null ||
+            subAfterSpecific >= global.minOrderValue!)) {
+      globalDiscount = _calcSingle(global, subAfterSpecific);
+    }
+
+    final finalTotal = (subAfterSpecific - globalDiscount)
+        .clamp(0, double.infinity)
+        .toDouble();
+    return (
+      subAfterSpecific: subAfterSpecific,
+      specificDiscount: specificDiscount,
+      globalDiscount: globalDiscount,
+      finalTotal: finalTotal,
+    );
+  }
+
+  double get _discountAmount {
+    final b = _computeBreakdown();
+    return b.specificDiscount + b.globalDiscount;
+  }
+
+  double get _total => _computeBreakdown().finalTotal;
 
   List<String> get _discountCodes =>
-      _selectedVoucher != null ? [_selectedVoucher!.discountCode] : [];
+      _selectedVouchers.map((v) => v.discountCode).toList();
+
+  /// Toggle voucher: cùng id → bỏ; cùng scope khác id → replace; khác scope → append.
+  void _toggleVoucher(UserDiscountEntity v) {
+    setState(() {
+      final existIdx = _selectedVouchers
+          .indexWhere((s) => s.userDiscountId == v.userDiscountId);
+      if (existIdx >= 0) {
+        _selectedVouchers.removeAt(existIdx);
+      } else {
+        _selectedVouchers.removeWhere((s) => s.scope == v.scope);
+        _selectedVouchers.add(v);
+      }
+    });
+  }
+
+  void _autoApplyPreCodes() {
+    if (_autoApplied) return;
+    final preCodes = widget.items
+        .expand((i) => i.autoAppliedCodes)
+        .toSet();
+    if (preCodes.isEmpty) {
+      _autoApplied = true;
+      return;
+    }
+    final toAdd = _walletVouchers
+        .where((v) => preCodes.contains(v.discountCode))
+        .toList();
+    if (toAdd.isEmpty) {
+      _autoApplied = true;
+      return;
+    }
+    setState(() {
+      // group by scope, keep best discount per scope
+      final byScope = <String, UserDiscountEntity>{};
+      for (final v in toAdd) {
+        final existing = byScope[v.scope];
+        if (existing == null) {
+          byScope[v.scope] = v;
+        } else {
+          // chọn mã giảm nhiều hơn trên subtotal hiện tại làm proxy
+          final scoreNew = _calcSingle(v, _subtotal);
+          final scoreOld = _calcSingle(existing, _subtotal);
+          if (scoreNew > scoreOld) byScope[v.scope] = v;
+        }
+      }
+      _selectedVouchers
+        ..clear()
+        ..addAll(byScope.values);
+      _autoApplied = true;
+    });
+  }
 
   Future<void> _loadWallet(String userId) async {
     setState(() => _walletLoading = true);
@@ -66,6 +186,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final dioClient = context.read<DioClient>();
       final ds = DiscountRemoteDataSource(dioClient.dio);
       final vouchers = await ds.getWallet(userId);
+      if (!mounted) return;
       setState(() {
         _walletVouchers = vouchers.where((v) => v.isAvailable).toList();
       });
@@ -87,18 +208,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => _VoucherBottomSheet(
-        vouchers: _walletVouchers,
-        selected: _selectedVoucher,
-        subtotal: _subtotal,
-        onSelect: (v) {
-          setState(() => _selectedVoucher = v);
-          Navigator.pop(context);
-        },
-        onClear: () {
-          setState(() => _selectedVoucher = null);
-          Navigator.pop(context);
-        },
+      builder: (_) => StatefulBuilder(
+        builder: (sheetCtx, setSheetState) => _VoucherBottomSheet(
+          vouchers: _walletVouchers,
+          selected: _selectedVouchers,
+          subtotal: _subtotal,
+          onToggle: (v) {
+            _toggleVoucher(v);
+            setSheetState(() {}); // rebuild sheet để cập nhật ticks
+          },
+          onConfirm: () => Navigator.pop(sheetCtx),
+        ),
       ),
     );
   }
@@ -617,7 +737,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     return _buildCard(
       title: 'Mã khuyến mãi',
-      child: _selectedVoucher == null
+      child: _selectedVouchers.isEmpty
           ? GestureDetector(
               onTap: () => _openVoucherSheet(userId),
               child: Container(
@@ -626,10 +746,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   horizontal: 14,
                 ),
                 decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Colors.grey.shade300,
-                    style: BorderStyle.solid,
-                  ),
+                  border: Border.all(color: Colors.grey.shade300),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -642,7 +759,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Chọn voucher từ ví của bạn',
+                        'Chọn voucher từ ví của bạn (tối đa 3)',
                         style: GoogleFonts.inter(
                           fontSize: 14,
                           color: AppColors.textGrey,
@@ -667,68 +784,70 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryRed.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: AppColors.primaryRed.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.local_offer_rounded,
-                        size: 16,
-                        color: AppColors.primaryRed,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                ..._selectedVouchers.map((v) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryRed.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: AppColors.primaryRed.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
                           children: [
-                            Text(
-                              _selectedVoucher!.discountCode,
-                              style: GoogleFonts.inter(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13,
-                                color: AppColors.primaryRed,
+                            const Icon(
+                              Icons.local_offer_rounded,
+                              size: 16,
+                              color: AppColors.primaryRed,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${v.discountCode}  ·  ${v.scopeLabel}',
+                                    style: GoogleFonts.inter(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13,
+                                      color: AppColors.primaryRed,
+                                    ),
+                                  ),
+                                  Text(
+                                    v.description,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 11,
+                                      color: AppColors.primaryRed.withValues(
+                                        alpha: 0.7,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            Text(
-                              _selectedVoucher!.description,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                color: AppColors.primaryRed.withValues(
-                                  alpha: 0.7,
-                                ),
+                            GestureDetector(
+                              onTap: () => _toggleVoucher(v),
+                              child: const Icon(
+                                Icons.close_rounded,
+                                size: 18,
+                                color: AppColors.primaryRed,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      GestureDetector(
-                        onTap: () => setState(() => _selectedVoucher = null),
-                        child: const Icon(
-                          Icons.close_rounded,
-                          size: 18,
-                          color: AppColors.primaryRed,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
+                    )),
                 GestureDetector(
                   onTap: () => _openVoucherSheet(userId),
                   child: Text(
-                    'Đổi voucher khác',
+                    'Thêm / đổi voucher',
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       color: AppColors.primaryRed,
@@ -834,9 +953,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             'Giảm giá',
             _discountAmount > 0
                 ? '- ${_currencyFormat.format(_discountAmount)}đ'
-                : (_selectedVoucher != null &&
-                      _selectedVoucher!.scope != 'GLOBAL')
-                ? 'Áp dụng sau'
                 : '0đ',
             valueColor: _discountAmount > 0 ? Colors.green.shade700 : null,
           ),
@@ -980,17 +1096,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
 class _VoucherBottomSheet extends StatelessWidget {
   final List<UserDiscountEntity> vouchers;
-  final UserDiscountEntity? selected;
+  final List<UserDiscountEntity> selected;
   final double subtotal;
-  final ValueChanged<UserDiscountEntity> onSelect;
-  final VoidCallback onClear;
+  final ValueChanged<UserDiscountEntity> onToggle;
+  final VoidCallback onConfirm;
 
   const _VoucherBottomSheet({
     required this.vouchers,
     required this.selected,
     required this.subtotal,
-    required this.onSelect,
-    required this.onClear,
+    required this.onToggle,
+    required this.onConfirm,
   });
 
   @override
@@ -1002,9 +1118,32 @@ class _VoucherBottomSheet extends StatelessWidget {
     );
     final dateFmt = DateFormat('dd/MM/yyyy');
 
+    // Group vouchers by scope
+    final groups = <String, List<UserDiscountEntity>>{
+      'GLOBAL': [],
+      'CATEGORY': [],
+      'SPECIFIC_PRODUCT': [],
+    };
+    for (final v in vouchers) {
+      groups.putIfAbsent(v.scope, () => []).add(v);
+    }
+
+    String headerLabel(String scope) {
+      switch (scope) {
+        case 'GLOBAL':
+          return 'Toàn đơn';
+        case 'CATEGORY':
+          return 'Theo danh mục';
+        case 'SPECIFIC_PRODUCT':
+          return 'Theo sản phẩm';
+        default:
+          return scope;
+      }
+    }
+
     return DraggableScrollableSheet(
-      initialChildSize: 0.6,
-      maxChildSize: 0.9,
+      initialChildSize: 0.7,
+      maxChildSize: 0.95,
       minChildSize: 0.4,
       expand: false,
       builder: (_, controller) => Column(
@@ -1021,7 +1160,6 @@ class _VoucherBottomSheet extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   'Chọn voucher',
@@ -1030,17 +1168,23 @@ class _VoucherBottomSheet extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                if (selected != null)
-                  TextButton(
-                    onPressed: onClear,
-                    child: Text(
-                      'Bỏ chọn',
-                      style: GoogleFonts.inter(
-                        color: AppColors.primaryRed,
-                        fontSize: 13,
-                      ),
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryRed.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${selected.length}/3',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primaryRed,
                     ),
                   ),
+                ),
               ],
             ),
           ),
@@ -1053,118 +1197,168 @@ class _VoucherBottomSheet extends StatelessWidget {
                       style: GoogleFonts.inter(color: Colors.grey),
                     ),
                   )
-                : ListView.separated(
+                : ListView(
                     controller: controller,
                     padding: const EdgeInsets.all(16),
-                    itemCount: vouchers.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 10),
-                    itemBuilder: (_, i) {
-                      final v = vouchers[i];
-                      final isSelected =
-                          selected?.discountCode == v.discountCode;
-                      final eligible =
-                          v.minOrderValue == null ||
-                          subtotal >= v.minOrderValue!;
-                      return GestureDetector(
-                        onTap: eligible ? () => onSelect(v) : null,
-                        child: Opacity(
-                          opacity: eligible ? 1.0 : 0.5,
-                          child: Container(
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? AppColors.primaryRed.withValues(alpha: 0.05)
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isSelected
-                                    ? AppColors.primaryRed
-                                    : const Color(0xFFEEEEEE),
+                    children: [
+                      for (final scope in const [
+                        'GLOBAL',
+                        'CATEGORY',
+                        'SPECIFIC_PRODUCT',
+                      ])
+                        if ((groups[scope] ?? []).isNotEmpty) ...[
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+                            child: Text(
+                              headerLabel(scope),
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textGrey,
                               ),
                             ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 60,
-                                  height: 60,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primaryRed,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      v.displayValue,
-                                      textAlign: TextAlign.center,
-                                      style: GoogleFonts.inter(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        v.discountCode,
-                                        style: GoogleFonts.inter(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        v.description,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.inter(
-                                          fontSize: 12,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      if (v.minOrderValue != null &&
-                                          v.minOrderValue! > 0)
-                                        Text(
-                                          eligible
-                                              ? 'Đủ điều kiện áp dụng'
-                                              : 'Tối thiểu ${currFmt.format(v.minOrderValue)}',
-                                          style: GoogleFonts.inter(
-                                            fontSize: 11,
-                                            color: eligible
-                                                ? Colors.green
-                                                : Colors.orange,
-                                          ),
-                                        ),
-                                      Text(
-                                        'HSD: ${dateFmt.format(v.endDate)}',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 11,
-                                          color: Colors.grey[500],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                if (isSelected)
-                                  const Icon(
-                                    Icons.check_circle_rounded,
-                                    color: AppColors.primaryRed,
-                                    size: 22,
-                                  ),
-                              ],
-                            ),
                           ),
-                        ),
-                      );
-                    },
+                          ...groups[scope]!.map((v) => Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: _voucherTile(v, currFmt, dateFmt),
+                              )),
+                        ],
+                    ],
                   ),
           ),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: onConfirm,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryRed,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    'Xác nhận (${selected.length})',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _voucherTile(
+    UserDiscountEntity v,
+    NumberFormat currFmt,
+    DateFormat dateFmt,
+  ) {
+    final isSelected =
+        selected.any((s) => s.userDiscountId == v.userDiscountId);
+    final eligible = v.minOrderValue == null || subtotal >= v.minOrderValue!;
+    return GestureDetector(
+      onTap: eligible ? () => onToggle(v) : null,
+      child: Opacity(
+        opacity: eligible ? 1.0 : 0.5,
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppColors.primaryRed.withValues(alpha: 0.05)
+                : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color:
+                  isSelected ? AppColors.primaryRed : const Color(0xFFEEEEEE),
+              width: isSelected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryRed,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: Text(
+                    v.displayValue,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      v.discountCode,
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      v.description,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    if (v.minOrderValue != null && v.minOrderValue! > 0)
+                      Text(
+                        eligible
+                            ? 'Đủ điều kiện áp dụng'
+                            : 'Tối thiểu ${currFmt.format(v.minOrderValue)}',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: eligible ? Colors.green : Colors.orange,
+                        ),
+                      ),
+                    Text(
+                      'HSD: ${dateFmt.format(v.endDate)}',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                isSelected
+                    ? Icons.check_circle_rounded
+                    : Icons.radio_button_off_rounded,
+                color: isSelected
+                    ? AppColors.primaryRed
+                    : Colors.grey.shade400,
+                size: 22,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
