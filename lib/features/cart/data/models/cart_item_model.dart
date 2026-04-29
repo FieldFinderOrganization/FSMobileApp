@@ -16,6 +16,7 @@ class CartItemModel extends CartItemEntity {
     super.salePercent,
     super.categoryId,
     super.appliedDiscountCodes,
+    super.availableGlobalCodes,
   });
 
   factory CartItemModel.fromJson(Map<String, dynamic> json) {
@@ -34,6 +35,10 @@ class CartItemModel extends CartItemEntity {
       salePercent: (json['salePercent'] as num?)?.toInt(),
       categoryId: (json['categoryId'] as num?)?.toInt(),
       appliedDiscountCodes: (json['appliedDiscountCodes'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      availableGlobalCodes: (json['availableGlobalCodes'] as List?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],

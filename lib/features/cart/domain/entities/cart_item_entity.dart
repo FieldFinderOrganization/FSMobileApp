@@ -13,6 +13,7 @@ class CartItemEntity {
   final int? salePercent;
   final int? categoryId;
   final List<String> appliedDiscountCodes;
+  final List<String> availableGlobalCodes;
 
   const CartItemEntity({
     required this.productId,
@@ -29,6 +30,7 @@ class CartItemEntity {
     this.salePercent,
     this.categoryId,
     this.appliedDiscountCodes = const [],
+    this.availableGlobalCodes = const [],
   });
 
   /// Sản phẩm đã hết hàng hoàn toàn
@@ -57,6 +59,7 @@ class CartItemEntity {
       salePercent: salePercent,
       categoryId: categoryId,
       appliedDiscountCodes: appliedDiscountCodes,
+      availableGlobalCodes: availableGlobalCodes,
     );
   }
 }
