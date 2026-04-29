@@ -35,12 +35,12 @@ class UserDiscountModel extends UserDiscountEntity {
       maxDiscountAmount: (json['maxDiscountAmount'] as num?)?.toDouble(),
       scope: json['scope'] as String? ?? 'GLOBAL',
       applicableProductIds: (json['applicableProductIds'] as List<dynamic>?)
-              ?.map((e) => e as int)
+              ?.map((e) => (e as num).toInt())
               .toList() ??
           [],
       applicableCategoryIds:
           (json['applicableCategoryIds'] as List<dynamic>?)
-                  ?.map((e) => e as int)
+                  ?.map((e) => (e as num).toInt())
                   .toList() ??
               [],
     );

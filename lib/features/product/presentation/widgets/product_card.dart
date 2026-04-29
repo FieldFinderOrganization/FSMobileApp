@@ -358,32 +358,38 @@ class ProductCard extends StatelessWidget {
 
   Widget _buildOverlayPriceRow() {
     if (product.isOnSale && product.salePrice != null) {
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      // Dùng Column để tránh overflow khi card nhỏ (bento 160 / 215)
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
+          Text(
+            '${product.price.toStringAsFixed(0)}k',
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              color: Colors.white54,
+              decoration: TextDecoration.lineThrough,
+              decorationColor: Colors.white54,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
             decoration: BoxDecoration(
               color: AppColors.primaryRed,
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(5),
             ),
             child: Text(
               '${product.salePrice!.toStringAsFixed(0)}k',
               style: GoogleFonts.inter(
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: FontWeight.w800,
                 color: Colors.white,
               ),
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '${product.price.toStringAsFixed(0)}k',
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              color: Colors.white38,
-              decoration: TextDecoration.lineThrough,
-              decorationColor: Colors.white38,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -396,6 +402,8 @@ class ProductCard extends StatelessWidget {
         fontWeight: FontWeight.w800,
         color: Colors.white,
       ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 
@@ -469,6 +477,7 @@ class ProductCard extends StatelessWidget {
     if (product.isOnSale && product.salePrice != null) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             '${product.price.toStringAsFixed(0)}k',
@@ -477,6 +486,8 @@ class ProductCard extends StatelessWidget {
               color: AppColors.textGrey,
               decoration: TextDecoration.lineThrough,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           Text(
             '${product.salePrice!.toStringAsFixed(0)}k',
@@ -485,6 +496,8 @@ class ProductCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
               color: AppColors.primaryRed,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       );
@@ -496,6 +509,8 @@ class ProductCard extends StatelessWidget {
         fontWeight: FontWeight.w700,
         color: AppColors.textDark,
       ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }

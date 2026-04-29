@@ -11,6 +11,9 @@ class CartItemEntity {
   final int quantity;
   final int stockAvailable;
   final int? salePercent;
+  final int? categoryId;
+  final List<String> appliedDiscountCodes;
+  final List<String> availableGlobalCodes;
 
   const CartItemEntity({
     required this.productId,
@@ -25,6 +28,9 @@ class CartItemEntity {
     required this.quantity,
     required this.stockAvailable,
     this.salePercent,
+    this.categoryId,
+    this.appliedDiscountCodes = const [],
+    this.availableGlobalCodes = const [],
   });
 
   /// Sản phẩm đã hết hàng hoàn toàn
@@ -51,6 +57,9 @@ class CartItemEntity {
       quantity: quantity ?? this.quantity,
       stockAvailable: stockAvailable ?? this.stockAvailable,
       salePercent: salePercent,
+      categoryId: categoryId,
+      appliedDiscountCodes: appliedDiscountCodes,
+      availableGlobalCodes: availableGlobalCodes,
     );
   }
 }

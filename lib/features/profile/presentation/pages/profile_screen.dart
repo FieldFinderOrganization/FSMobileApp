@@ -68,16 +68,6 @@ class _ProfileBody extends StatelessWidget {
                 duration: Duration(seconds: 1),
               ),
             );
-          } else if (state is AuthInitial) {
-            // Reset all feature-specific states for clean account switching
-            context.read<HomeCubit>().reset();
-            context.read<ProductCubit>().reset();
-            context.read<CartCubit>().reset();
-
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const LoginScreen()),
-              (route) => false,
-            );
           }
         },
         child: Scaffold(

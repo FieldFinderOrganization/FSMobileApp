@@ -290,6 +290,9 @@ class _BottomBar extends StatelessWidget {
                               originalPrice: i.originalPrice,
                               salePercent: i.salePercent,
                               quantity: i.quantity,
+                              categoryId: i.categoryId,
+                              autoAppliedCodes: i.appliedDiscountCodes,
+                              availableGlobalCodes: i.availableGlobalCodes,
                             ))
                         .toList();
                     Navigator.push(

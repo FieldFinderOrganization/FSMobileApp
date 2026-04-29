@@ -145,33 +145,46 @@ class CartItemCard extends StatelessWidget {
                       const SizedBox(height: 10),
                       // Price + quantity controls
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          // Price column
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (hasSale)
-                                Text(
-                                  formatter.format(item.originalPrice),
-                                  style: GoogleFonts.inter(
-                                    fontSize: 11,
-                                    color: AppColors.textGrey,
-                                    decoration: TextDecoration.lineThrough,
-                                    decorationColor: AppColors.textGrey,
+                          // Price column - flexible to avoid overflow
+                          Expanded(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (hasSale)
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      formatter.format(item.originalPrice),
+                                      maxLines: 1,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 11,
+                                        color: AppColors.textGrey,
+                                        decoration: TextDecoration.lineThrough,
+                                        decorationColor: AppColors.textGrey,
+                                      ),
+                                    ),
+                                  ),
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    formatter.format(item.unitPrice),
+                                    maxLines: 1,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.primaryRed,
+                                    ),
                                   ),
                                 ),
-                              Text(
-                                formatter.format(item.unitPrice),
-                                style: GoogleFonts.inter(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primaryRed,
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: 8),
 
                           // Quantity stepper
                           Row(
