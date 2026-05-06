@@ -15,6 +15,8 @@ import '../../data/datasources/payment_remote_datasource.dart';
 import '../../data/repositories/booking_repository_impl.dart';
 import '../../data/repositories/payment_repository_impl.dart';
 import '../../domain/entities/pitch_entity.dart';
+import '../../../refund/data/datasources/refund_remote_data_source.dart';
+import '../../../../shared/widgets/refund_code_dialog.dart';
 import 'booking_detail_screen.dart';
 import 'payment_screen.dart';
 
@@ -31,6 +33,8 @@ class BookingHistoryScreen extends StatelessWidget {
             dioClient: context.read<DioClient>(),
           ),
         ),
+        refundDataSource:
+            RefundRemoteDataSource(dioClient: context.read<DioClient>()),
         userId: userId,
       )..loadBookings(),
       child: const _BookingHistoryBody(),
@@ -54,10 +58,19 @@ class _BookingHistoryBody extends StatelessWidget {
                 SnackBar(content: Text(state.message), backgroundColor: Colors.redAccent),
               );
             } else if (state is BookingHistorySuccess && state.message != null) {
+              final cubit = context.read<BookingHistoryCubit>();
+              final refund = cubit.lastRefund;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(state.message!), backgroundColor: Colors.green),
               );
-              context.read<BookingHistoryCubit>().clearMessage();
+              cubit.clearMessage();
+              if (refund != null && refund.refundCode != null) {
+                cubit.clearLastRefund();
+                Future.microtask(() async {
+                  if (!context.mounted) return;
+                  await RefundCodeDialog.show(context, refund: refund);
+                });
+              }
             }
           },
           child: SafeArea(

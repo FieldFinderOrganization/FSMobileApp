@@ -1,19 +1,168 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/network/dio_client.dart';
+import '../../../../shared/widgets/cancel_reason_sheet.dart';
+import '../../../../shared/widgets/cancel_window_countdown.dart';
+import '../../../../shared/widgets/refund_code_dialog.dart';
+import '../../../auth/login/presentation/bloc/auth_cubit.dart';
+import '../../../discount/presentation/pages/my_wallet_screen.dart';
+import '../../../refund/data/datasources/refund_remote_data_source.dart';
+import '../../data/datasources/booking_remote_datasource.dart';
 import '../../data/models/booking_response_model.dart';
 
-class BookingDetailScreen extends StatelessWidget {
+class BookingDetailScreen extends StatefulWidget {
   final BookingResponseModel booking;
 
   const BookingDetailScreen({super.key, required this.booking});
 
   @override
-  Widget build(BuildContext context) {
-    final bool isPaid = booking.paymentStatus == 'PAID';
-    final bool isConfirmed = booking.status == 'CONFIRMED';
+  State<BookingDetailScreen> createState() => _BookingDetailScreenState();
+}
 
+class _BookingDetailScreenState extends State<BookingDetailScreen> {
+  late BookingResponseModel _booking;
+  bool _cancelling = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _booking = widget.booking;
+  }
+
+  bool get _isPaid => _booking.paymentStatus.toUpperCase() == 'PAID';
+  bool get _isPending =>
+      _booking.status.toUpperCase() == 'PENDING';
+  bool get _isCanceled => _booking.status.toUpperCase() == 'CANCELED';
+
+  /// Parse "HH:mm - HH:mm" → DateTime tại bookingDate.
+  DateTime? get _earliestSlotStart {
+    if (_booking.slotsName.isEmpty) return null;
+    DateTime? earliest;
+    for (final name in _booking.slotsName) {
+      final parts = name.split(' - ');
+      if (parts.isEmpty) continue;
+      final start = parts[0].trim();
+      final hm = start.split(':');
+      if (hm.length < 2) continue;
+      final h = int.tryParse(hm[0]);
+      final m = int.tryParse(hm[1]);
+      if (h == null || m == null) continue;
+      try {
+        final date = DateTime.parse(_booking.bookingDate);
+        final dt = DateTime(date.year, date.month, date.day, h, m);
+        if (earliest == null || dt.isBefore(earliest)) earliest = dt;
+      } catch (_) {}
+    }
+    return earliest;
+  }
+
+  bool get _willRefund {
+    if (!_isPaid || _isCanceled) return false;
+    final earliest = _earliestSlotStart;
+    if (earliest == null) return false;
+    return DateTime.now()
+        .add(const Duration(minutes: 10))
+        .isBefore(earliest);
+  }
+
+  bool get _canCancel => (_isPending && !_isCanceled) || _willRefund;
+
+  /// Hết cửa sổ hủy = earliestSlotStart - 10 phút.
+  DateTime? get _refundDeadline =>
+      _earliestSlotStart?.subtract(const Duration(minutes: 10));
+
+  Future<void> _handleCancel() async {
+    final reason = await CancelReasonSheet.show(
+      context,
+      title: _willRefund ? 'Lý do hủy & nhận hoàn tiền' : 'Lý do hủy đặt sân',
+      options: CancelReasonSheet.bookingReasons,
+      willIssueRefund: _willRefund,
+    );
+    if (reason == null || !mounted) return;
+
+    setState(() => _cancelling = true);
+    try {
+      final dioClient = context.read<DioClient>();
+      final bookingDs = BookingRemoteDataSource(dioClient: dioClient);
+      final refundDs = RefundRemoteDataSource(dioClient: dioClient);
+
+      await bookingDs.cancelBooking(_booking.bookingId, reason: reason.encode());
+
+      final refund = await refundDs.getBySource(
+        type: 'BOOKING',
+        sourceId: _booking.bookingId,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _booking = BookingResponseModel(
+          userId: _booking.userId,
+          userName: _booking.userName,
+          providerUserId: _booking.providerUserId,
+          bookingId: _booking.bookingId,
+          bookingDate: _booking.bookingDate,
+          status: 'CANCELED',
+          paymentStatus: refund != null ? 'REFUNDED' : _booking.paymentStatus,
+          totalPrice: _booking.totalPrice,
+          providerId: _booking.providerId,
+          paymentMethod: _booking.paymentMethod,
+          providerName: _booking.providerName,
+          pitchName: _booking.pitchName,
+          pitchImageUrl: _booking.pitchImageUrl,
+          pitchId: _booking.pitchId,
+          slots: _booking.slots,
+          slotsName: _booking.slotsName,
+          createdAt: _booking.createdAt,
+          paidAt: _booking.paidAt,
+        );
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            refund?.refundCode != null
+                ? 'Đã hủy + cấp mã ${refund!.refundCode}'
+                : 'Đã hủy đặt sân',
+            style: GoogleFonts.inter(),
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      if (refund != null && refund.refundCode != null) {
+        final action = await RefundCodeDialog.show(context, refund: refund);
+        if (action == 'wallet' && mounted) {
+          final userId = context.read<AuthCubit>().state.currentUser?.userId;
+          if (userId != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => MyWalletScreen(userId: userId),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Hủy thất bại: $e',
+              style: GoogleFonts.inter(color: Colors.white)),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _cancelling = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
       appBar: AppBar(
@@ -41,20 +190,15 @@ class BookingDetailScreen extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Status Card
-            _buildStatusCard(isPaid, isConfirmed),
+            _buildStatusCard(),
             const SizedBox(height: 20),
-
-            // Main Info Card (Pitch & Provider)
             _buildMainInfoCard(),
             const SizedBox(height: 20),
-
-            // Invoice Details Table
             _buildInvoiceTable(),
             const SizedBox(height: 20),
-
-            // Time Tracking Section
             _buildTimeTracking(context),
+            const SizedBox(height: 20),
+            if (_canCancel) _buildCancelSection(),
             const SizedBox(height: 30),
           ],
         ),
@@ -62,22 +206,92 @@ class BookingDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusCard(bool isPaid, bool isConfirmed) {
-    final bool isCanceled = booking.status == 'CANCELED';
-    
+  Widget _buildCancelSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFEEEEEE)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_willRefund && _refundDeadline != null) ...[
+            Row(
+              children: [
+                const Icon(Icons.savings_rounded,
+                    color: Color(0xFF16A34A), size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Còn cửa sổ hủy & hoàn tiền (T-10 phút)',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF166534),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            CancelWindowCountdown(
+              deadline: _refundDeadline!,
+              tickInterval: const Duration(seconds: 1),
+            ),
+            const SizedBox(height: 12),
+          ],
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: ElevatedButton.icon(
+              onPressed: _cancelling ? null : _handleCancel,
+              icon: _cancelling
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.cancel_rounded, color: Colors.white),
+              label: Text(
+                _willRefund ? 'Hủy đặt sân & nhận mã hoàn tiền' : 'Hủy đặt sân',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryRed,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusCard() {
     Color statusColor = Colors.orange;
     IconData statusIcon = Icons.pending_rounded;
     String statusText = 'Chờ TT';
 
-    if (isPaid) {
-      statusColor = Colors.green;
-      statusIcon = Icons.check_circle_rounded;
-      statusText = 'Thanh toán thành công';
-    } else if (isCanceled) {
+    if (_isCanceled) {
       statusColor = AppColors.primaryRed;
       statusIcon = Icons.cancel_rounded;
       statusText = 'Đã hủy đơn';
-    } else if (isConfirmed) {
+    } else if (_isPaid) {
+      statusColor = Colors.green;
+      statusIcon = Icons.check_circle_rounded;
+      statusText = 'Thanh toán thành công';
+    } else if (_booking.status == 'CONFIRMED') {
       statusColor = Colors.green;
       statusIcon = Icons.verified_rounded;
       statusText = 'Đã xác nhận';
@@ -104,11 +318,7 @@ class BookingDetailScreen extends StatelessWidget {
               color: statusColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              statusIcon,
-              color: statusColor,
-              size: 32,
-            ),
+            child: Icon(statusIcon, color: statusColor, size: 32),
           ),
           const SizedBox(height: 12),
           Text(
@@ -121,7 +331,7 @@ class BookingDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Mã đặt sân: #${booking.bookingId.substring(0, 8).toUpperCase()}',
+            'Mã đặt sân: #${_booking.bookingId.substring(0, 8).toUpperCase()}',
             style: GoogleFonts.inter(fontSize: 13, color: AppColors.textGrey),
           ),
         ],
@@ -146,10 +356,10 @@ class BookingDetailScreen extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child:
-                    booking.pitchImageUrl != null &&
-                        booking.pitchImageUrl!.isNotEmpty
+                    _booking.pitchImageUrl != null &&
+                        _booking.pitchImageUrl!.isNotEmpty
                     ? Image.network(
-                        booking.pitchImageUrl!,
+                        _booking.pitchImageUrl!,
                         width: 60,
                         height: 60,
                         fit: BoxFit.cover,
@@ -163,7 +373,7 @@ class BookingDetailScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      booking.pitchName,
+                      _booking.pitchName,
                       style: GoogleFonts.inter(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
@@ -171,7 +381,7 @@ class BookingDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Loại sân: ${booking.slots.length} slots', // Placeholder for actual pitch info
+                      'Loại sân: ${_booking.slots.length} slots',
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         color: AppColors.textGrey,
@@ -189,25 +399,27 @@ class BookingDetailScreen extends StatelessWidget {
           _buildInfoRow(
             Icons.person_pin_rounded,
             'Chủ sân',
-            booking.providerName,
+            _booking.providerName,
           ),
           const SizedBox(height: 12),
           _buildInfoRow(
             Icons.calendar_today_rounded,
             'Ngày đặt',
-            booking.bookingDate,
+            _booking.bookingDate,
           ),
           const SizedBox(height: 12),
           _buildInfoRow(
             Icons.access_time_rounded,
             'Slots',
-            booking.slots.join(', '),
+            _booking.slotsName.isNotEmpty
+                ? _booking.slotsName.join(', ')
+                : _booking.slots.join(', '),
           ),
           const SizedBox(height: 12),
           _buildInfoRow(
             Icons.payment_rounded,
             'Phương thức',
-            booking.paymentMethod,
+            _booking.paymentMethod,
           ),
         ],
       ),
@@ -224,12 +436,15 @@ class BookingDetailScreen extends StatelessWidget {
           style: GoogleFonts.inter(fontSize: 13, color: AppColors.textGrey),
         ),
         const Spacer(),
-        Text(
-          value,
-          style: GoogleFonts.inter(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textDark,
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textDark,
+            ),
           ),
         ),
       ],
@@ -264,7 +479,8 @@ class BookingDetailScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          _invoiceRow('Tiền sân', '${booking.totalPrice.toStringAsFixed(0)}k'),
+          _invoiceRow(
+              'Tiền sân', '${_booking.totalPrice.toStringAsFixed(0)}k'),
           _invoiceRow('Phí dịch vụ', '0k'),
           const Divider(height: 24),
           Row(
@@ -278,7 +494,7 @@ class BookingDetailScreen extends StatelessWidget {
                 ),
               ),
               Text(
-                '${booking.totalPrice.toStringAsFixed(0)}k',
+                '${_booking.totalPrice.toStringAsFixed(0)}k',
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.w900,
                   fontSize: 20,
@@ -320,11 +536,12 @@ class BookingDetailScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          if (booking.createdAt != null)
-            _timeRow('Thời gian tạo:', _formatDateTime(booking.createdAt!)),
-          if (booking.paidAt != null) ...[
+          if (_booking.createdAt != null)
+            _timeRow('Thời gian tạo:', _formatDateTime(_booking.createdAt!)),
+          if (_booking.paidAt != null) ...[
             const SizedBox(height: 8),
-            _timeRow('Thời gian thanh toán:', _formatDateTime(booking.paidAt!)),
+            _timeRow(
+                'Thời gian thanh toán:', _formatDateTime(_booking.paidAt!)),
           ],
         ],
       ),

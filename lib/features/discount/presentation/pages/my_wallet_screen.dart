@@ -124,6 +124,10 @@ class _VoucherCard extends StatelessWidget {
     final dateFmt = DateFormat('dd/MM/yyyy');
     final currFmt = NumberFormat.currency(
         locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
+    final isRefund = voucher.isRefundCredit;
+    final accent = dimmed
+        ? Colors.grey[200]!
+        : (isRefund ? const Color(0xFF15803D) : AppColors.primaryRed);
 
     return Opacity(
       opacity: dimmed ? 0.5 : 1.0,
@@ -145,7 +149,7 @@ class _VoucherCard extends StatelessWidget {
               Container(
                 width: 80,
                 decoration: BoxDecoration(
-                  color: dimmed ? Colors.grey[200] : AppColors.primaryRed,
+                  color: accent,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(14),
                     bottomLeft: Radius.circular(14),
@@ -156,15 +160,24 @@ class _VoucherCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        voucher.displayValue,
+                        isRefund
+                            ? currFmt
+                                .format(voucher.effectiveValue)
+                                .replaceAll(' ', '')
+                            : voucher.displayValue,
+                        textAlign: TextAlign.center,
                         style: GoogleFonts.inter(
-                          fontSize: 18,
+                          fontSize: isRefund ? 13 : 18,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
+                          height: 1.05,
                         ),
                       ),
+                      const SizedBox(height: 2),
                       Text(
-                        voucher.isPercentage ? 'GIẢM' : 'OFF',
+                        isRefund
+                            ? 'HOÀN'
+                            : (voucher.isPercentage ? 'GIẢM' : 'OFF'),
                         style: GoogleFonts.inter(
                             fontSize: 10,
                             color: Colors.white70,
@@ -209,13 +222,28 @@ class _VoucherCard extends StatelessWidget {
                         spacing: 6,
                         runSpacing: 4,
                         children: [
-                          _InfoChip(label: voucher.scopeLabel),
-                          if (voucher.minOrderValue != null &&
+                          _InfoChip(
+                            label: voucher.scopeLabel,
+                            color: voucher.isRefundCredit
+                                ? const Color(0xFF15803D)
+                                : null,
+                          ),
+                          if (voucher.isRefundCredit &&
+                              voucher.remainingValue != null &&
+                              voucher.remainingValue! < voucher.value)
+                            _InfoChip(
+                              label:
+                                  'Số dư ${currFmt.format(voucher.remainingValue)}',
+                              color: const Color(0xFF15803D),
+                            ),
+                          if (!voucher.isRefundCredit &&
+                              voucher.minOrderValue != null &&
                               voucher.minOrderValue! > 0)
                             _InfoChip(
                                 label:
                                     'Tối thiểu ${currFmt.format(voucher.minOrderValue)}'),
-                          if (voucher.maxDiscountAmount != null &&
+                          if (!voucher.isRefundCredit &&
+                              voucher.maxDiscountAmount != null &&
                               voucher.maxDiscountAmount! > 0)
                             _InfoChip(
                                 label:
@@ -277,19 +305,26 @@ class _StatusBadge extends StatelessWidget {
 
 class _InfoChip extends StatelessWidget {
   final String label;
+  final Color? color;
 
-  const _InfoChip({required this.label});
+  const _InfoChip({required this.label, this.color});
 
   @override
   Widget build(BuildContext context) {
+    final base = color ?? const Color(0xFF6B7280);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F0F0),
+        color: color != null
+            ? color!.withValues(alpha: 0.12)
+            : const Color(0xFFF0F0F0),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(label,
-          style: GoogleFonts.inter(fontSize: 10, color: Colors.grey[700])),
+          style: GoogleFonts.inter(
+              fontSize: 10,
+              color: base,
+              fontWeight: color != null ? FontWeight.w700 : FontWeight.w500)),
     );
   }
 }

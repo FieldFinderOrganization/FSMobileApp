@@ -32,10 +32,14 @@ class BookingRemoteDataSource {
     }
   }
 
-  Future<void> cancelBooking(String bookingId) async {
+  /// Hủy đặt sân — BE phát hành mã hoàn tiền nếu booking đã PAID + còn ≥10p.
+  Future<void> cancelBooking(String bookingId, {String? reason}) async {
     try {
       await dioClient.dio.put(
         '${ApiConstants.bookings}/$bookingId/cancel',
+        queryParameters: reason != null && reason.isNotEmpty
+            ? {'reason': reason}
+            : null,
       );
     } catch (e) {
       rethrow;

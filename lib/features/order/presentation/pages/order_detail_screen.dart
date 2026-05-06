@@ -1,14 +1,136 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../data/models/order_model.dart';
+import '../../../../core/network/dio_client.dart';
+import '../../../../shared/widgets/cancel_reason_sheet.dart';
+import '../../../../shared/widgets/cancel_window_countdown.dart';
+import '../../../../shared/widgets/refund_code_dialog.dart';
+import '../../../discount/presentation/pages/my_wallet_screen.dart';
+import '../../../refund/data/datasources/refund_remote_data_source.dart';
+import '../../../auth/login/presentation/bloc/auth_cubit.dart';
+import '../../data/datasources/order_remote_data_source.dart';
 import '../../data/models/order_item_model.dart';
+import '../../data/models/order_model.dart';
 
-class OrderDetailScreen extends StatelessWidget {
+class OrderDetailScreen extends StatefulWidget {
   final OrderModel order;
 
   const OrderDetailScreen({super.key, required this.order});
+
+  @override
+  State<OrderDetailScreen> createState() => _OrderDetailScreenState();
+}
+
+class _OrderDetailScreenState extends State<OrderDetailScreen> {
+  late OrderModel _order;
+  bool _cancelling = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _order = widget.order;
+  }
+
+  bool get _isPending => _order.status.toUpperCase() == 'PENDING';
+  bool get _willRefund {
+    if (_order.paymentTime == null) return false;
+    final s = _order.status.toUpperCase();
+    if (s != 'PAID' && s != 'CONFIRMED') return false;
+    return DateTime.now()
+        .isBefore(_order.paymentTime!.add(const Duration(hours: 24)));
+  }
+
+  bool get _canCancel => _isPending || _willRefund;
+  DateTime? get _refundDeadline =>
+      _order.paymentTime?.add(const Duration(hours: 24));
+
+  Future<void> _handleCancel() async {
+    final reason = await CancelReasonSheet.show(
+      context,
+      title: _willRefund ? 'Lý do hủy & nhận hoàn tiền' : 'Lý do hủy đơn',
+      options: CancelReasonSheet.orderReasons,
+      willIssueRefund: _willRefund,
+    );
+    if (reason == null || !mounted) return;
+
+    setState(() => _cancelling = true);
+    try {
+      final dioClient = context.read<DioClient>();
+      final orderDs = OrderRemoteDataSource(dioClient: dioClient);
+      final refundDs = RefundRemoteDataSource(dioClient: dioClient);
+
+      await orderDs.cancelOrder(_order.orderId, reason: reason.encode());
+
+      // Pull refund nếu có
+      final refund = await refundDs.getBySource(
+        type: 'ORDER',
+        sourceId: _order.orderId.toString(),
+      );
+
+      if (!mounted) return;
+      // Update local order status
+      setState(() {
+        _order = OrderModel(
+          orderId: _order.orderId,
+          userName: _order.userName,
+          totalAmount: _order.totalAmount,
+          status: 'CANCELED',
+          paymentMethod: _order.paymentMethod,
+          createdAt: _order.createdAt,
+          paymentTime: _order.paymentTime,
+          items: _order.items,
+        );
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            refund?.refundCode != null
+                ? 'Đã hủy + cấp mã ${refund!.refundCode}'
+                : 'Đã hủy đơn hàng',
+            style: GoogleFonts.inter(),
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      if (refund != null && refund.refundCode != null) {
+        final action = await RefundCodeDialog.show(context, refund: refund);
+        if (action == 'wallet' && mounted) {
+          final userId = context.read<AuthCubit>().state.currentUser?.userId;
+          if (userId != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => MyWalletScreen(userId: userId),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Hủy thất bại: ${_extractErrorMessage(e)}',
+            style: GoogleFonts.inter(color: Colors.white),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _cancelling = false);
+    }
+  }
+
+  String _extractErrorMessage(Object error) {
+    final msg = error.toString();
+    if (msg.length > 200) return '${msg.substring(0, 200)}...';
+    return msg;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,20 +161,15 @@ class OrderDetailScreen extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Status Card
             _buildStatusCard(),
             const SizedBox(height: 20),
-
-            // Order Info Card
             _buildOrderInfoCard(),
             const SizedBox(height: 20),
-
-            // Product List Card
             _buildProductListCard(),
             const SizedBox(height: 20),
-
-            // Billing Card
             _buildBillingCard(),
+            const SizedBox(height: 20),
+            if (_canCancel) _buildCancelSection(),
             const SizedBox(height: 30),
           ],
         ),
@@ -60,13 +177,89 @@ class OrderDetailScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildCancelSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFEEEEEE)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_willRefund && _refundDeadline != null) ...[
+            Row(
+              children: [
+                const Icon(Icons.savings_rounded,
+                    color: Color(0xFF16A34A), size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Đơn còn trong cửa sổ 24h hoàn tiền',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF166534),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            CancelWindowCountdown(
+              deadline: _refundDeadline!,
+              tickInterval: const Duration(seconds: 30),
+            ),
+            const SizedBox(height: 12),
+          ],
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: ElevatedButton.icon(
+              onPressed: _cancelling ? null : _handleCancel,
+              icon: _cancelling
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.cancel_rounded, color: Colors.white),
+              label: Text(
+                _willRefund ? 'Hủy đơn & nhận mã hoàn tiền' : 'Hủy đơn hàng',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryRed,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStatusCard() {
-    final status = order.status.toUpperCase();
+    final status = _order.status.toUpperCase();
     Color statusColor = Colors.orange;
     IconData statusIcon = Icons.pending_rounded;
     String statusText = 'Chờ TT';
 
-    if (status == 'CONFIRMED') {
+    if (status == 'PAID') {
+      statusColor = Colors.green;
+      statusIcon = Icons.payments_rounded;
+      statusText = 'Đã thanh toán';
+    } else if (status == 'CONFIRMED') {
       statusColor = Colors.green;
       statusIcon = Icons.check_circle_rounded;
       statusText = 'Đã xác nhận';
@@ -74,6 +267,10 @@ class OrderDetailScreen extends StatelessWidget {
       statusColor = AppColors.primaryRed;
       statusIcon = Icons.cancel_rounded;
       statusText = 'Đã hủy đơn';
+    } else if (status == 'DELIVERED') {
+      statusColor = const Color(0xFF1565C0);
+      statusIcon = Icons.local_shipping_rounded;
+      statusText = 'Đã giao';
     }
 
     return Container(
@@ -110,7 +307,7 @@ class OrderDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Mã đơn hàng: #${order.orderId}',
+            'Mã đơn hàng: #${_order.orderId}',
             style: GoogleFonts.inter(fontSize: 13, color: AppColors.textGrey),
           ),
         ],
@@ -134,27 +331,27 @@ class OrderDetailScreen extends StatelessWidget {
           _buildInfoRow(
             Icons.person_outline_rounded,
             'Người đặt',
-            order.userName,
+            _order.userName,
           ),
           const SizedBox(height: 12),
           _buildInfoRow(
             Icons.calendar_today_rounded,
             'Ngày đặt',
-            dateFmt.format(order.createdAt),
+            dateFmt.format(_order.createdAt),
           ),
           const SizedBox(height: 12),
-          if (order.paymentTime != null) ...[
+          if (_order.paymentTime != null) ...[
             _buildInfoRow(
               Icons.payment_rounded,
               'Ngày thanh toán',
-              dateFmt.format(order.paymentTime!),
+              dateFmt.format(_order.paymentTime!),
             ),
             const SizedBox(height: 12),
           ],
           _buildInfoRow(
             Icons.account_balance_wallet_outlined,
             'PT Thanh toán',
-            order.paymentMethod == 'BANK' ? 'Chuyển khoản' : 'Tiền mặt',
+            _order.paymentMethod == 'BANK' ? 'Chuyển khoản' : 'Tiền mặt',
           ),
         ],
       ),
@@ -203,7 +400,7 @@ class OrderDetailScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          ...order.items.map((item) => _buildProductItem(item)),
+          ..._order.items.map((item) => _buildProductItem(item)),
         ],
       ),
     );
@@ -279,7 +476,7 @@ class OrderDetailScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _billingRow('Tạm tính', currencyFmt.format(order.totalAmount)),
+          _billingRow('Tạm tính', currencyFmt.format(_order.totalAmount)),
           _billingRow('Phí vận chuyển', '0đ'),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
@@ -297,7 +494,7 @@ class OrderDetailScreen extends StatelessWidget {
                 ),
               ),
               Text(
-                currencyFmt.format(order.totalAmount),
+                currencyFmt.format(_order.totalAmount),
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.w900,
                   fontSize: 20,

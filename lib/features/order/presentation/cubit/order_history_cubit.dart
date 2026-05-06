@@ -2,14 +2,27 @@ import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/datasources/order_remote_data_source.dart';
 import '../../data/models/order_model.dart';
+import '../../../refund/data/datasources/refund_remote_data_source.dart';
+import '../../../refund/data/models/refund_request_model.dart';
 import 'order_history_state.dart';
 
 class OrderHistoryCubit extends Cubit<OrderHistoryState> {
   final OrderRemoteDataSource dataSource;
+  final RefundRemoteDataSource? refundDataSource;
   final String userId;
 
-  OrderHistoryCubit({required this.dataSource, required this.userId})
-    : super(OrderHistoryInitial());
+  /// Mã hoàn tiền cuối cùng vừa phát hành — listener UI dùng để show dialog rồi clear.
+  RefundRequestModel? lastRefund;
+
+  OrderHistoryCubit({
+    required this.dataSource,
+    required this.userId,
+    this.refundDataSource,
+  }) : super(OrderHistoryInitial());
+
+  void clearLastRefund() {
+    lastRefund = null;
+  }
 
   Future<void> loadOrders() async {
     emit(OrderHistoryLoading());
@@ -79,11 +92,25 @@ class OrderHistoryCubit extends Cubit<OrderHistoryState> {
     ));
   }
 
-  Future<void> cancelOrder(int orderId) async {
+  Future<void> cancelOrder(int orderId, {String? reason}) async {
     try {
-      await dataSource.cancelOrder(orderId);
+      await dataSource.cancelOrder(orderId, reason: reason);
+
+      // Fetch refund (nullable — đơn PENDING không sinh refund)
+      lastRefund = null;
+      if (refundDataSource != null) {
+        try {
+          lastRefund = await refundDataSource!.getBySource(
+            type: 'ORDER',
+            sourceId: orderId.toString(),
+          );
+        } catch (_) {
+          // Không fail toàn flow chỉ vì fetch refund lỗi
+        }
+      }
+
       final orders = await dataSource.getOrdersByUser(userId);
-      
+
       final filtered = _applyFilters(
         orders,
         null,
@@ -94,7 +121,9 @@ class OrderHistoryCubit extends Cubit<OrderHistoryState> {
       emit(OrderHistorySuccess(
         allOrders: orders,
         filteredOrders: filtered,
-        message: 'Hủy đơn hàng thành công!',
+        message: lastRefund?.refundCode != null
+            ? 'Hủy đơn thành công · Mã hoàn tiền ${lastRefund!.refundCode}'
+            : 'Hủy đơn hàng thành công!',
       ));
     } on DioException catch (e) {
       final message = e.response?.data?['message'] ?? e.message ?? e.toString();

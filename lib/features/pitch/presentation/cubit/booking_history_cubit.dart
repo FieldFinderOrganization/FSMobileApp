@@ -1,17 +1,27 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/repositories/booking_repository_impl.dart';
+import '../../../refund/data/datasources/refund_remote_data_source.dart';
+import '../../../refund/data/models/refund_request_model.dart';
 import 'booking_history_state.dart';
 import '../../data/models/booking_response_model.dart';
 
 class BookingHistoryCubit extends Cubit<BookingHistoryState> {
   final BookingRepository repository;
+  final RefundRemoteDataSource? refundDataSource;
   final String userId;
+
+  RefundRequestModel? lastRefund;
 
   BookingHistoryCubit({
     required this.repository,
     required this.userId,
+    this.refundDataSource,
   }) : super(BookingHistoryInitial());
+
+  void clearLastRefund() {
+    lastRefund = null;
+  }
 
   Future<void> loadBookings() async {
     emit(BookingHistoryLoading());
@@ -122,11 +132,22 @@ class BookingHistoryCubit extends Cubit<BookingHistoryState> {
     ));
   }
 
-  Future<void> cancelBooking(String bookingId) async {
+  Future<void> cancelBooking(String bookingId, {String? reason}) async {
     try {
-      await repository.cancelBooking(bookingId);
+      await repository.cancelBooking(bookingId, reason: reason);
+
+      lastRefund = null;
+      if (refundDataSource != null) {
+        try {
+          lastRefund = await refundDataSource!.getBySource(
+            type: 'BOOKING',
+            sourceId: bookingId,
+          );
+        } catch (_) {}
+      }
+
       final bookings = await repository.getBookingsByUser(userId);
-      
+
       final filtered = _applyFilters(
         bookings,
         null,
@@ -138,7 +159,9 @@ class BookingHistoryCubit extends Cubit<BookingHistoryState> {
       emit(BookingHistorySuccess(
         allBookings: bookings,
         filteredBookings: filtered,
-        message: 'Hủy đặt sân thành công!',
+        message: lastRefund?.refundCode != null
+            ? 'Hủy đặt sân thành công · Mã hoàn tiền ${lastRefund!.refundCode}'
+            : 'Hủy đặt sân thành công!',
       ));
     } on DioException catch (e) {
       final message = e.response?.data?['message'] ?? e.message ?? e.toString();
