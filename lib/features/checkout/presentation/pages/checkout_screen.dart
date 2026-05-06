@@ -102,6 +102,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   bool _isVoucherSelectable(UserDiscountEntity v) {
     if (!v.isAvailable) return false;
+
+    final hasRefundSelected =
+        _selectedVouchers.any((s) => s.isRefundCredit);
+    final hasPromoSelected =
+        _selectedVouchers.any((s) => !s.isRefundCredit);
+
+    // No-stack rule: REFUND_CREDIT không dùng chung promo và ngược lại.
+    if (v.isRefundCredit && hasPromoSelected) return false;
+    if (!v.isRefundCredit && hasRefundSelected) return false;
+
+    // REFUND_CREDIT chỉ cần còn balance > 0 (validate residual).
+    if (v.isRefundCredit) {
+      return v.effectiveValue > 0;
+    }
+
     if (v.scope == 'GLOBAL') {
       final selectedSpecific = _selectedVouchers
           .where((s) => s.scope != 'GLOBAL')
@@ -152,6 +167,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     double finalTotal,
   })
   _computeBreakdown() {
+    // Nhánh REFUND_CREDIT độc quyền: trừ effectiveValue trực tiếp lên subtotal.
+    if (_selectedVouchers.any((v) => v.isRefundCredit)) {
+      double remaining = _subtotal;
+      double refundApplied = 0;
+      for (final v in _selectedVouchers.where((v) => v.isRefundCredit)) {
+        if (remaining <= 0) break;
+        final deduct = remaining < v.effectiveValue
+            ? remaining
+            : v.effectiveValue;
+        refundApplied += deduct;
+        remaining -= deduct;
+      }
+      return (
+        subAfterSpecific: _subtotal,
+        specificDiscount: 0,
+        globalDiscount: refundApplied,
+        finalTotal: remaining.clamp(0, double.infinity).toDouble(),
+      );
+    }
+
     double subAfterSpecific = 0;
     double specificDiscount = 0;
     for (final it in widget.items) {

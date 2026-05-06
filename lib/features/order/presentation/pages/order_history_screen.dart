@@ -15,6 +15,9 @@ import '../cubit/order_history_state.dart';
 import '../../../checkout/presentation/pages/shop_payment_screen.dart';
 import '../../../checkout/domain/entities/checkout_item_entity.dart';
 import '../../../pitch/data/datasources/payment_remote_datasource.dart';
+import '../../../refund/data/datasources/refund_remote_data_source.dart';
+import '../../../../shared/widgets/cancel_reason_sheet.dart';
+import '../../../../shared/widgets/refund_code_dialog.dart';
 import 'order_detail_screen.dart';
 
 class OrderHistoryScreen extends StatelessWidget {
@@ -27,6 +30,8 @@ class OrderHistoryScreen extends StatelessWidget {
     return BlocProvider(
       create: (context) => OrderHistoryCubit(
         dataSource: OrderRemoteDataSource(dioClient: context.read<DioClient>()),
+        refundDataSource:
+            RefundRemoteDataSource(dioClient: context.read<DioClient>()),
         userId: userId,
       )..loadOrders(),
       child: const _OrderHistoryBody(),
@@ -50,10 +55,19 @@ class _OrderHistoryBody extends StatelessWidget {
                 SnackBar(content: Text(state.message), backgroundColor: Colors.redAccent),
               );
             } else if (state is OrderHistorySuccess && state.message != null) {
+              final cubit = context.read<OrderHistoryCubit>();
+              final refund = cubit.lastRefund;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(state.message!), backgroundColor: Colors.green),
               );
-              context.read<OrderHistoryCubit>().clearMessage();
+              cubit.clearMessage();
+              if (refund != null && refund.refundCode != null) {
+                cubit.clearLastRefund();
+                Future.microtask(() async {
+                  if (!context.mounted) return;
+                  await RefundCodeDialog.show(context, refund: refund);
+                });
+              }
             }
           },
           child: SafeArea(
@@ -755,10 +769,10 @@ class _OrderItemCardState extends State<_OrderItemCard> {
                                 ),
                         ),
                       ],
-                      if (widget.order.status == 'PENDING') ...[
+                      if (_canCancel(widget.order)) ...[
                         const SizedBox(height: 6),
                         OutlinedButton(
-                          onPressed: () => _showCancelDialog(context),
+                          onPressed: () => _showCancelSheet(context),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.primaryRed,
                             padding: const EdgeInsets.symmetric(
@@ -772,9 +786,9 @@ class _OrderItemCardState extends State<_OrderItemCard> {
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
-                          child: const Text(
-                            'Hủy đơn',
-                            style: TextStyle(
+                          child: Text(
+                            _willRefund(widget.order) ? 'Hủy & hoàn tiền' : 'Hủy đơn',
+                            style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
@@ -792,30 +806,36 @@ class _OrderItemCardState extends State<_OrderItemCard> {
     );
   }
 
-  void _showCancelDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Xác nhận hủy'),
-        content: const Text('Bạn có chắc chắn muốn hủy đơn hàng này không?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Không'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              context.read<OrderHistoryCubit>().cancelOrder(
-                widget.order.orderId,
-              );
-            },
-            style: TextButton.styleFrom(foregroundColor: AppColors.primaryRed),
-            child: const Text('Hủy đơn'),
-          ),
-        ],
-      ),
+  bool _canCancel(OrderModel order) {
+    final s = order.status.toUpperCase();
+    if (s == 'PENDING') return true;
+    return _willRefund(order);
+  }
+
+  /// Đơn đã PAID/CONFIRMED còn trong vòng 24h kể từ paymentTime → có hoàn tiền.
+  bool _willRefund(OrderModel order) {
+    if (order.paymentTime == null) return false;
+    final s = order.status.toUpperCase();
+    if (s != 'PAID' && s != 'CONFIRMED') return false;
+    return DateTime.now()
+        .isBefore(order.paymentTime!.add(const Duration(hours: 24)));
+  }
+
+  Future<void> _showCancelSheet(BuildContext outerContext) async {
+    final result = await CancelReasonSheet.show(
+      outerContext,
+      title: _willRefund(widget.order)
+          ? 'Lý do hủy & nhận hoàn tiền'
+          : 'Lý do hủy đơn',
+      options: CancelReasonSheet.orderReasons,
+      willIssueRefund: _willRefund(widget.order),
     );
+    if (result == null) return;
+    if (!outerContext.mounted) return;
+    outerContext.read<OrderHistoryCubit>().cancelOrder(
+          widget.order.orderId,
+          reason: result.encode(),
+        );
   }
 
   Future<void> _navigateToPayment(BuildContext context) async {

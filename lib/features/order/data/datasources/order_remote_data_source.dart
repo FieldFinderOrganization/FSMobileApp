@@ -6,8 +6,15 @@ class OrderRemoteDataSource {
 
   const OrderRemoteDataSource({required this.dioClient});
 
-  Future<void> cancelOrder(int orderId) async {
-    await dioClient.dio.put('/orders/$orderId/cancel');
+  /// Hủy đơn — BE tự quyết định có phát hành mã hoàn tiền không (PENDING vs PAID+24h).
+  /// Mobile sau 200 OK gọi /refunds/by-source để lấy mã nếu có.
+  Future<void> cancelOrder(int orderId, {String? reason}) async {
+    await dioClient.dio.put(
+      '/orders/$orderId/cancel',
+      queryParameters: reason != null && reason.isNotEmpty
+          ? {'reason': reason}
+          : null,
+    );
   }
 
   Future<List<OrderModel>> getOrdersByUser(String userId) async {
