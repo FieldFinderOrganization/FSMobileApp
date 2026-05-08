@@ -25,6 +25,7 @@ class AllProductsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const Divider(height: 1, thickness: 1, color: Color(0xFFEFEFEF)),
           const SectionHeader(title: 'Tất cả sản phẩm', onSeeAll: null, index: '03'),
 
           // ── Danh mục cha ────────────────────────────────────────────────
@@ -261,7 +262,7 @@ class _SortChip extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.primaryRed : const Color(0xFFF5F5F5),
+          color: isActive ? AppColors.primaryRed : Colors.white,
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
             color: isActive ? AppColors.primaryRed : const Color(0xFFDDDDDD),
@@ -300,7 +301,7 @@ class _GenderChip extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.primaryRed : const Color(0xFFF5F5F5),
+          color: isActive ? AppColors.primaryRed : Colors.white,
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
             color: isActive ? AppColors.primaryRed : const Color(0xFFDDDDDD),
@@ -337,7 +338,7 @@ class _BrandChip extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.primaryRed : const Color(0xFFF5F5F5),
+          color: isActive ? AppColors.primaryRed : Colors.white,
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
             color: isActive ? AppColors.primaryRed : const Color(0xFFDDDDDD),
@@ -419,10 +420,13 @@ class _ParentCategoryChips extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: isActive
-                      ? AppColors.primaryRed
-                      : const Color(0xFFF5F5F5),
+                  color: isActive ? AppColors.primaryRed : Colors.white,
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isActive
+                        ? AppColors.primaryRed
+                        : const Color(0xFFDDDDDD),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -472,9 +476,9 @@ class _SubCategoryChips extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFAFAFA),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFEEEEEE)),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: Wrap(
         spacing: 8,

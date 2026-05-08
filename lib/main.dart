@@ -160,7 +160,13 @@ class MyApp extends StatelessWidget {
         navigatorKey: _navigatorKey,
         debugShowCheckedModeBanner: false,
         title: 'FS Mobile App',
-        theme: ThemeData(primarySwatch: Colors.red, useMaterial3: true),
+        themeMode: ThemeMode.light,
+        theme: ThemeData(
+          brightness: Brightness.light,
+          primarySwatch: Colors.red,
+          useMaterial3: true,
+          scaffoldBackgroundColor: Colors.white,
+        ),
         home: const WelcomeScreen(),
       ),
     );

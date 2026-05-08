@@ -22,10 +22,11 @@ class TopProductsSection extends StatelessWidget {
     return FadeInSection(
       delay: const Duration(milliseconds: 200),
       child: Container(
-        color: const Color(0xFFFAFAFA),
+        color: Colors.white,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const Divider(height: 1, thickness: 1, color: Color(0xFFEFEFEF)),
             const SectionHeader(
               title: 'Bán chạy nhất',
               onSeeAll: null,

@@ -15,6 +15,8 @@ class ProductEntity {
   final int totalSold;
   final List<ProductVariantEntity> variants;
   final List<String>? appliedDiscountCodes;
+  final int? categoryId;
+  final List<String> availableGlobalCodes;
 
   const ProductEntity({
     required this.id,
@@ -31,9 +33,11 @@ class ProductEntity {
     required this.totalSold,
     this.variants = const [],
     this.appliedDiscountCodes,
+    this.categoryId,
+    this.availableGlobalCodes = const [],
   });
 
-  bool get isOnSale => salePercent != null && salePercent! > 0;
+  bool get isOnSale => salePrice != null && salePrice! < price;
   bool get hasPersonalizedDiscount =>
       appliedDiscountCodes != null && appliedDiscountCodes!.isNotEmpty;
 }

@@ -66,6 +66,15 @@ class DioClient {
           role: role,
         );
 
+        // Chỉ auto-retry GET (idempotent). POST/PUT/PATCH/DELETE có thể đã được
+        // server xử lý 1 phần (trừ stock, ghi đơn...) trước khi auth filter trả 401
+        // → retry sẽ gây side-effect nhân đôi. Throw 401 lên FE để user retry thủ công.
+        final method = err.requestOptions.method.toUpperCase();
+        if (method != 'GET') {
+          handler.next(err);
+          return;
+        }
+
         // Retry request gốc với token mới
         err.requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
         final retryResponse = await dio.fetch(err.requestOptions);

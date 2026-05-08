@@ -196,6 +196,9 @@ class _AddToCartModalState extends State<AddToCartModal> {
       originalPrice: widget.product.price,
       salePercent: widget.product.salePercent,
       quantity: _quantity,
+      categoryId: widget.product.categoryId,
+      autoAppliedCodes: widget.product.appliedDiscountCodes ?? const [],
+      availableGlobalCodes: widget.product.availableGlobalCodes,
     );
     Navigator.pop(context);
     Navigator.push(

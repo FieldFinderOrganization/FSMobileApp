@@ -41,8 +41,10 @@ class UserDiscountEntity {
   double get effectiveValue =>
       isRefundCredit ? (remainingValue ?? value) : value;
 
-  String get displayValue =>
-      isPercentage ? '${value.toInt()}%' : '${value.toInt()}đ';
+  String get displayValue {
+    final v = effectiveValue;
+    return isPercentage ? '${v.toInt()}%' : '${v.toInt()}đ';
+  }
 
   String get scopeLabel {
     if (isRefundCredit) return 'Hoàn tiền';

@@ -33,6 +33,8 @@ class ProductModel extends ProductEntity {
     required super.totalSold,
     super.variants = const [],
     super.appliedDiscountCodes,
+    super.categoryId,
+    super.availableGlobalCodes,
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
@@ -61,6 +63,11 @@ class ProductModel extends ProductEntity {
       appliedDiscountCodes: (json['appliedDiscountCodes'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList(),
+      categoryId: (json['categoryId'] as num?)?.toInt(),
+      availableGlobalCodes: (json['availableGlobalCodes'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
     );
   }
 }
