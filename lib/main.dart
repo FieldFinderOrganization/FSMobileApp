@@ -167,6 +167,13 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
           scaffoldBackgroundColor: Colors.white,
         ),
+        builder: (context, child) {
+          return MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(platformBrightness: Brightness.light),
+            child: child!,
+          );
+        },
         home: const WelcomeScreen(),
       ),
     );

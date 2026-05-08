@@ -77,12 +77,25 @@ class SectionHeader extends StatelessWidget {
           // Title
           Text(
             title.toUpperCase(),
-            style: GoogleFonts.inter(
-              fontSize: 22,
+            style: GoogleFonts.playfairDisplay(
+              fontSize: 24,
               fontWeight: FontWeight.w900,
               color: textColor,
               letterSpacing: 0.5,
               height: 1,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            height: 2,
+            width: 32,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.accentGold,
+                  AppColors.accentGold.withValues(alpha: 0),
+                ],
+              ),
             ),
           ),
         ],

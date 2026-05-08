@@ -14,8 +14,10 @@ class HeroBanner extends StatefulWidget {
   State<HeroBanner> createState() => _HeroBannerState();
 }
 
-class _HeroBannerState extends State<HeroBanner> {
+class _HeroBannerState extends State<HeroBanner>
+    with SingleTickerProviderStateMixin {
   late PageController _pageController;
+  late AnimationController _shimmerCtrl;
   int _currentPage = 0;
   Timer? _timer;
 
@@ -24,6 +26,10 @@ class _HeroBannerState extends State<HeroBanner> {
     super.initState();
     _pageController = PageController();
     _pageController.addListener(_onPageScroll);
+    _shimmerCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat();
     _startAutoPlay();
   }
 
@@ -55,7 +61,33 @@ class _HeroBannerState extends State<HeroBanner> {
   void dispose() {
     _timer?.cancel();
     _pageController.dispose();
+    _shimmerCtrl.dispose();
     super.dispose();
+  }
+
+  Widget _shimmerText(Widget child) {
+    return AnimatedBuilder(
+      animation: _shimmerCtrl,
+      builder: (_, _) {
+        final t = _shimmerCtrl.value;
+        return ShaderMask(
+          blendMode: BlendMode.srcATop,
+          shaderCallback: (rect) {
+            return LinearGradient(
+              begin: Alignment(-1.5 + t * 3.0, -0.4),
+              end: Alignment(-0.5 + t * 3.0, 0.4),
+              colors: const [
+                Colors.transparent,
+                Colors.white24,
+                Colors.transparent,
+              ],
+              stops: const [0.0, 0.5, 1.0],
+            ).createShader(rect);
+          },
+          child: child,
+        );
+      },
+    );
   }
 
   @override
@@ -102,10 +134,28 @@ class _HeroBannerState extends State<HeroBanner> {
                 width: isActive ? 28 : 8,
                 height: 2,
                 color: isActive
-                    ? Colors.white
+                    ? AppColors.accentGold
                     : Colors.white.withValues(alpha: 0.35),
               );
             }),
+          ),
+        ),
+        // Gold hairline separating hero from body
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.accentGold.withValues(alpha: 0),
+                  AppColors.accentGold.withValues(alpha: 0.6),
+                  AppColors.accentGold.withValues(alpha: 0),
+                ],
+              ),
+            ),
           ),
         ),
       ],
@@ -113,7 +163,6 @@ class _HeroBannerState extends State<HeroBanner> {
   }
 
   Widget _buildBannerCard(BuildContext context, discount) {
-    final screenWidth = MediaQuery.of(context).size.width;
     final valueText = discount.isPercentage
         ? '${discount.value.toInt()}%'
         : '${discount.value.toStringAsFixed(0)}K';
@@ -121,45 +170,49 @@ class _HeroBannerState extends State<HeroBanner> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Deep dark gradient — fashion brand base
+        // Fintech-grade midnight gradient
         Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topRight,
               end: Alignment.bottomLeft,
               colors: [
-                Color(0xFF1A0008),
-                Color(0xFF2D000F),
-                Color(0xFF0A0A0A),
+                AppColors.midnightDeep,
+                AppColors.midnightMid,
+                AppColors.midnightSoft,
               ],
               stops: [0.0, 0.5, 1.0],
             ),
           ),
         ),
 
-        // Oversized discount value as background typography element
+        // Champagne radial accent — soft warmth
         Positioned(
-          right: -12,
-          top: 20,
-          child: Text(
-            valueText,
-            style: GoogleFonts.playfairDisplay(
-              fontSize: screenWidth * 0.38,
-              fontWeight: FontWeight.w900,
-              color: AppColors.primaryRed.withValues(alpha: 0.12),
-              height: 1,
+          right: -120,
+          top: -60,
+          child: Container(
+            width: 300,
+            height: 300,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  AppColors.champagne.withValues(alpha: 0.18),
+                  AppColors.champagne.withValues(alpha: 0),
+                ],
+              ),
             ),
           ),
         ),
 
-        // Thin vertical accent line
+        // Champagne vertical accent
         Positioned(
           left: 24,
           top: 36,
           bottom: 50,
           child: Container(
             width: 1,
-            color: AppColors.primaryRed.withValues(alpha: 0.6),
+            color: AppColors.champagne.withValues(alpha: 0.55),
           ),
         ),
 
@@ -178,7 +231,7 @@ class _HeroBannerState extends State<HeroBanner> {
                 style: GoogleFonts.inter(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.primaryRed,
+                  color: AppColors.champagne,
                   letterSpacing: 2.5,
                 ),
               ),
@@ -189,28 +242,42 @@ class _HeroBannerState extends State<HeroBanner> {
                 style: GoogleFonts.inter(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white54,
+                  color: AppColors.warmIvory.withValues(alpha: 0.55),
                   letterSpacing: 2,
                 ),
               ),
               const SizedBox(height: 4),
-              // Oversized value — centrepiece
-              Text(
-                valueText,
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 72,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  height: 0.9,
-                  letterSpacing: -2,
+              // Oversized value — centrepiece (auto-fit when long)
+              _shimmerText(
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    valueText,
+                    maxLines: 1,
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 72,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.warmIvory,
+                      height: 0.9,
+                      letterSpacing: -2,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
-              // Thin rule
+              // Champagne rule
               Container(
                 width: 48,
                 height: 1,
-                color: Colors.white24,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.champagne,
+                      AppColors.champagne.withValues(alpha: 0),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
               // Code
@@ -219,7 +286,7 @@ class _HeroBannerState extends State<HeroBanner> {
                 style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: AppColors.warmIvory,
                   letterSpacing: 3,
                 ),
               ),
@@ -228,7 +295,7 @@ class _HeroBannerState extends State<HeroBanner> {
                 discount.description,
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: Colors.white38,
+                  color: AppColors.warmIvory.withValues(alpha: 0.45),
                   height: 1.4,
                 ),
                 maxLines: 2,
@@ -255,36 +322,40 @@ class _HeroBannerState extends State<HeroBanner> {
                 begin: Alignment.topRight,
                 end: Alignment.bottomLeft,
                 colors: [
-                  Color(0xFF1A0008),
-                  Color(0xFF2D000F),
-                  Color(0xFF0A0A0A),
+                  AppColors.midnightDeep,
+                  AppColors.midnightMid,
+                  AppColors.midnightSoft,
                 ],
                 stops: [0.0, 0.5, 1.0],
               ),
             ),
           ),
-          // Huge background text
+          // Champagne radial accent
           Positioned(
-            right: -8,
-            top: 16,
-            child: Text(
-              'FF',
-              style: GoogleFonts.playfairDisplay(
-                fontSize: screenWidth * 0.55,
-                fontWeight: FontWeight.w900,
-                color: AppColors.primaryRed.withValues(alpha: 0.08),
-                height: 1,
+            right: -120,
+            top: -60,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.champagne.withValues(alpha: 0.18),
+                    AppColors.champagne.withValues(alpha: 0),
+                  ],
+                ),
               ),
             ),
           ),
-          // Thin vertical line
+          // Champagne vertical accent
           Positioned(
             left: 24,
             top: 36,
             bottom: 50,
             child: Container(
               width: 1,
-              color: AppColors.primaryRed.withValues(alpha: 0.6),
+              color: AppColors.champagne.withValues(alpha: 0.55),
             ),
           ),
           Positioned(
@@ -300,7 +371,7 @@ class _HeroBannerState extends State<HeroBanner> {
                   style: GoogleFonts.inter(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.primaryRed,
+                    color: AppColors.champagne,
                     letterSpacing: 2.5,
                   ),
                 ),
@@ -310,7 +381,7 @@ class _HeroBannerState extends State<HeroBanner> {
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 58,
                     fontWeight: FontWeight.w900,
-                    color: Colors.white,
+                    color: AppColors.warmIvory,
                     height: 0.95,
                     letterSpacing: -1,
                   ),
@@ -320,20 +391,31 @@ class _HeroBannerState extends State<HeroBanner> {
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 58,
                     fontWeight: FontWeight.w900,
-                    color: Colors.white,
+                    color: AppColors.warmIvory,
                     height: 0.95,
                     letterSpacing: -1,
                   ),
                 ),
                 const SizedBox(height: 16),
-                Container(width: 48, height: 1, color: Colors.white24),
+                Container(
+                  width: 48,
+                  height: 1,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.champagne,
+                        AppColors.champagne.withValues(alpha: 0),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'MUA ĐỒ · THI ĐẤU',
                   style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white38,
+                    color: AppColors.warmIvory.withValues(alpha: 0.45),
                     letterSpacing: 2.5,
                   ),
                 ),

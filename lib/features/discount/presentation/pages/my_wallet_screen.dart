@@ -22,7 +22,7 @@ class _MyWalletScreenState extends State<MyWalletScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     context.read<MyWalletCubit>().loadWallet(widget.userId);
   }
 
@@ -53,8 +53,11 @@ class _MyWalletScreenState extends State<MyWalletScreen>
           labelColor: AppColors.primaryRed,
           unselectedLabelColor: Colors.grey,
           indicatorColor: AppColors.primaryRed,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           tabs: const [
             Tab(text: 'Có thể dùng'),
+            Tab(text: 'Mã hoàn tiền'),
             Tab(text: 'Đã dùng / Hết hạn'),
           ],
         ),
@@ -74,6 +77,7 @@ class _MyWalletScreenState extends State<MyWalletScreen>
             controller: _tabController,
             children: [
               _VoucherList(vouchers: state.available),
+              _VoucherList(vouchers: state.refundCredits),
               _VoucherList(vouchers: state.usedOrExpired, dimmed: true),
             ],
           );
@@ -104,8 +108,9 @@ class _VoucherList extends StatelessWidget {
         ),
       );
     }
+    final bottomInset = MediaQuery.of(context).padding.bottom;
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 24 + bottomInset),
       itemCount: vouchers.length,
       itemBuilder: (_, i) =>
           _VoucherCard(voucher: vouchers[i], dimmed: dimmed),

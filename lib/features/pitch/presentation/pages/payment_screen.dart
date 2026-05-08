@@ -13,6 +13,10 @@ import '../../data/models/payment_response_model.dart';
 import '../../data/repositories/payment_repository_impl.dart';
 import '../../data/datasources/payment_remote_datasource.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../../shared/widgets/cancel_reason_sheet.dart';
+import '../../../../shared/widgets/refund_code_dialog.dart';
+import '../../../refund/data/datasources/refund_remote_data_source.dart';
+import '../../data/datasources/booking_remote_datasource.dart';
 import 'booking_history_screen.dart';
 
 class PaymentScreen extends StatefulWidget {
@@ -435,10 +439,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   void _showSuccessAndClose() {
+    final outerContext = context;
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -455,26 +460,106 @@ class _PaymentScreenState extends State<PaymentScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context); // close dialog
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BookingHistoryScreen(userId: widget.userId),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: () =>
+                      _cancelPaidBooking(dialogContext, outerContext),
+                  child: Text(
+                    'Hủy đặt sân',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textGrey,
+                    ),
                   ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1B5E20),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('Hoàn tất'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    Navigator.pushReplacement(
+                      outerContext,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            BookingHistoryScreen(userId: widget.userId),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1B5E20),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Hoàn tất'),
+                ),
+              ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _cancelPaidBooking(
+    BuildContext dialogContext,
+    BuildContext outerContext,
+  ) async {
+    final reason = await CancelReasonSheet.show(
+      dialogContext,
+      title: 'Lý do hủy & nhận hoàn tiền',
+      options: CancelReasonSheet.bookingReasons,
+      willIssueRefund: true,
+    );
+    if (reason == null) return;
+
+    try {
+      final dioClient = outerContext.read<DioClient>();
+      final bookingDs = BookingRemoteDataSource(dioClient: dioClient);
+      final refundDs = RefundRemoteDataSource(dioClient: dioClient);
+
+      await bookingDs.cancelBooking(widget.bookingId, reason: reason.encode());
+
+      final refund = await refundDs.getBySource(
+        type: 'BOOKING',
+        sourceId: widget.bookingId,
+      );
+
+      if (dialogContext.mounted) Navigator.pop(dialogContext);
+      if (!outerContext.mounted) return;
+      ScaffoldMessenger.of(outerContext).showSnackBar(
+        SnackBar(
+          content: Text(
+            refund?.refundCode != null
+                ? 'Đã hủy + cấp mã ${refund!.refundCode}'
+                : 'Đã hủy đặt sân',
+            style: GoogleFonts.inter(),
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      if (refund != null && refund.refundCode != null) {
+        await RefundCodeDialog.show(outerContext, refund: refund);
+      }
+
+      if (!outerContext.mounted) return;
+      Navigator.pushReplacement(
+        outerContext,
+        MaterialPageRoute(
+          builder: (_) => BookingHistoryScreen(userId: widget.userId),
+        ),
+      );
+    } catch (e) {
+      if (!outerContext.mounted) return;
+      ScaffoldMessenger.of(outerContext).showSnackBar(
+        SnackBar(
+          content: Text('Hủy thất bại: $e',
+              style: GoogleFonts.inter(color: Colors.white)),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

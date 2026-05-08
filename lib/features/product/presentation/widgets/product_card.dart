@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../domain/entities/product_entity.dart';
+import '../../../home/presentation/widgets/tilt_card.dart';
 import '../pages/product_detail_screen.dart';
 import 'sale_badge.dart';
 
@@ -36,7 +37,7 @@ class ProductCard extends StatelessWidget {
         card = _buildOverlayCard();
         break;
     }
-    return GestureDetector(
+    return TiltCard(
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(

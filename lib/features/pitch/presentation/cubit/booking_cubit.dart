@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../discount/domain/entities/user_discount_entity.dart';
 import '../../data/models/booking_request_model.dart';
 import '../../data/models/payment_request_model.dart';
 import '../../data/repositories/booking_repository_impl.dart';
@@ -90,12 +91,13 @@ class BookingCubit extends Cubit<BookingState> {
       }).toList();
 
       final selectedIds = allSlots.where((s) => s.status == SlotStatus.selected).map((s) => s.slotId).toList();
-      final totalAmount = selectedIds.length * pitch.price;
+      final subtotal = selectedIds.length * pitch.price;
 
       emit(BookingSuccess(
         slots: allSlots,
         selectedSlotIds: selectedIds,
-        totalAmount: totalAmount,
+        subtotal: subtotal,
+        totalAmount: subtotal,
       ));
     } catch (e) {
       emit(BookingError(e.toString()));
@@ -122,13 +124,61 @@ class BookingCubit extends Cubit<BookingState> {
         .map((s) => s.slotId)
         .toList();
 
-    final totalAmount = selectedIds.length * pitch.price;
+    final subtotal = selectedIds.length * pitch.price;
+    final discount = _computeDiscount(subtotal, currentState.discountCodes);
+    final totalAmount = (subtotal - discount).clamp(0.0, double.infinity);
 
     emit(currentState.copyWith(
       slots: updatedSlots,
       selectedSlotIds: selectedIds,
+      subtotal: subtotal,
+      discountAmount: discount,
       totalAmount: totalAmount,
     ));
+  }
+
+  // Cache info from picker so we can recompute when slots change.
+  final Map<String, UserDiscountEntity> _discountInfo = {};
+
+  void applyDiscounts(List<UserDiscountEntity> picked) {
+    if (state is! BookingSuccess) return;
+    final s = state as BookingSuccess;
+    _discountInfo
+      ..clear()
+      ..addEntries(picked.map((e) => MapEntry(e.discountCode, e)));
+    final codes = picked.map((e) => e.discountCode).toList();
+    final discount = _computeDiscount(s.subtotal, codes);
+    final total = (s.subtotal - discount).clamp(0.0, double.infinity);
+    emit(s.copyWith(
+      discountCodes: codes,
+      discountAmount: discount,
+      totalAmount: total,
+    ));
+  }
+
+  double _computeDiscount(double subtotal, List<String> codes) {
+    var remaining = subtotal;
+    var totalCut = 0.0;
+    for (final code in codes) {
+      final v = _discountInfo[code];
+      if (v == null) continue;
+      double cut;
+      if (v.isRefundCredit) {
+        final bal = v.remainingValue ?? v.value;
+        cut = bal.clamp(0.0, remaining);
+      } else if (v.isPercentage) {
+        cut = remaining * v.value / 100;
+        if (v.maxDiscountAmount != null && cut > v.maxDiscountAmount!) {
+          cut = v.maxDiscountAmount!;
+        }
+      } else {
+        cut = v.value.clamp(0.0, remaining);
+      }
+      totalCut += cut;
+      remaining -= cut;
+      if (remaining <= 0) break;
+    }
+    return totalCut;
   }
 
   void setPaymentMethod(String method) {
@@ -165,6 +215,7 @@ class BookingCubit extends Cubit<BookingState> {
           );
         }).toList(),
         paymentMethod: currentState.paymentMethod,
+        discountCodes: currentState.discountCodes,
       );
 
       final bookingId = await repository.createBooking(bookingRequest);
@@ -182,7 +233,7 @@ class BookingCubit extends Cubit<BookingState> {
           bookingId: bookingId,
         ));
       } else {
-        emit(BookingConfirmed());
+        emit(BookingConfirmed(bookingId: bookingId));
       }
     } catch (e) {
       emit(BookingError(e.toString()));
@@ -194,7 +245,7 @@ class BookingCubit extends Cubit<BookingState> {
     try {
       final status = await paymentRepository.getPaymentStatusByBookingId(bookingId);
       if (status.isPaid) {
-        emit(BookingConfirmed());
+        emit(BookingConfirmed(bookingId: bookingId));
       }
     } catch (e) {
       // Ignore polling errors to not disrupt UI

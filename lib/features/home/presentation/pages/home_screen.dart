@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../cubit/home_cubit.dart';
@@ -7,6 +8,7 @@ import '../../../pitch/presentation/widgets/featured_pitches_section.dart';
 import '../widgets/hero_banner.dart';
 import '../widgets/home_footer.dart';
 import '../widgets/home_header.dart';
+import '../widgets/premium_surface.dart';
 import '../widgets/quick_actions_bar.dart';
 import '../../../product/presentation/widgets/top_products_section.dart';
 import 'search_screen.dart';
@@ -71,9 +73,25 @@ class _HomeBodyState extends State<_HomeBody> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ValueListenableBuilder<double>(
+      valueListenable: _headerOpacity,
+      builder: (context, op, child) {
+        final dark = op > 0.5;
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarBrightness: dark ? Brightness.light : Brightness.dark,
+            statusBarIconBrightness:
+                dark ? Brightness.dark : Brightness.light,
+          ),
+          child: child!,
+        );
+      },
+      child: Scaffold(
       backgroundColor: Colors.white,
-      body: Stack(
+      body: Container(
+        color: Colors.white,
+        child: Stack(
         children: [
           // Parallax background — only this layer rebuilds on scroll
           _ParallaxBackground(offsetNotifier: _parallaxOffset),
@@ -89,17 +107,37 @@ class _HomeBodyState extends State<_HomeBody> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   slivers: [
                     SliverToBoxAdapter(
-                      child: SizedBox(
+                      child: Container(
                         height: MediaQuery.of(context).padding.top + 56,
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topRight,
+                            end: Alignment.bottomLeft,
+                            colors: [
+                              AppColors.midnightDeep,
+                              AppColors.midnightMid,
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                     SliverToBoxAdapter(child: HeroBanner(state: state)),
                     SliverToBoxAdapter(child: QuickActionsBar(state: state)),
                     SliverToBoxAdapter(
-                      child: FeaturedPitchesSection(state: state),
+                      child: PremiumSurface(
+                        child: FeaturedPitchesSection(state: state),
+                      ),
                     ),
-                    SliverToBoxAdapter(child: TopProductsSection(state: state)),
-                    SliverToBoxAdapter(child: AllProductsSection(state: state)),
+                    SliverToBoxAdapter(
+                      child: PremiumSurface(
+                        child: TopProductsSection(state: state),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: PremiumSurface(
+                        child: AllProductsSection(state: state),
+                      ),
+                    ),
                     const SliverToBoxAdapter(child: HomeFooter()),
                   ],
                 ),
@@ -118,7 +156,9 @@ class _HomeBodyState extends State<_HomeBody> {
             },
           ),
         ],
+        ),
       ),
+    ),
     );
   }
 }
@@ -141,24 +181,14 @@ class _ParallaxBackground extends StatelessWidget {
             return Stack(
               children: [
                 Positioned(
-                  top: -80 + offset * 0.15,
-                  left: -60,
-                  child: _circle(300, 0.06),
-                ),
-                Positioned(
-                  top: 200 + offset * 0.08,
-                  right: -80,
-                  child: _circle(250, 0.04),
-                ),
-                Positioned(
                   top: 500 + offset * 0.12,
-                  left: -40,
-                  child: _circle(200, 0.05),
+                  left: -60,
+                  child: _circle(220, 0.04, AppColors.primaryRed),
                 ),
                 Positioned(
-                  top: 800 + offset * 0.05,
+                  top: 900 + offset * 0.05,
                   right: -50,
-                  child: _circle(350, 0.04),
+                  child: _circle(280, 0.03, AppColors.accentGold),
                 ),
               ],
             );
@@ -168,13 +198,18 @@ class _ParallaxBackground extends StatelessWidget {
     );
   }
 
-  Widget _circle(double size, double opacity) {
+  Widget _circle(double size, double opacity, Color color) {
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: AppColors.primaryRed.withValues(alpha: opacity),
+        gradient: RadialGradient(
+          colors: [
+            color.withValues(alpha: opacity),
+            color.withValues(alpha: 0),
+          ],
+        ),
       ),
     );
   }

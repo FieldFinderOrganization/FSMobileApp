@@ -27,11 +27,17 @@ class MyWalletState {
     );
   }
 
+  List<UserDiscountEntity> get _promotionsOnly =>
+      vouchers.where((v) => !v.isRefundCredit).toList();
+
   List<UserDiscountEntity> get available =>
-      vouchers.where((v) => v.isAvailable).toList();
+      _promotionsOnly.where((v) => v.isAvailable).toList();
 
   List<UserDiscountEntity> get usedOrExpired =>
-      vouchers.where((v) => !v.isAvailable).toList();
+      _promotionsOnly.where((v) => !v.isAvailable).toList();
+
+  List<UserDiscountEntity> get refundCredits =>
+      vouchers.where((v) => v.isRefundCredit).toList();
 }
 
 class MyWalletCubit extends Cubit<MyWalletState> {

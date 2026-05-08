@@ -5,6 +5,7 @@ class BookingRequestModel {
   final double totalPrice;
   final List<BookingDetailModel> bookingDetails;
   final String paymentMethod;
+  final List<String> discountCodes;
 
   BookingRequestModel({
     required this.pitchId,
@@ -13,6 +14,7 @@ class BookingRequestModel {
     required this.totalPrice,
     required this.bookingDetails,
     required this.paymentMethod,
+    this.discountCodes = const [],
   });
 
   Map<String, dynamic> toJson() {
@@ -23,6 +25,7 @@ class BookingRequestModel {
       'totalPrice': totalPrice,
       'bookingDetails': bookingDetails.map((x) => x.toJson()).toList(),
       'paymentMethod': paymentMethod,
+      if (discountCodes.isNotEmpty) 'discountCodes': discountCodes,
     };
   }
 }

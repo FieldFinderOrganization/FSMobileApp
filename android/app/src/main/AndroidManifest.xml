@@ -5,7 +5,8 @@
         android:label="Sports Hub"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="true"
+        android:forceDarkAllowed="false">
 
         <activity
             android:name=".MainActivity"

@@ -7,6 +7,8 @@ class DiscountEntity {
   final String status;
   final DateTime startDate;
   final DateTime endDate;
+  final String kind;  // PROMOTION | REFUND_CREDIT
+  final String scope; // GLOBAL | CATEGORY | SPECIFIC_PRODUCT
 
   const DiscountEntity({
     required this.id,
@@ -17,8 +19,13 @@ class DiscountEntity {
     required this.status,
     required this.startDate,
     required this.endDate,
+    this.kind = 'PROMOTION',
+    this.scope = 'GLOBAL',
   });
 
   bool get isActive => status == 'ACTIVE';
   bool get isPercentage => discountType == 'PERCENTAGE';
+  bool get isPromotion => kind == 'PROMOTION';
+  bool get isAllowedScope =>
+      scope == 'GLOBAL' || scope == 'CATEGORY' || scope == 'SPECIFIC_PRODUCT';
 }

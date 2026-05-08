@@ -8,6 +8,9 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../auth/login/presentation/bloc/auth_cubit.dart';
 import '../../../auth/login/presentation/bloc/auth_state.dart';
+import '../../../../shared/widgets/cancel_reason_sheet.dart';
+import '../../../discount/data/datasources/discount_remote_data_source.dart';
+import '../widgets/booking_discount_picker.dart';
 import '../../data/datasources/booking_remote_datasource.dart';
 import '../../data/datasources/payment_remote_datasource.dart';
 import '../../data/repositories/booking_repository_impl.dart';
@@ -69,7 +72,7 @@ class _BookingView extends StatelessWidget {
             SnackBar(content: Text(state.message), backgroundColor: Colors.red),
           );
         } else if (state is BookingConfirmed) {
-          _showSuccessDialog(context);
+          _showSuccessDialog(context, bookingId: state.bookingId);
         } else if (state is BookingPaymentRequired) {
           final authState = context.read<AuthCubit>().state;
           final userId = authState.currentUser?.userId ?? '';
@@ -420,9 +423,11 @@ class _BookingView extends StatelessWidget {
         _buildActionCard(
           icon: Icons.card_giftcard_rounded,
           title: 'Mã ưu đãi',
-          subtitle: 'Chưa áp dụng mã nào',
-          actionLabel: 'Chọn mã',
-          onTap: () => _showComingSoon(context, 'Khuyến mãi'),
+          subtitle: state.discountCodes.isEmpty
+              ? 'Chưa áp dụng mã nào'
+              : '${state.discountCodes.length} mã · -${state.discountAmount.toStringAsFixed(0)}k',
+          actionLabel: state.discountCodes.isEmpty ? 'Chọn mã' : 'Đổi',
+          onTap: () => _openDiscountPicker(context, state),
         ),
         const SizedBox(height: 20),
         // User Info Card
@@ -480,6 +485,14 @@ class _BookingView extends StatelessWidget {
                 'Số giờ chọn:',
                 '${state.selectedSlotIds.length} giờ',
               ),
+              if (state.discountAmount > 0) ...[
+                const SizedBox(height: 8),
+                _buildPriceRow(
+                  'Giảm giá:',
+                  '-${state.discountAmount.toStringAsFixed(0)}k đ',
+                  valueColor: const Color(0xFF15803D),
+                ),
+              ],
               const Divider(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -637,7 +650,7 @@ class _BookingView extends StatelessWidget {
     );
   }
 
-  Widget _buildPriceRow(String label, String value) {
+  Widget _buildPriceRow(String label, String value, {Color? valueColor}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -650,11 +663,28 @@ class _BookingView extends StatelessWidget {
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: AppColors.textDark,
+            color: valueColor ?? AppColors.textDark,
           ),
         ),
       ],
     );
+  }
+
+  Future<void> _openDiscountPicker(
+      BuildContext context, BookingSuccess state) async {
+    final authState = context.read<AuthCubit>().state;
+    final userId = authState.currentUser?.userId;
+    if (userId == null) return;
+    final dioClient = context.read<DioClient>();
+    final ds = DiscountRemoteDataSource(dioClient.dio);
+    final picked = await BookingDiscountPicker.show(
+      context,
+      userId: userId,
+      dataSource: ds,
+      initiallySelected: state.discountCodes,
+    );
+    if (picked == null || !context.mounted) return;
+    context.read<BookingCubit>().applyDiscounts(picked);
   }
 
   Widget _buildConfirmButton(BuildContext context, BookingSuccess state) {
@@ -788,11 +818,12 @@ class _BookingView extends StatelessWidget {
     );
   }
 
-  void _showSuccessDialog(BuildContext context) {
+  void _showSuccessDialog(BuildContext context, {String? bookingId}) {
+    final outerContext = context;
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -824,23 +855,35 @@ class _BookingView extends StatelessWidget {
           ],
         ),
         actions: [
+          if (bookingId != null)
+            TextButton(
+              onPressed: () =>
+                  _cancelFromSuccess(dialogContext, outerContext, bookingId),
+              child: Text(
+                'Hủy đặt sân',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textGrey,
+                ),
+              ),
+            ),
           TextButton(
-              onPressed: () {
-                final authState = context.read<AuthCubit>().state;
-                final userId = (authState is AuthSuccess)
-                    ? authState.authToken.user.userId
-                    : (authState is AuthOtpVerified)
-                    ? authState.authToken.user.userId
-                    : '';
-                
-                Navigator.pop(context); // close dialog
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BookingHistoryScreen(userId: userId),
-                  ),
-                );
-              },
+            onPressed: () {
+              final authState = outerContext.read<AuthCubit>().state;
+              final userId = (authState is AuthSuccess)
+                  ? authState.authToken.user.userId
+                  : (authState is AuthOtpVerified)
+                  ? authState.authToken.user.userId
+                  : '';
+
+              Navigator.pop(dialogContext);
+              Navigator.pushReplacement(
+                outerContext,
+                MaterialPageRoute(
+                  builder: (context) => BookingHistoryScreen(userId: userId),
+                ),
+              );
+            },
             child: Text(
               'Xong',
               style: GoogleFonts.inter(
@@ -852,5 +895,56 @@ class _BookingView extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _cancelFromSuccess(
+    BuildContext dialogContext,
+    BuildContext outerContext,
+    String bookingId,
+  ) async {
+    final reason = await CancelReasonSheet.show(
+      dialogContext,
+      title: 'Lý do hủy đặt sân',
+      options: CancelReasonSheet.bookingReasons,
+    );
+    if (reason == null) return;
+
+    try {
+      final dioClient = outerContext.read<DioClient>();
+      await BookingRemoteDataSource(dioClient: dioClient)
+          .cancelBooking(bookingId, reason: reason.encode());
+
+      if (dialogContext.mounted) Navigator.pop(dialogContext);
+
+      if (!outerContext.mounted) return;
+      ScaffoldMessenger.of(outerContext).showSnackBar(
+        SnackBar(
+          content: Text('Đã hủy đặt sân', style: GoogleFonts.inter()),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      final authState = outerContext.read<AuthCubit>().state;
+      final userId = (authState is AuthSuccess)
+          ? authState.authToken.user.userId
+          : (authState is AuthOtpVerified)
+          ? authState.authToken.user.userId
+          : '';
+      Navigator.pushReplacement(
+        outerContext,
+        MaterialPageRoute(
+          builder: (_) => BookingHistoryScreen(userId: userId),
+        ),
+      );
+    } catch (e) {
+      if (!outerContext.mounted) return;
+      ScaffoldMessenger.of(outerContext).showSnackBar(
+        SnackBar(
+          content: Text('Hủy thất bại: $e',
+              style: GoogleFonts.inter(color: Colors.white)),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

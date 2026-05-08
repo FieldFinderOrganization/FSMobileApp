@@ -15,6 +15,12 @@ class HomeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final showShadow = opacity > 0.5;
+    final onDark = opacity < 0.5;
+    final logoFirstColor =
+        onDark ? Colors.white : AppColors.textDark;
+    final logoSecondColor =
+        onDark ? AppColors.accentGold : AppColors.primaryRed;
+    final iconColor = onDark ? Colors.white : AppColors.textDark;
 
     return Container(
       decoration: BoxDecoration(
@@ -46,7 +52,7 @@ class HomeHeader extends StatelessWidget {
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
-                          color: AppColors.textDark,
+                          color: logoFirstColor,
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -55,7 +61,7 @@ class HomeHeader extends StatelessWidget {
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
-                          color: AppColors.primaryRed,
+                          color: logoSecondColor,
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -66,11 +72,12 @@ class HomeHeader extends StatelessWidget {
                 // Action icons
                 _HeaderIcon(
                   icon: Icons.search_rounded,
-                  isDark: true,
+                  color: iconColor,
                   onTap: onSearchTap ?? () {},
                 ),
                 const SizedBox(width: 4),
                 _CartIconWithBadge(
+                  color: iconColor,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const CartScreen()),
@@ -79,7 +86,7 @@ class HomeHeader extends StatelessWidget {
                 const SizedBox(width: 4),
                 _HeaderIcon(
                   icon: Icons.notifications_outlined,
-                  isDark: true,
+                  color: iconColor,
                   onTap: () {},
                 ),
               ],
@@ -93,8 +100,9 @@ class HomeHeader extends StatelessWidget {
 
 class _CartIconWithBadge extends StatelessWidget {
   final VoidCallback onTap;
+  final Color color;
 
-  const _CartIconWithBadge({required this.onTap});
+  const _CartIconWithBadge({required this.onTap, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -107,9 +115,9 @@ class _CartIconWithBadge extends StatelessWidget {
           children: [
             IconButton(
               onPressed: onTap,
-              icon: const Icon(
+              icon: Icon(
                 Icons.shopping_cart_outlined,
-                color: AppColors.textDark,
+                color: color,
                 size: 24,
               ),
               padding: const EdgeInsets.all(8),
@@ -149,12 +157,12 @@ class _CartIconWithBadge extends StatelessWidget {
 
 class _HeaderIcon extends StatelessWidget {
   final IconData icon;
-  final bool isDark;
+  final Color color;
   final VoidCallback onTap;
 
   const _HeaderIcon({
     required this.icon,
-    required this.isDark,
+    required this.color,
     required this.onTap,
   });
 
@@ -164,7 +172,7 @@ class _HeaderIcon extends StatelessWidget {
       onPressed: onTap,
       icon: Icon(
         icon,
-        color: isDark ? AppColors.textDark : Colors.white,
+        color: color,
         size: 24,
       ),
       padding: const EdgeInsets.all(8),

@@ -16,6 +16,7 @@ import '../../data/repositories/booking_repository_impl.dart';
 import '../../data/repositories/payment_repository_impl.dart';
 import '../../domain/entities/pitch_entity.dart';
 import '../../../refund/data/datasources/refund_remote_data_source.dart';
+import '../../../../shared/widgets/cancel_reason_sheet.dart';
 import '../../../../shared/widgets/refund_code_dialog.dart';
 import 'booking_detail_screen.dart';
 import 'payment_screen.dart';
@@ -455,6 +456,38 @@ class _BookingItemCardState extends State<_BookingItemCard> {
 
   bool get _isPending => widget.booking.status == 'PENDING';
 
+  DateTime? get _earliestSlotStart {
+    final b = widget.booking;
+    if (b.slotsName.isEmpty) return null;
+    DateTime? earliest;
+    for (final name in b.slotsName) {
+      final parts = name.split(' - ');
+      if (parts.isEmpty) continue;
+      final hm = parts[0].trim().split(':');
+      if (hm.length < 2) continue;
+      final h = int.tryParse(hm[0]);
+      final m = int.tryParse(hm[1]);
+      if (h == null || m == null) continue;
+      try {
+        final d = DateTime.parse(b.bookingDate);
+        final dt = DateTime(d.year, d.month, d.day, h, m);
+        if (earliest == null || dt.isBefore(earliest)) earliest = dt;
+      } catch (_) {}
+    }
+    return earliest;
+  }
+
+  bool get _willRefund {
+    final b = widget.booking;
+    if (b.status.toUpperCase() != 'CONFIRMED') return false;
+    if (b.paymentStatus.toUpperCase() != 'PAID') return false;
+    final start = _earliestSlotStart;
+    if (start == null) return false;
+    return DateTime.now()
+        .add(const Duration(minutes: 10))
+        .isBefore(start);
+  }
+
   /// Deadline = ngày đặt sân + giờ bắt đầu slot nhỏ nhất - 5 phút
   DateTime? _calcDeadline() {
     final booking = widget.booking;
@@ -537,6 +570,21 @@ class _BookingItemCardState extends State<_BookingItemCard> {
         ],
       ),
     );
+  }
+
+  Future<void> _showRefundCancelSheet(BuildContext context) async {
+    final reason = await CancelReasonSheet.show(
+      context,
+      title: 'Lý do hủy & nhận hoàn tiền',
+      options: CancelReasonSheet.bookingReasons,
+      willIssueRefund: true,
+    );
+    if (reason == null || !mounted) return;
+
+    // BlocListener in _BookingHistoryBody handles snackbar + RefundCodeDialog.
+    await context
+        .read<BookingHistoryCubit>()
+        .cancelBooking(widget.booking.bookingId, reason: reason.encode());
   }
 
   Future<void> _navigateToPayment(BuildContext context) async {
@@ -870,6 +918,61 @@ class _BookingItemCardState extends State<_BookingItemCard> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
+                          ),
+                        ],
+                      )
+                    else if (_willRefund)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          OutlinedButton(
+                            onPressed: () => _showRefundCancelSheet(context),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.primaryRed,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              side: const BorderSide(color: AppColors.primaryRed),
+                            ),
+                            child: const Text(
+                              'Hủy đặt sân',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => BookingDetailScreen(
+                                    booking: widget.booking),
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryRed,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text(
+                              'Chi tiết',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ],
                       )

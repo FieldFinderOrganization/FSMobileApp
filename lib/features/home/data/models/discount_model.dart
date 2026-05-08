@@ -10,6 +10,8 @@ class DiscountModel extends DiscountEntity {
     required super.status,
     required super.startDate,
     required super.endDate,
+    super.kind,
+    super.scope,
   });
 
   factory DiscountModel.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,8 @@ class DiscountModel extends DiscountEntity {
       endDate: json['endDate'] != null
           ? DateTime.tryParse(json['endDate'].toString()) ?? DateTime.now()
           : DateTime.now(),
+      kind: json['kind'] as String? ?? 'PROMOTION',
+      scope: json['scope'] as String? ?? 'GLOBAL',
     );
   }
 }

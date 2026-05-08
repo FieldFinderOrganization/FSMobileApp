@@ -39,6 +39,14 @@ class _PitchTabBodyState extends State<_PitchTabBody>
       duration: const Duration(milliseconds: 250),
     );
     _scrollController = ScrollController()..addListener(_onScroll);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final s = context.read<HomeCubit>().state;
+      if (s.pitchesStatus == LoadStatus.initial && s.pitches.isEmpty) {
+        context.read<HomeCubit>().loadAll();
+      }
+    });
   }
 
   void _onScroll() {
@@ -90,18 +98,24 @@ class _PitchTabBodyState extends State<_PitchTabBody>
       body: BlocBuilder<HomeCubit, HomeState>(
         builder: (context, state) {
           final pitches = _getFilteredPitches(state);
+          final isLoading = state.pitchesStatus == LoadStatus.loading ||
+              state.pitchesStatus == LoadStatus.initial;
+
+          Widget body;
+          if (pitches.isEmpty && isLoading) {
+            body = _buildSkeletonList();
+          } else if (pitches.isEmpty) {
+            body = _buildEmptyState();
+          } else {
+            body = _buildPitchList(pitches, state);
+          }
 
           return SafeArea(
             bottom: false,
             child: Column(
               children: [
                 _buildHeader(state),
-                Expanded(
-                  child: pitches.isEmpty &&
-                          state.pitchesStatus != LoadStatus.loading
-                      ? _buildEmptyState()
-                      : _buildPitchList(pitches, state),
-                ),
+                Expanded(child: body),
               ],
             ),
           );
@@ -278,6 +292,21 @@ class _PitchTabBodyState extends State<_PitchTabBody>
           );
         }
       },
+    );
+  }
+
+  Widget _buildSkeletonList() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      itemCount: 4,
+      itemBuilder: (_, _) => Container(
+        margin: const EdgeInsets.only(bottom: 20),
+        height: 220,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF2F2F2),
+          borderRadius: BorderRadius.circular(20),
+        ),
+      ),
     );
   }
 

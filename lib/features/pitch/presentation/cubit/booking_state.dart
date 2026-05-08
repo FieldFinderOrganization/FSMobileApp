@@ -16,29 +16,49 @@ class BookingLoading extends BookingState {}
 class BookingSuccess extends BookingState {
   final List<BookingSlotEntity> slots;
   final List<int> selectedSlotIds;
-  final double totalAmount;
+  final double totalAmount;       // sau giảm giá
+  final double subtotal;          // trước giảm giá
+  final double discountAmount;    // tổng giảm
+  final List<String> discountCodes;
   final String paymentMethod; // 'CASH' or 'BANK_TRANSFER'
 
   const BookingSuccess({
     required this.slots,
     this.selectedSlotIds = const [],
     this.totalAmount = 0.0,
+    this.subtotal = 0.0,
+    this.discountAmount = 0.0,
+    this.discountCodes = const [],
     this.paymentMethod = 'CASH',
   });
 
   @override
-  List<Object?> get props => [slots, selectedSlotIds, totalAmount, paymentMethod];
+  List<Object?> get props => [
+        slots,
+        selectedSlotIds,
+        totalAmount,
+        subtotal,
+        discountAmount,
+        discountCodes,
+        paymentMethod,
+      ];
 
   BookingSuccess copyWith({
     List<BookingSlotEntity>? slots,
     List<int>? selectedSlotIds,
     double? totalAmount,
+    double? subtotal,
+    double? discountAmount,
+    List<String>? discountCodes,
     String? paymentMethod,
   }) {
     return BookingSuccess(
       slots: slots ?? this.slots,
       selectedSlotIds: selectedSlotIds ?? this.selectedSlotIds,
       totalAmount: totalAmount ?? this.totalAmount,
+      subtotal: subtotal ?? this.subtotal,
+      discountAmount: discountAmount ?? this.discountAmount,
+      discountCodes: discountCodes ?? this.discountCodes,
       paymentMethod: paymentMethod ?? this.paymentMethod,
     );
   }
@@ -52,7 +72,13 @@ class BookingError extends BookingState {
   List<Object?> get props => [message];
 }
 
-class BookingConfirmed extends BookingState {}
+class BookingConfirmed extends BookingState {
+  final String? bookingId;
+  const BookingConfirmed({this.bookingId});
+
+  @override
+  List<Object?> get props => [bookingId];
+}
 
 class BookingPaymentRequired extends BookingState {
   final PaymentResponseModel paymentResponse;
