@@ -16,6 +16,17 @@ class AiProductCard extends StatelessWidget {
     final salePrice = (product['salePrice'] as num?)?.toDouble();
     final imageUrl = product['imageUrl'] as String? ?? '';
     final category = product['categoryName'] as String? ?? '';
+    final brand = (product['brand'] as String? ?? '').trim();
+    final sexRaw = (product['sex'] as String? ?? '').trim().toUpperCase();
+    final sexLabel = switch (sexRaw) {
+      'MALE' || 'M' || 'MEN' => 'Nam',
+      'FEMALE' || 'F' || 'WOMEN' => 'Nữ',
+      'UNISEX' || 'U' => 'Unisex',
+      _ => '',
+    };
+    final categoryLine = brand.isNotEmpty
+        ? '$category • $brand'
+        : category;
 
     final displayPrice = salePrice != null && salePrice < price ? salePrice : price;
     final hasSale = salePrice != null && salePrice < price;
@@ -59,17 +70,41 @@ class AiProductCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            child: imageUrl.isNotEmpty
-                ? Image.network(
-                    imageUrl,
-                    height: imageHeight,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => _placeholder(imageHeight),
-                  )
-                : _placeholder(imageHeight),
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                child: imageUrl.isNotEmpty
+                    ? Image.network(
+                        imageUrl,
+                        height: imageHeight,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => _placeholder(imageHeight),
+                      )
+                    : _placeholder(imageHeight),
+              ),
+              if (sexLabel.isNotEmpty)
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.65),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      sexLabel,
+                      style: GoogleFonts.inter(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
           Expanded(
             child: Padding(
@@ -80,7 +115,7 @@ class AiProductCard extends StatelessWidget {
                   SizedBox(
                     height: 14,
                     child: Text(
-                      category,
+                      categoryLine,
                       style: GoogleFonts.inter(fontSize: 10, color: Colors.grey),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

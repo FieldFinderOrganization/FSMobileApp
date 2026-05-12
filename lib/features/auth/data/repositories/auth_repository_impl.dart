@@ -117,6 +117,14 @@ class AuthRepositoryImpl implements AuthRepository {
     String? phone,
     String? status,
     String? imageUrl,
+    String? gender,
+    DateTime? dateOfBirth,
+    String? address,
+    String? province,
+    String? district,
+    String? occupation,
+    String? preferredPitchType,
+    String? preferredPlayTime,
   }) async {
     try {
       return await _datasource.updateProfile(
@@ -126,6 +134,14 @@ class AuthRepositoryImpl implements AuthRepository {
         phone: phone,
         status: status,
         imageUrl: imageUrl,
+        gender: gender,
+        dateOfBirth: dateOfBirth,
+        address: address,
+        province: province,
+        district: district,
+        occupation: occupation,
+        preferredPitchType: preferredPitchType,
+        preferredPlayTime: preferredPlayTime,
       );
     } on DioException catch (e) {
       throw _mapDioError(e);

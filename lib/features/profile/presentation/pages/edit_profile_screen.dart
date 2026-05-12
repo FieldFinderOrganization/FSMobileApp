@@ -23,7 +23,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
   late TextEditingController _emailController;
-  
+  late TextEditingController _addressController;
+  late TextEditingController _provinceController;
+  late TextEditingController _districtController;
+  late TextEditingController _occupationController;
+
+  String? _gender;             // MALE/FEMALE/OTHER
+  DateTime? _dateOfBirth;
+  String? _preferredPitchType; // FIVE_A_SIDE/SEVEN_A_SIDE/ELEVEN_A_SIDE
+  String? _preferredPlayTime;  // MORNING/AFTERNOON/EVENING/NIGHT
+
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
 
@@ -33,6 +42,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _nameController = TextEditingController(text: widget.user.name);
     _phoneController = TextEditingController(text: widget.user.phone == 'N/A' ? '' : widget.user.phone);
     _emailController = TextEditingController(text: widget.user.email);
+    _addressController = TextEditingController(text: widget.user.address ?? '');
+    _provinceController = TextEditingController(text: widget.user.province ?? '');
+    _districtController = TextEditingController(text: widget.user.district ?? '');
+    _occupationController = TextEditingController(text: widget.user.occupation ?? '');
+
+    _gender = widget.user.gender;
+    _dateOfBirth = widget.user.dateOfBirth;
+    _preferredPitchType = widget.user.preferredPitchType;
+    _preferredPlayTime = widget.user.preferredPlayTime;
   }
 
   @override
@@ -40,6 +58,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _nameController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
+    _addressController.dispose();
+    _provinceController.dispose();
+    _districtController.dispose();
+    _occupationController.dispose();
     super.dispose();
   }
 
@@ -63,10 +85,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  Future<void> _pickDateOfBirth() async {
+    final now = DateTime.now();
+    final initial = _dateOfBirth ?? DateTime(now.year - 20, now.month, now.day);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(1900),
+      lastDate: now,
+      helpText: 'Chọn ngày sinh',
+      cancelText: 'Hủy',
+      confirmText: 'Chọn',
+    );
+    if (picked != null) {
+      setState(() => _dateOfBirth = picked);
+    }
+  }
+
   void _saveChanges() {
     final name = _nameController.text.trim();
     final phone = _phoneController.text.trim();
-    
+
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng nhập tên của bạn.')),
@@ -87,6 +126,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       name: name,
       phone: phone.isEmpty ? 'N/A' : phone,
       imagePath: _selectedImage?.path,
+      gender: _gender,
+      dateOfBirth: _dateOfBirth,
+      address: _addressController.text.trim(),
+      province: _provinceController.text.trim(),
+      district: _districtController.text.trim(),
+      occupation: _occupationController.text.trim(),
+      preferredPitchType: _preferredPitchType,
+      preferredPlayTime: _preferredPlayTime,
     );
   }
 
@@ -245,6 +292,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        _buildSectionLabel('Thông tin cơ bản'),
         _buildFieldLabel('Họ và tên'),
         AuthTextField(
           controller: _nameController,
@@ -269,7 +317,109 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           keyboardType: TextInputType.emailAddress,
           enabled: false,
         ),
+
+        const SizedBox(height: 28),
+        _buildSectionLabel('Thông tin cá nhân'),
+        _buildFieldLabel('Giới tính'),
+        _buildDropdown<String>(
+          icon: Icons.wc_rounded,
+          value: _gender,
+          hint: 'Chọn giới tính',
+          items: const [
+            DropdownMenuItem(value: 'MALE', child: Text('Nam')),
+            DropdownMenuItem(value: 'FEMALE', child: Text('Nữ')),
+            DropdownMenuItem(value: 'OTHER', child: Text('Khác')),
+          ],
+          onChanged: (v) => setState(() => _gender = v),
+        ),
+        const SizedBox(height: 20),
+        _buildFieldLabel('Ngày sinh'),
+        InkWell(
+          onTap: _pickDateOfBirth,
+          child: _buildReadOnlyField(
+            icon: Icons.cake_outlined,
+            text: _dateOfBirth == null
+                ? 'Chọn ngày sinh'
+                : '${_dateOfBirth!.day.toString().padLeft(2, '0')}/${_dateOfBirth!.month.toString().padLeft(2, '0')}/${_dateOfBirth!.year}',
+            isPlaceholder: _dateOfBirth == null,
+          ),
+        ),
+        const SizedBox(height: 20),
+        _buildFieldLabel('Địa chỉ'),
+        AuthTextField(
+          controller: _addressController,
+          hintText: 'Số nhà, tên đường',
+          icon: Icons.location_on_outlined,
+          keyboardType: TextInputType.streetAddress,
+        ),
+        const SizedBox(height: 20),
+        _buildFieldLabel('Quận / Huyện'),
+        AuthTextField(
+          controller: _districtController,
+          hintText: 'Nhập quận/huyện',
+          icon: Icons.map_outlined,
+          keyboardType: TextInputType.text,
+        ),
+        const SizedBox(height: 20),
+        _buildFieldLabel('Tỉnh / Thành phố'),
+        AuthTextField(
+          controller: _provinceController,
+          hintText: 'Nhập tỉnh/thành phố',
+          icon: Icons.location_city_outlined,
+          keyboardType: TextInputType.text,
+        ),
+        const SizedBox(height: 20),
+        _buildFieldLabel('Nghề nghiệp'),
+        AuthTextField(
+          controller: _occupationController,
+          hintText: 'Nhập nghề nghiệp',
+          icon: Icons.work_outline_rounded,
+          keyboardType: TextInputType.text,
+        ),
+
+        const SizedBox(height: 28),
+        _buildSectionLabel('Sở thích chơi bóng'),
+        _buildFieldLabel('Loại sân yêu thích'),
+        _buildDropdown<String>(
+          icon: Icons.sports_soccer_rounded,
+          value: _preferredPitchType,
+          hint: 'Chọn loại sân',
+          items: const [
+            DropdownMenuItem(value: 'FIVE_A_SIDE', child: Text('Sân 5')),
+            DropdownMenuItem(value: 'SEVEN_A_SIDE', child: Text('Sân 7')),
+            DropdownMenuItem(value: 'ELEVEN_A_SIDE', child: Text('Sân 11')),
+          ],
+          onChanged: (v) => setState(() => _preferredPitchType = v),
+        ),
+        const SizedBox(height: 20),
+        _buildFieldLabel('Khung giờ chơi'),
+        _buildDropdown<String>(
+          icon: Icons.access_time_rounded,
+          value: _preferredPlayTime,
+          hint: 'Chọn khung giờ',
+          items: const [
+            DropdownMenuItem(value: 'MORNING',   child: Text('Sáng')),
+            DropdownMenuItem(value: 'AFTERNOON', child: Text('Chiều')),
+            DropdownMenuItem(value: 'EVENING',   child: Text('Tối')),
+            DropdownMenuItem(value: 'NIGHT',     child: Text('Đêm')),
+          ],
+          onChanged: (v) => setState(() => _preferredPlayTime = v),
+        ),
       ],
+    );
+  }
+
+  Widget _buildSectionLabel(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 12, top: 4),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: 15,
+          fontWeight: FontWeight.w800,
+          color: AppColors.textDark,
+        ),
+      ),
     );
   }
 
@@ -283,6 +433,83 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           fontWeight: FontWeight.w600,
           color: AppColors.textGrey,
         ),
+      ),
+    );
+  }
+
+  Widget _buildDropdown<T>({
+    required IconData icon,
+    required T? value,
+    required String hint,
+    required List<DropdownMenuItem<T>> items,
+    required ValueChanged<T?> onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F7F8),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.textGrey, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<T>(
+                isExpanded: true,
+                value: value,
+                hint: Text(
+                  hint,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: AppColors.textGrey,
+                  ),
+                ),
+                items: items,
+                onChanged: onChanged,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: AppColors.textDark,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReadOnlyField({
+    required IconData icon,
+    required String text,
+    bool isPlaceholder = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F7F8),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.textGrey, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: isPlaceholder ? AppColors.textGrey : AppColors.textDark,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.textGrey),
+        ],
       ),
     );
   }

@@ -213,6 +213,14 @@ class AuthCubit extends Cubit<AuthState> {
     String? name,
     String? phone,
     String? imagePath,
+    String? gender,
+    DateTime? dateOfBirth,
+    String? address,
+    String? province,
+    String? district,
+    String? occupation,
+    String? preferredPitchType,
+    String? preferredPlayTime,
   }) async {
     final previousState = state;
     final token = _currentToken;
@@ -232,6 +240,14 @@ class AuthCubit extends Cubit<AuthState> {
         phone: phone,
         status: token.user.status,
         imageUrl: imageUrl,
+        gender: gender,
+        dateOfBirth: dateOfBirth,
+        address: address,
+        province: province,
+        district: district,
+        occupation: occupation,
+        preferredPitchType: preferredPitchType,
+        preferredPlayTime: preferredPlayTime,
       );
 
       final newToken = token.copyWith(user: updatedUser);

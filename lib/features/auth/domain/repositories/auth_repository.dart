@@ -24,6 +24,14 @@ abstract class AuthRepository {
     String? phone,
     String? status,
     String? imageUrl,
+    String? gender,
+    DateTime? dateOfBirth,
+    String? address,
+    String? province,
+    String? district,
+    String? occupation,
+    String? preferredPitchType,
+    String? preferredPlayTime,
   });
   Future<String> uploadImage(String filePath);
   Future<List<String>> uploadMultipleImages(List<String> filePaths);

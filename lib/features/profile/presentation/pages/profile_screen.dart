@@ -106,6 +106,9 @@ class _ProfileBody extends StatelessWidget {
                         // ── Info Card ─────────────────────────────────────
                         _buildInfoCard(),
                         const SizedBox(height: 20),
+                        // ── Personal Info (with edit button) ──────────────
+                        _buildPersonalInfoSection(context),
+                        const SizedBox(height: 20),
                         // ── Quick actions ─────────────────────────────────
                         _buildQuickActions(context),
                         const SizedBox(height: 20),
@@ -148,30 +151,6 @@ class _ProfileBody extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.mediumImpact();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => EditProfileScreen(user: user),
-                ),
-              );
-            },
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.edit_outlined,
-                size: 18,
-                color: AppColors.textGrey,
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -370,6 +349,162 @@ class _ProfileBody extends StatelessWidget {
             valueColor: statusColor,
             isLast: true,
             iconColor: statusColor,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Personal Info Section (with edit button)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  String _formatDate(DateTime? d) {
+    if (d == null) return 'Chưa cập nhật';
+    final dd = d.day.toString().padLeft(2, '0');
+    final mm = d.month.toString().padLeft(2, '0');
+    return '$dd/$mm/${d.year}';
+  }
+
+  String _localizeGender(String? g) {
+    switch ((g ?? '').toUpperCase()) {
+      case 'MALE': return 'Nam';
+      case 'FEMALE': return 'Nữ';
+      case 'OTHER': return 'Khác';
+      default: return 'Chưa cập nhật';
+    }
+  }
+
+  String _localizePitchType(String? p) {
+    switch ((p ?? '').toUpperCase()) {
+      case 'FIVE_A_SIDE': return 'Sân 5';
+      case 'SEVEN_A_SIDE': return 'Sân 7';
+      case 'ELEVEN_A_SIDE': return 'Sân 11';
+      default: return 'Chưa chọn';
+    }
+  }
+
+  String _localizePlayTime(String? t) {
+    switch ((t ?? '').toUpperCase()) {
+      case 'MORNING': return 'Sáng';
+      case 'AFTERNOON': return 'Chiều';
+      case 'EVENING': return 'Tối';
+      case 'NIGHT': return 'Đêm';
+      default: return 'Chưa chọn';
+    }
+  }
+
+  String _orFallback(String? v) =>
+      (v == null || v.trim().isEmpty) ? 'Chưa cập nhật' : v.trim();
+
+  Widget _buildPersonalInfoSection(BuildContext context) {
+    final addressFull = [user.address, user.district, user.province]
+        .where((s) => s != null && s.trim().isNotEmpty)
+        .join(', ');
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFEEEEEE)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Section header with edit button
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 12, 6),
+            child: Row(
+              children: [
+                Text(
+                  'Thông tin cá nhân',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textDark,
+                  ),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.mediumImpact();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => EditProfileScreen(user: user),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryRed.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppColors.primaryRed.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.edit_outlined,
+                          size: 14,
+                          color: AppColors.primaryRed,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Chỉnh sửa',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primaryRed,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _InfoRow(
+            icon: Icons.wc_rounded,
+            label: 'Giới tính',
+            value: _localizeGender(user.gender),
+            isFirst: true,
+          ),
+          _InfoRow(
+            icon: Icons.cake_outlined,
+            label: 'Ngày sinh',
+            value: _formatDate(user.dateOfBirth),
+          ),
+          _InfoRow(
+            icon: Icons.location_on_outlined,
+            label: 'Địa chỉ',
+            value: addressFull.isEmpty ? 'Chưa cập nhật' : addressFull,
+          ),
+          _InfoRow(
+            icon: Icons.work_outline_rounded,
+            label: 'Nghề nghiệp',
+            value: _orFallback(user.occupation),
+          ),
+          _InfoRow(
+            icon: Icons.sports_soccer_rounded,
+            label: 'Loại sân yêu thích',
+            value: _localizePitchType(user.preferredPitchType),
+          ),
+          _InfoRow(
+            icon: Icons.access_time_rounded,
+            label: 'Khung giờ chơi',
+            value: _localizePlayTime(user.preferredPlayTime),
+            isLast: true,
           ),
         ],
       ),

@@ -94,16 +94,33 @@ class AuthRemoteDatasource {
     String? phone,
     String? status,
     String? imageUrl,
+    String? gender,
+    DateTime? dateOfBirth,
+    String? address,
+    String? province,
+    String? district,
+    String? occupation,
+    String? preferredPitchType,
+    String? preferredPlayTime,
   }) async {
+    final body = <String, dynamic>{};
+    if (name != null)               body['name'] = name;
+    if (email != null)              body['email'] = email;
+    if (phone != null)              body['phone'] = phone;
+    if (status != null)             body['status'] = status;
+    if (imageUrl != null)           body['imageUrl'] = imageUrl;
+    if (gender != null)             body['gender'] = gender;
+    if (dateOfBirth != null)        body['dateOfBirth'] = dateOfBirth.toIso8601String().substring(0, 10);
+    if (address != null)            body['address'] = address;
+    if (province != null)           body['province'] = province;
+    if (district != null)           body['district'] = district;
+    if (occupation != null)         body['occupation'] = occupation;
+    if (preferredPitchType != null) body['preferredPitchType'] = preferredPitchType;
+    if (preferredPlayTime != null)  body['preferredPlayTime'] = preferredPlayTime;
+
     final response = await _dio.put(
       ApiConstants.userUpdate(userId),
-      data: {
-        'name': ?name,
-        'email': ?email,
-        'phone': ?phone,
-        'status': ?status,
-        'imageUrl': ?imageUrl,
-      },
+      data: body,
     );
     return UserModel.fromJson(response.data as Map<String, dynamic>);
   }

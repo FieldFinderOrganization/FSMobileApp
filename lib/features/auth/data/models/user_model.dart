@@ -10,9 +10,26 @@ class UserModel extends UserEntity {
     required super.status,
     super.imageUrl,
     required super.hasPassword,
+    super.gender,
+    super.dateOfBirth,
+    super.address,
+    super.province,
+    super.district,
+    super.occupation,
+    super.preferredPitchType,
+    super.preferredPlayTime,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    DateTime? parseDate(dynamic v) {
+      if (v == null) return null;
+      try {
+        return DateTime.parse(v.toString());
+      } catch (_) {
+        return null;
+      }
+    }
+
     return UserModel(
       userId: json['userId'] as String,
       name: json['name'] as String,
@@ -22,6 +39,14 @@ class UserModel extends UserEntity {
       status: json['status'] as String,
       imageUrl: json['imageUrl'] as String?,
       hasPassword: json['hasPassword'] as bool? ?? true,
+      gender: json['gender'] as String?,
+      dateOfBirth: parseDate(json['dateOfBirth']),
+      address: json['address'] as String?,
+      province: json['province'] as String?,
+      district: json['district'] as String?,
+      occupation: json['occupation'] as String?,
+      preferredPitchType: json['preferredPitchType'] as String?,
+      preferredPlayTime: json['preferredPlayTime'] as String?,
     );
   }
 }

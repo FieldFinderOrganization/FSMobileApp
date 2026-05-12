@@ -10,6 +10,18 @@ class UserEntity extends Equatable {
   final String? imageUrl;
   final bool hasPassword;
 
+  // Personal info
+  final String? gender;             // MALE / FEMALE / OTHER / UNKNOWN
+  final DateTime? dateOfBirth;
+  final String? address;
+  final String? province;
+  final String? district;
+  final String? occupation;
+
+  // Preferences
+  final String? preferredPitchType; // FIVE_A_SIDE / SEVEN_A_SIDE / ELEVEN_A_SIDE
+  final String? preferredPlayTime;  // MORNING / AFTERNOON / EVENING / NIGHT
+
   const UserEntity({
     required this.userId,
     required this.name,
@@ -19,10 +31,22 @@ class UserEntity extends Equatable {
     required this.status,
     this.imageUrl,
     this.hasPassword = true,
+    this.gender,
+    this.dateOfBirth,
+    this.address,
+    this.province,
+    this.district,
+    this.occupation,
+    this.preferredPitchType,
+    this.preferredPlayTime,
   });
 
   @override
-  List<Object?> get props => [userId, name, email, phone, role, status, imageUrl, hasPassword];
+  List<Object?> get props => [
+        userId, name, email, phone, role, status, imageUrl, hasPassword,
+        gender, dateOfBirth, address, province, district, occupation,
+        preferredPitchType, preferredPlayTime,
+      ];
 
   UserEntity copyWith({
     String? userId,
@@ -33,6 +57,14 @@ class UserEntity extends Equatable {
     String? status,
     String? imageUrl,
     bool? hasPassword,
+    String? gender,
+    DateTime? dateOfBirth,
+    String? address,
+    String? province,
+    String? district,
+    String? occupation,
+    String? preferredPitchType,
+    String? preferredPlayTime,
   }) {
     return UserEntity(
       userId: userId ?? this.userId,
@@ -43,7 +75,14 @@ class UserEntity extends Equatable {
       status: status ?? this.status,
       imageUrl: imageUrl ?? this.imageUrl,
       hasPassword: hasPassword ?? this.hasPassword,
+      gender: gender ?? this.gender,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      address: address ?? this.address,
+      province: province ?? this.province,
+      district: district ?? this.district,
+      occupation: occupation ?? this.occupation,
+      preferredPitchType: preferredPitchType ?? this.preferredPitchType,
+      preferredPlayTime: preferredPlayTime ?? this.preferredPlayTime,
     );
   }
 }
-
