@@ -27,7 +27,6 @@ class ProductCubit extends Cubit<ProductState> {
       case SortOption.none:
         return null;
     }
-    return null;
   }
 
   String? get _brandParam {

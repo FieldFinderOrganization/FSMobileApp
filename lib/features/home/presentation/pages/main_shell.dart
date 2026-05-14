@@ -9,7 +9,6 @@ import '../../../auth/login/presentation/bloc/auth_state.dart';
 
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
-import '../../../product/presentation/cubit/product_cubit.dart';
 import '../../../chat/presentation/pages/chat_screen.dart';
 import '../../../home/presentation/cubit/home_cubit.dart';
 import '../../../home/presentation/pages/home_screen.dart';
