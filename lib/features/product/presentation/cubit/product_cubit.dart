@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/product_entity.dart';
@@ -7,6 +9,9 @@ import 'product_state.dart';
 
 class ProductCubit extends Cubit<ProductState> {
   final ProductRepository _repository;
+
+  /// Tăng mỗi lần bắt đầu `loadProducts` để bỏ qua kết quả cũ (prefetch / phân trang vs đổi filter).
+  int _catalogLoadGeneration = 0;
 
   ProductCubit({required ProductRepository repository})
       : _repository = repository,
@@ -22,6 +27,7 @@ class ProductCubit extends Cubit<ProductState> {
       case SortOption.none:
         return null;
     }
+    return null;
   }
 
   String? get _brandParam {
@@ -39,7 +45,16 @@ class ProductCubit extends Cubit<ProductState> {
     }
   }
 
+  /// Giống `reload()`: id danh mục đang áp dụng cho list (sub ưu tiên hơn parent).
+  int? _activeCategoryIdForListing() {
+    final activeName = state.selectedSubCategoryNames.isNotEmpty
+        ? state.selectedSubCategoryNames.first
+        : state.selectedCategory;
+    return _getCategoryIdFromName(activeName);
+  }
+
   Future<void> loadProducts({int? categoryId, String? brand, String? sort}) async {
+    final session = ++_catalogLoadGeneration;
     emit(state.copyWith(
       status: LoadStatus.loading,
       currentPage: 0,
@@ -49,6 +64,8 @@ class ProductCubit extends Cubit<ProductState> {
     ));
     try {
       final result = await _repository.getAllProducts(page: 0, size: 10, categoryId: categoryId, brand: brand, sort: sort);
+      if (session != _catalogLoadGeneration) return;
+
       final List<ProductEntity> products = result['products'] as List<ProductEntity>;
       final bool last = result['last'] as bool;
 
@@ -61,13 +78,20 @@ class ProductCubit extends Cubit<ProductState> {
       emit(state.copyWith(
         status: LoadStatus.success,
         products: products,
+        currentPage: 0,
         hasMore: !last,
         priceRange: RangeValues(0, maxPrice),
       ));
 
-      // Loading categories as well
-      await _loadCategories();
+      await _loadCategories(session);
+      if (session != _catalogLoadGeneration) return;
+
+      // Trang 2 trong nền để kéo xuống bớt chờ (user vẫn có pull-to-refresh).
+      if (!last) {
+        unawaited(_prefetchNextPage(session));
+      }
     } catch (e) {
+      if (session != _catalogLoadGeneration) return;
       emit(state.copyWith(
         status: LoadStatus.failure,
         errorMessage: e.toString(),
@@ -77,12 +101,15 @@ class ProductCubit extends Cubit<ProductState> {
 
   Future<void> loadNextPage() async {
     if (state.isLoadingMore || !state.hasMore) return;
+    final session = _catalogLoadGeneration;
 
     emit(state.copyWith(isLoadingMore: true));
     try {
       final nextPage = state.currentPage + 1;
-      final categoryId = _getCategoryIdFromName(state.selectedCategory);
+      final categoryId = _activeCategoryIdForListing();
       final result = await _repository.getAllProducts(page: nextPage, size: 10, categoryId: categoryId, brand: _brandParam, sort: _sortParam());
+      if (session != _catalogLoadGeneration) return;
+
       final List<ProductEntity> newProducts = result['products'] as List<ProductEntity>;
       final bool last = result['last'] as bool;
 
@@ -93,19 +120,27 @@ class ProductCubit extends Cubit<ProductState> {
         hasMore: !last,
       ));
     } catch (e) {
+      if (session != _catalogLoadGeneration) return;
       emit(state.copyWith(isLoadingMore: false));
     }
   }
 
-  Future<void> _loadCategories() async {
+  Future<void> _prefetchNextPage(int session) async {
+    if (session != _catalogLoadGeneration) return;
+    await loadNextPage();
+  }
+
+  Future<void> _loadCategories(int session) async {
     emit(state.copyWith(categoriesStatus: LoadStatus.loading));
     try {
       final categories = await _repository.fetchCategories();
+      if (session != _catalogLoadGeneration) return;
       emit(state.copyWith(
         categoriesStatus: LoadStatus.success,
         categories: categories,
       ));
     } catch (e) {
+      if (session != _catalogLoadGeneration) return;
       emit(state.copyWith(categoriesStatus: LoadStatus.failure));
     }
   }
@@ -195,6 +230,7 @@ class ProductCubit extends Cubit<ProductState> {
   }
 
   void reset() {
+    _catalogLoadGeneration++;
     emit(const ProductState());
   }
 }

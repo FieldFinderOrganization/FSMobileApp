@@ -308,7 +308,8 @@ class _ProductContentState extends State<_ProductContent> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    // Prefetch sớm hơn để trang kế load trước khi user kéo tới đáy list
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 520) {
       context.read<ProductCubit>().loadNextPage();
     }
   }

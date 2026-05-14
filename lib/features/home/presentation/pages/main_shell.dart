@@ -66,12 +66,9 @@ class _MainShellState extends State<MainShell>
   void _onTabTapped(int index) {
     if (index == _currentIndex) return;
     HapticFeedback.selectionClick();
-    // Refresh product list when switching to Shop tab to ensure fresh stock data.
-    // Dùng reload() để giữ category/sub/brand/sort hiện tại — tránh state desync
-    // (selectedCategory hiển thị "Clothing" nhưng data load all).
-    if (index == 2) {
-      context.read<ProductCubit>().reload();
-    }
+    // Không gọi ProductCubit.reload() khi vào Shop: [IndexedStack] đã giữ state;
+    // reload mỗi lần chuyển tab làm xóa list + loading ~10s+ dù dữ liệu vẫn còn trong cubit.
+    // Đồng bộ tồn kho: kéo refresh trên Shop, hoặc sau khi thanh toán (checkout đã gọi loadProducts).
     setState(() => _currentIndex = index);
   }
 
