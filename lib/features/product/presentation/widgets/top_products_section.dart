@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/image_url.dart';
 import '../../../home/presentation/cubit/home_state.dart';
 import '../../../home/presentation/widgets/fade_in_section.dart';
 import '../../../home/presentation/widgets/section_header.dart';
@@ -289,15 +291,16 @@ class _PodiumBubble extends StatelessWidget {
       );
     }
     return Center(
-      child: Image.network(
-        product.imageUrl,
+      child: CachedNetworkImage(
+        imageUrl: ImageUrl.thumbnail(product.imageUrl, width: 400),
         width: double.infinity,
         height: double.infinity,
         fit: BoxFit.contain,
         alignment: Alignment.center,
-        errorBuilder: (_, _, _) => Container(
+        memCacheWidth: 400,
+        errorWidget: (_, __, ___) => Container(
           color: const Color(0xFFF0F0F0),
-          child: Icon(Icons.image_not_supported, color: Colors.grey),
+          child: const Icon(Icons.image_not_supported, color: Colors.grey),
         ),
       ),
     );

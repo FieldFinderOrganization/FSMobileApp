@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/image_url.dart';
 import '../../domain/entities/product_entity.dart';
 import '../../../home/presentation/widgets/tilt_card.dart';
 import '../pages/product_detail_screen.dart';
@@ -441,16 +443,16 @@ class ProductCard extends StatelessWidget {
     if (product.imageUrl.isEmpty) {
       return _imagePlaceholder(width: double.infinity, height: height);
     }
-    return Image.network(
-      product.imageUrl,
+    return CachedNetworkImage(
+      imageUrl: ImageUrl.thumbnail(product.imageUrl, width: 400),
       width: double.infinity,
       height: height,
       fit: BoxFit.cover,
-      loadingBuilder: (_, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return _imageShimmer(width: double.infinity, height: height);
-      },
-      errorBuilder: (context2, e, stack) =>
+      memCacheWidth: 400,
+      fadeInDuration: const Duration(milliseconds: 120),
+      placeholder: (_, __) =>
+          _imageShimmer(width: double.infinity, height: height),
+      errorWidget: (_, __, ___) =>
           _imagePlaceholder(width: double.infinity, height: height),
     );
   }

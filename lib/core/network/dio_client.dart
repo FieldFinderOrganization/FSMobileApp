@@ -17,6 +17,9 @@ class DioClient {
       ),
     );
 
+    // IPv4 override removed — Cloudflare connectionFactory bypass TLS với HTTPS.
+    // OS-level resolution sẽ chọn IPv4/IPv6 theo network mobile (VN ISP thường IPv4).
+
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: _onRequest,

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/image_url.dart';
 import '../../domain/entities/product_entity.dart';
 import '../../domain/entities/product_variant_entity.dart';
 import '../../domain/repositories/product_repository.dart';
@@ -282,11 +284,12 @@ class _Fake3DImageSectionState extends State<_Fake3DImageSection>
               transform: Matrix4.identity()
                 ..setEntry(3, 2, 0.001)
                 ..rotateY(_rotationY),
-              child: Image.network(
-                widget.imageUrl,
+              child: CachedNetworkImage(
+                imageUrl: ImageUrl.fullsize(widget.imageUrl, width: 1000),
                 fit: BoxFit.contain,
                 height: 280,
-                errorBuilder: (_, _, _) => const Icon(
+                memCacheWidth: 1000,
+                errorWidget: (_, __, ___) => const Icon(
                   Icons.image_not_supported_outlined,
                   size: 80,
                   color: AppColors.textGrey,
@@ -352,10 +355,11 @@ class _FullscreenImageViewer extends StatelessWidget {
             child: InteractiveViewer(
               minScale: 0.5,
               maxScale: 5.0,
-              child: Image.network(
-                imageUrl,
+              child: CachedNetworkImage(
+                imageUrl: ImageUrl.fullsize(imageUrl, width: 1500),
                 fit: BoxFit.contain,
-                errorBuilder: (_, _, _) => const Icon(
+                memCacheWidth: 1500,
+                errorWidget: (_, __, ___) => const Icon(
                   Icons.image_not_supported_outlined,
                   size: 80,
                   color: Colors.white38,
