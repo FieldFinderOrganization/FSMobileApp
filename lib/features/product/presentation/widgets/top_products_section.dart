@@ -199,7 +199,9 @@ class _PodiumBubble extends StatelessWidget {
               Container(
                 width: bubbleSize,
                 height: bubbleSize,
-                padding: const EdgeInsets.all(6), // Gap to prevent image bleeding into border
+                padding: const EdgeInsets.all(
+                  6,
+                ), // Gap to prevent image bleeding into border
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white,
@@ -263,22 +265,24 @@ class _PodiumBubble extends StatelessWidget {
           const SizedBox(height: 8),
 
           // Podium Column
-        Container(
-          width: double.infinity,
-          height: columnHeight,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                rankColor.withValues(alpha: 0.5),
-                rankColor.withValues(alpha: 0.1),
-              ],
+          Container(
+            width: double.infinity,
+            height: columnHeight,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  rankColor.withValues(alpha: 0.5),
+                  rankColor.withValues(alpha: 0.1),
+                ],
+              ),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(8),
+              ),
             ),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
           ),
-        ),
-      ],
+        ],
       ),
     );
   }
@@ -298,7 +302,7 @@ class _PodiumBubble extends StatelessWidget {
         fit: BoxFit.contain,
         alignment: Alignment.center,
         memCacheWidth: 400,
-        errorWidget: (_, __, ___) => Container(
+        errorWidget: (_, _, _) => Container(
           color: const Color(0xFFF0F0F0),
           child: const Icon(Icons.image_not_supported, color: Colors.grey),
         ),

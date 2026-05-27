@@ -104,6 +104,31 @@ class AiProductCard extends StatelessWidget {
                     ),
                   ),
                 ),
+              if (brand.isNotEmpty)
+                Positioned(
+                  top: 6,
+                  left: 6,
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 90),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.92),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                    ),
+                    child: Text(
+                      brand.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF1F2937),
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
           Expanded(

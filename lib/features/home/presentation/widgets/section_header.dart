@@ -19,8 +19,6 @@ class SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textColor = darkMode ? Colors.white : AppColors.textDark;
-    final subColor =
-        darkMode ? Colors.white24 : const Color(0xFFDDDDDD);
     final seeAllColor = darkMode ? Colors.white54 : AppColors.primaryRed;
 
     return Padding(
@@ -70,10 +68,7 @@ class SectionHeader extends StatelessWidget {
                   ),
               ],
             ),
-          if (index != null) const SizedBox(height: 6),
-          // Thin rule
-          Container(height: 1, color: subColor),
-          const SizedBox(height: 10),
+          if (index != null) const SizedBox(height: 10),
           // Title
           Text(
             title.toUpperCase(),
