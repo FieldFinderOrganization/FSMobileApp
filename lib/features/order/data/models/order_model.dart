@@ -8,6 +8,10 @@ class OrderModel {
   final String paymentMethod;
   final DateTime createdAt;
   final DateTime? paymentTime;
+  final String? deliveryAddress;
+  final double? destLat;
+  final double? destLng;
+  final String? shipperName;
   final List<OrderItemModel> items;
 
   const OrderModel({
@@ -18,6 +22,10 @@ class OrderModel {
     required this.paymentMethod,
     required this.createdAt,
     this.paymentTime,
+    this.deliveryAddress,
+    this.destLat,
+    this.destLng,
+    this.shipperName,
     required this.items,
   });
 
@@ -34,6 +42,10 @@ class OrderModel {
       paymentTime: json['paymentTime'] != null
           ? DateTime.parse(json['paymentTime'] as String)
           : null,
+      deliveryAddress: json['deliveryAddress'] as String?,
+      destLat: (json['destLat'] as num?)?.toDouble(),
+      destLng: (json['destLng'] as num?)?.toDouble(),
+      shipperName: json['shipperName'] as String?,
       items: (json['items'] as List<dynamic>? ?? [])
           .map((e) => OrderItemModel.fromJson(e as Map<String, dynamic>))
           .toList(),

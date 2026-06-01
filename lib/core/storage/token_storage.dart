@@ -20,10 +20,24 @@ class TokenStorage {
     _initFuture ??= () async {
       // Đọc tuần tự từng key thay vì Future.wait để tránh
       // deadlock của Android Keystore khi đọc đồng thời quá nhiều.
-      _accessToken = await _storage.read(key: _keyAccessToken);
-      _refreshToken = await _storage.read(key: _keyRefreshToken);
-      _userId = await _storage.read(key: _keyUserId);
-      _role = await _storage.read(key: _keyRole);
+      // Bọc try/catch: sau khi cài lại app, Keystore có thể không giải mã
+      // được entry cũ và NÉM lỗi. Không được để lỗi này lan ra ngoài
+      // (sẽ làm interceptor treo request vĩnh viễn). Lỗi → coi như chưa login.
+      try {
+        _accessToken = await _storage.read(key: _keyAccessToken);
+        _refreshToken = await _storage.read(key: _keyRefreshToken);
+        _userId = await _storage.read(key: _keyUserId);
+        _role = await _storage.read(key: _keyRole);
+      } catch (_) {
+        _accessToken = null;
+        _refreshToken = null;
+        _userId = null;
+        _role = null;
+        // Xoá entry hỏng để lần sau không lặp lại.
+        try {
+          await _storage.deleteAll();
+        } catch (_) {}
+      }
     }();
     return _initFuture!;
   }

@@ -345,7 +345,8 @@ class _ProductContentState extends State<_ProductContent> {
   Widget build(BuildContext context) {
     return BlocBuilder<ProductCubit, ProductState>(
       builder: (context, state) {
-        if (state.status == LoadStatus.loading) {
+        if (state.status == LoadStatus.loading ||
+            state.status == LoadStatus.initial) {
           return const Center(child: CircularProgressIndicator(color: AppColors.primaryRed));
         }
 
