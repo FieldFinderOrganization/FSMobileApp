@@ -8,8 +8,8 @@ class PremiumSurface extends StatelessWidget {
   const PremiumSurface({
     super.key,
     required this.child,
-    this.margin = const EdgeInsets.symmetric(vertical: 8),
-    this.padding = const EdgeInsets.symmetric(vertical: 12),
+    this.margin = const EdgeInsets.fromLTRB(16, 8, 16, 8),
+    this.padding = const EdgeInsets.symmetric(vertical: 16),
   });
 
   @override
@@ -18,7 +18,17 @@ class PremiumSurface extends StatelessWidget {
       child: Container(
         margin: margin,
         padding: padding,
-        decoration: const BoxDecoration(color: Colors.white),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
         child: child,
       ),
     );

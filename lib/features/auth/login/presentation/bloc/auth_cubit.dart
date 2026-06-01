@@ -221,6 +221,8 @@ class AuthCubit extends Cubit<AuthState> {
     String? occupation,
     String? preferredPitchType,
     String? preferredPlayTime,
+    double? latitude,
+    double? longitude,
   }) async {
     final previousState = state;
     final token = _currentToken;
@@ -248,6 +250,8 @@ class AuthCubit extends Cubit<AuthState> {
         occupation: occupation,
         preferredPitchType: preferredPitchType,
         preferredPlayTime: preferredPlayTime,
+        latitude: latitude,
+        longitude: longitude,
       );
 
       final newToken = token.copyWith(user: updatedUser);

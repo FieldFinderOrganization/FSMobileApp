@@ -32,6 +32,8 @@ abstract class AuthRepository {
     String? occupation,
     String? preferredPitchType,
     String? preferredPlayTime,
+    double? latitude,
+    double? longitude,
   });
   Future<String> uploadImage(String filePath);
   Future<List<String>> uploadMultipleImages(List<String> filePaths);

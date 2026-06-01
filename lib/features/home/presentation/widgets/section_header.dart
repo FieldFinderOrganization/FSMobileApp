@@ -22,7 +22,7 @@ class SectionHeader extends StatelessWidget {
     final seeAllColor = darkMode ? Colors.white54 : AppColors.primaryRed;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -24,7 +24,9 @@ class ApiConstants {
   // Home screen endpoints
   static const String products = '/products';
   static const String topProducts = '/products/top-selling';
+  static const String suggestedProductsForPitch = '/products/suggested-for-pitch';
   static const String pitches = '/pitches';
+  static const String suggestedPitchesForProduct = '/pitches/suggested-for-product';
   static const String providers = '/providers';
   static const String providerAddresses = '/provider-addresses';
   static const String categories = '/categories';
@@ -81,6 +83,9 @@ class ApiConstants {
   static const String adminStatisticsPitchesByType = '/admin/statistics/pitches-by-type';
   static const String adminStatisticsRecentBookings = '/admin/statistics/recent-bookings';
   static const String adminStatisticsProducts = '/admin/statistics/products';
+
+  // Search history endpoints
+  static const String searchHistory = '/search-history';
 
   // User-to-user Chat endpoints
   static const String chatHistory = '/chat/history';

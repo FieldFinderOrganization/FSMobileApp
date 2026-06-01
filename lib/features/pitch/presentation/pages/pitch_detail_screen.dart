@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/location/location_helper.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../auth/login/presentation/bloc/auth_cubit.dart';
@@ -13,7 +14,13 @@ import '../../data/datasources/review_remote_datasource.dart';
 import '../../data/repositories/pitch_repository_impl.dart';
 import '../../domain/entities/pitch_entity.dart';
 import '../../domain/entities/review_entity.dart';
+import '../../domain/entities/suggested_pitches_entity.dart';
+import '../widgets/suggested_pitch_card.dart';
+import '../../../home/presentation/widgets/shimmer_card.dart';
 import './booking_screen.dart';
+import '../../../product/domain/repositories/product_repository.dart';
+import '../../../product/domain/entities/product_entity.dart';
+import '../../../product/presentation/widgets/product_card.dart';
 
 class PitchDetailScreen extends StatefulWidget {
   final PitchEntity pitch;
@@ -30,6 +37,7 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
   int _currentImagePage = 0;
   bool _showAllReviews = false;
   DateTime _selectedDate = DateTime.now();
+  bool _suggestedRequested = false;
 
   late AnimationController _fabAnimController;
   late Animation<double> _fabScaleAnimation;
@@ -68,10 +76,18 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
           pitchRemoteDatasource: pitchDatasource,
           reviewRemoteDatasource: reviewDatasource,
         );
-        return PitchDetailCubit(repository)
-          ..loadPitchDetails(widget.pitch.pitchId);
+        return PitchDetailCubit(
+          repository,
+          context.read<ProductRepository>(),
+        )..loadPitchDetails(widget.pitch.pitchId);
       },
-      child: BlocBuilder<PitchDetailCubit, PitchDetailState>(
+      child: BlocConsumer<PitchDetailCubit, PitchDetailState>(
+        listener: (context, state) {
+          if (state is PitchDetailSuccess && !_suggestedRequested) {
+            _suggestedRequested = true;
+            _loadSuggested(context);
+          }
+        },
         builder: (context, state) {
           if (state is PitchDetailLoading) {
             return const Scaffold(
@@ -132,8 +148,23 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                           // ── Reviews ───────────────────────────────────────────
                           _buildReviews(reviews),
 
+                          // ── Suggested (loading placeholder) ───────────────────
+                          if (state is PitchDetailSuccess &&
+                              state.suggestedLoading &&
+                              state.suggested.isEmpty &&
+                              state.suggestedProducts.isEmpty)
+                            const _SuggestedLoadingPlaceholder(),
+
+                          // ── Suggested pitches ─────────────────────────────────
+                          if (state is PitchDetailSuccess)
+                            _buildSuggestedPitches(state.suggested),
+
+                          // ── Suggested products ────────────────────────────────
+                          if (state is PitchDetailSuccess)
+                            _buildSuggestedProducts(state.suggestedProducts),
+
                           // Bottom padding for booking bar
-                          const SizedBox(height: 120),
+                          const SizedBox(height: 160),
                         ],
                       ),
                     ),
@@ -172,6 +203,111 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
           );
         },
       ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Suggested pitches
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Future<void> _loadSuggested(BuildContext context) async {
+    print("[DETAIL_SCREEN] _loadSuggested triggered for pitch: ${widget.pitch.pitchId}");
+    final cubit = context.read<PitchDetailCubit>();
+    print("[DETAIL_SCREEN] Fetching location coordinates...");
+    final pos = await LocationHelper.currentPosition();
+    print("[DETAIL_SCREEN] Location coordinates: lat=${pos?.latitude}, lng=${pos?.longitude}");
+    if (!mounted) {
+      print("[DETAIL_SCREEN] Widget not mounted anymore, aborting loadSuggested");
+      return;
+    }
+    await cubit.loadSuggested(
+      widget.pitch.pitchId,
+      lat: pos?.latitude,
+      lng: pos?.longitude,
+    );
+    print("[DETAIL_SCREEN] loadSuggested completed");
+  }
+
+  Widget _buildSuggestedPitches(SuggestedPitchesEntity suggested) {
+    if (suggested.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionDivider(),
+        if (suggested.nearby.isNotEmpty)
+          _suggestedSection('Sân gần bạn', suggested.nearby),
+        if (suggested.topRated.isNotEmpty)
+          _suggestedSection('Đánh giá cao', suggested.topRated),
+        if (suggested.visited.isNotEmpty)
+          _suggestedSection('Bạn đã xem', suggested.visited),
+      ],
+    );
+  }
+
+  Widget _buildSuggestedProducts(List<ProductEntity> products) {
+    if (products.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionDivider(),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          child: Text(
+            'Trang bị khuyên dùng cho trận đấu',
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textDark,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 252,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            itemCount: products.length,
+            itemBuilder: (_, i) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: ProductCard(
+                  product: products[i],
+                  mode: ProductCardMode.horizontal,
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+
+  Widget _suggestedSection(String title, List<PitchEntity> pitches) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          child: Text(
+            title,
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textDark,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 210,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            itemCount: pitches.length,
+            itemBuilder: (_, i) => SuggestedPitchCard(pitch: pitches[i]),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1382,3 +1518,38 @@ class _ExpandableTextState extends State<_ExpandableText> {
 //     required this.available,
 //   });
 // }
+
+// ── Suggested loading placeholder ─────────────────────────────────────────────
+class _SuggestedLoadingPlaceholder extends StatelessWidget {
+  const _SuggestedLoadingPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionDivider(),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          child: ShimmerCard(
+            width: 180,
+            height: 18,
+            borderRadius: BorderRadius.circular(6),
+          ),
+        ),
+        SizedBox(
+          height: 200,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            itemCount: 3,
+            itemBuilder: (context, index) => const Padding(
+              padding: EdgeInsets.only(right: 12),
+              child: ShimmerCard(width: 200, height: 200),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}

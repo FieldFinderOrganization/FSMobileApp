@@ -22,6 +22,10 @@ class UserEntity extends Equatable {
   final String? preferredPitchType; // FIVE_A_SIDE / SEVEN_A_SIDE / ELEVEN_A_SIDE
   final String? preferredPlayTime;  // MORNING / AFTERNOON / EVENING / NIGHT
 
+  // Toạ độ (dùng cho "sân gần bạn" khi GPS không có)
+  final double? latitude;
+  final double? longitude;
+
   const UserEntity({
     required this.userId,
     required this.name,
@@ -39,13 +43,15 @@ class UserEntity extends Equatable {
     this.occupation,
     this.preferredPitchType,
     this.preferredPlayTime,
+    this.latitude,
+    this.longitude,
   });
 
   @override
   List<Object?> get props => [
         userId, name, email, phone, role, status, imageUrl, hasPassword,
         gender, dateOfBirth, address, province, district, occupation,
-        preferredPitchType, preferredPlayTime,
+        preferredPitchType, preferredPlayTime, latitude, longitude,
       ];
 
   UserEntity copyWith({
@@ -65,6 +71,8 @@ class UserEntity extends Equatable {
     String? occupation,
     String? preferredPitchType,
     String? preferredPlayTime,
+    double? latitude,
+    double? longitude,
   }) {
     return UserEntity(
       userId: userId ?? this.userId,
@@ -83,6 +91,8 @@ class UserEntity extends Equatable {
       occupation: occupation ?? this.occupation,
       preferredPitchType: preferredPitchType ?? this.preferredPitchType,
       preferredPlayTime: preferredPlayTime ?? this.preferredPlayTime,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
     );
   }
 }

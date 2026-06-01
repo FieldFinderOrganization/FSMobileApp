@@ -5,6 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../domain/entities/pitch_entity.dart';
 import '../../../home/presentation/cubit/home_cubit.dart';
+import '../../../home/presentation/pages/search_screen.dart';
 import '../widgets/filter_sheet.dart';
 import 'pitch_detail_screen.dart';
 
@@ -160,8 +161,16 @@ class _PitchTabBodyState extends State<_PitchTabBody>
                       const SizedBox(width: 10),
                       Expanded(
                         child: TextField(
-                          controller: _controller,
-                          onChanged: _onQueryChanged,
+                          readOnly: true,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const SearchScreen(
+                                  initialMode: SearchMode.pitch,
+                                ),
+                              ),
+                            );
+                          },
                           style: GoogleFonts.inter(fontSize: 14),
                           decoration: InputDecoration(
                             hintText: 'Tìm kiếm sân bóng...',

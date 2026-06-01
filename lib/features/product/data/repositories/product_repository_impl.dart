@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import '../../../home/data/models/category_model.dart';
 import '../../../home/domain/entities/category_entity.dart';
 import '../../domain/entities/product_entity.dart';
+import '../../domain/entities/suggested_products_entity.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../datasources/product_remote_data_source.dart';
 import '../models/product_model.dart';
@@ -45,6 +46,29 @@ class ProductRepositoryImpl implements ProductRepository {
     try {
       final data = await _remoteDataSource.fetchCategories();
       return data.map((e) => CategoryModel.fromJson(e)).toList();
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
+  @override
+  Future<SuggestedProductsEntity> getSuggested(String productId, {int limit = 10}) async {
+    try {
+      final result = await _remoteDataSource.fetchSuggested(productId, limit: limit);
+      return SuggestedProductsEntity(
+        similar: result['similar'] ?? const [],
+        topSelling: result['topSelling'] ?? const [],
+        historyBased: result['historyBased'] ?? const [],
+      );
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
+  @override
+  Future<List<ProductEntity>> getSuggestedForPitch({int limit = 10}) async {
+    try {
+      return await _remoteDataSource.fetchSuggestedForPitch(limit: limit);
     } on DioException catch (e) {
       throw _mapDioError(e);
     }

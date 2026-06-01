@@ -9,10 +9,14 @@ import 'package:share_plus/share_plus.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/datasources/admin_statistics_datasource.dart';
 import '../../data/models/admin_pitch_list_model.dart';
 import '../../data/models/pitch_type_model.dart';
 import 'admin_users_screen.dart' show buildAdminPaginationBar;
+import '../../../../core/network/dio_client.dart';
+import '../../../../core/constants/api_constants.dart';
+import '../../../../core/location/map_picker_screen.dart';
 
 class AdminPitchesScreen extends StatefulWidget {
   final AdminStatisticsDatasource datasource;
@@ -1002,6 +1006,48 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
     );
   }
 
+  Future<void> _editPitchLocation(AdminPitchItem pitch) async {
+    final picked = await Navigator.of(context).push<MapPickResult>(
+      MaterialPageRoute(
+        builder: (_) => MapPickerScreen(
+          initialLat: pitch.latitude,
+          initialLng: pitch.longitude,
+          title: 'Vị trí: ${pitch.name}',
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+
+    final dio = context.read<DioClient>().dio;
+    try {
+      await dio.put(
+        '${ApiConstants.providerAddresses}/${pitch.providerAddressId}',
+        data: {
+          // Giữ địa chỉ cũ; chỉ cập nhật toạ độ chính xác.
+          'address': pitch.address ?? '',
+          'latitude': picked.latLng.latitude,
+          'longitude': picked.latLng.longitude,
+        },
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đã cập nhật vị trí sân.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lỗi cập nhật vị trí: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
   Widget _buildRow(AdminPitchItem pitch, bool isLast) {
     final typeColor = pitch.type.contains('5')
         ? _kPrimary
@@ -1091,6 +1137,18 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
                   ),
                 ],
               ),
+              if (pitch.providerAddressId != null)
+                IconButton(
+                  tooltip: 'Sửa vị trí trên bản đồ',
+                  icon: Icon(
+                    pitch.latitude != null
+                        ? Icons.edit_location_alt
+                        : Icons.add_location_alt_outlined,
+                    color: pitch.latitude != null ? _kTeal : _kPrimary,
+                    size: 22,
+                  ),
+                  onPressed: () => _editPitchLocation(pitch),
+                ),
             ],
           ),
         ),

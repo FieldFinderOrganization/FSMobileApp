@@ -5,7 +5,9 @@ abstract class ProviderRepository {
   Future<ProviderEntity> getProviderByUserId(String userId);
   Future<ProviderEntity> updateProvider(String providerId, String cardNumber, String bank);
   Future<List<ProviderAddressEntity>> getAddressesByProvider(String providerId);
-  Future<ProviderAddressEntity> addAddress(String providerId, String address);
-  Future<ProviderAddressEntity> updateAddress(String addressId, String address);
+  Future<ProviderAddressEntity> addAddress(String providerId, String address,
+      {double? latitude, double? longitude});
+  Future<ProviderAddressEntity> updateAddress(String addressId, String address,
+      {double? latitude, double? longitude});
   Future<void> deleteAddress(String addressId);
 }

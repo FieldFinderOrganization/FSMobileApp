@@ -259,20 +259,17 @@ class _SortChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.primaryRed : Colors.white,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: isActive ? AppColors.primaryRed : const Color(0xFFDDDDDD),
-          ),
+          color: isActive ? AppColors.primaryRed : const Color(0xFFF3F4F6),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
           label,
           style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: isActive ? Colors.white : AppColors.textGrey,
+            color: isActive ? Colors.white : AppColors.textDark.withValues(alpha: 0.8),
           ),
         ),
       ),
@@ -298,20 +295,17 @@ class _GenderChip extends StatelessWidget {
       onTap: () => context.read<HomeCubit>().toggleGender(value),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.primaryRed : Colors.white,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: isActive ? AppColors.primaryRed : const Color(0xFFDDDDDD),
-          ),
+          color: isActive ? AppColors.primaryRed : const Color(0xFFF3F4F6),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
           label,
           style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: isActive ? Colors.white : AppColors.textGrey,
+            color: isActive ? Colors.white : AppColors.textDark.withValues(alpha: 0.8),
           ),
         ),
       ),
@@ -335,20 +329,17 @@ class _BrandChip extends StatelessWidget {
       onTap: () => context.read<HomeCubit>().setBrand(label),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.primaryRed : Colors.white,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: isActive ? AppColors.primaryRed : const Color(0xFFDDDDDD),
-          ),
+          color: isActive ? AppColors.primaryRed : const Color(0xFFF3F4F6),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
           label,
           style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: isActive ? Colors.white : AppColors.textGrey,
+            color: isActive ? Colors.white : AppColors.textDark.withValues(alpha: 0.8),
           ),
         ),
       ),
@@ -419,13 +410,8 @@ class _ParentCategoryChips extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: isActive ? AppColors.primaryRed : Colors.white,
+                  color: isActive ? AppColors.primaryRed : const Color(0xFFF3F4F6),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isActive
-                        ? AppColors.primaryRed
-                        : const Color(0xFFDDDDDD),
-                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -435,7 +421,7 @@ class _ParentCategoryChips extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: isActive ? Colors.white : AppColors.textGrey,
+                        color: isActive ? Colors.white : AppColors.textDark.withValues(alpha: 0.8),
                       ),
                     ),
                     if (hasChildren) ...[
@@ -445,7 +431,7 @@ class _ParentCategoryChips extends StatelessWidget {
                             ? Icons.keyboard_arrow_up_rounded
                             : Icons.keyboard_arrow_down_rounded,
                         size: 14,
-                        color: isActive ? Colors.white : AppColors.textGrey,
+                        color: isActive ? Colors.white : AppColors.textDark.withValues(alpha: 0.8),
                       ),
                     ],
                   ],
@@ -475,9 +461,8 @@ class _SubCategoryChips extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        color: const Color(0xFFF9FAF7),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Wrap(
         spacing: 8,
@@ -492,14 +477,11 @@ class _SubCategoryChips extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppColors.primaryRed.withValues(alpha: 0.08)
-                    : Colors.white,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: isSelected
-                      ? AppColors.primaryRed
-                      : const Color(0xFFDDDDDD),
-                  width: isSelected ? 1.5 : 1,
-                ),
+                    : const Color(0xFFF3F4F6),
+                borderRadius: BorderRadius.circular(8),
+                border: isSelected
+                    ? Border.all(color: AppColors.primaryRed, width: 1.5)
+                    : null,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,

@@ -69,11 +69,13 @@ class ProviderCubit extends Cubit<ProviderState> {
     }
   }
 
-  Future<void> addAddress(String providerId, String address) async {
+  Future<void> addAddress(String providerId, String address,
+      {double? latitude, double? longitude}) async {
     final currentState = state;
     if (currentState is ProviderLoaded) {
       try {
-        await repository.addAddress(providerId, address);
+        await repository.addAddress(providerId, address,
+            latitude: latitude, longitude: longitude);
         final addresses = await repository.getAddressesByProvider(providerId);
         emit(ProviderLoaded(
           provider: currentState.provider,
@@ -86,11 +88,13 @@ class ProviderCubit extends Cubit<ProviderState> {
     }
   }
 
-  Future<void> updateAddress(String addressId, String address) async {
+  Future<void> updateAddress(String addressId, String address,
+      {double? latitude, double? longitude}) async {
     final currentState = state;
     if (currentState is ProviderLoaded) {
       try {
-        await repository.updateAddress(addressId, address);
+        await repository.updateAddress(addressId, address,
+            latitude: latitude, longitude: longitude);
         final addresses = await repository.getAddressesByProvider(currentState.provider.providerId);
         emit(ProviderLoaded(
           provider: currentState.provider,

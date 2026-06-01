@@ -89,9 +89,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final base = it.originalTotalPrice;
       double itemDiscount = 0;
       for (final v in vouchers) {
-        if (v.scope != 'GLOBAL' &&
-            _matchesItem(v, it) &&
-            _meetsMin(v, base)) {
+        if (v.scope != 'GLOBAL' && _matchesItem(v, it) && _meetsMin(v, base)) {
           itemDiscount = max(itemDiscount, _calcSingle(v, base));
         }
       }
@@ -124,9 +122,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final base = item.originalTotalPrice;
     double itemDiscount = 0;
     for (final v in _selectedVouchers) {
-      if (v.scope != 'GLOBAL' &&
-          _matchesItem(v, item) &&
-          _meetsMin(v, base)) {
+      if (v.scope != 'GLOBAL' && _matchesItem(v, item) && _meetsMin(v, base)) {
         itemDiscount = max(itemDiscount, _calcSingle(v, base));
       }
     }
@@ -167,9 +163,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       double itemDiscount = 0;
       for (final v in _selectedVouchers) {
         if (v.isRefundCredit) continue;
-        if (v.scope != 'GLOBAL' &&
-            _matchesItem(v, it) &&
-            _meetsMin(v, base)) {
+        if (v.scope != 'GLOBAL' && _matchesItem(v, it) && _meetsMin(v, base)) {
           itemDiscount = max(itemDiscount, _calcSingle(v, base));
         }
       }
@@ -195,7 +189,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     double refundApplied = 0;
     for (final v in _selectedVouchers.where((v) => v.isRefundCredit)) {
       if (afterPromo <= 0) break;
-      final deduct = afterPromo < v.effectiveValue ? afterPromo : v.effectiveValue;
+      final deduct = afterPromo < v.effectiveValue
+          ? afterPromo
+          : v.effectiveValue;
       refundApplied += deduct;
       afterPromo -= deduct;
     }
@@ -273,8 +269,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
       final globals = toAdd.where((v) => v.scope == 'GLOBAL').toList();
       if (globals.isNotEmpty) {
-        globals.sort((a, b) =>
-            _calcSingle(b, _subtotal).compareTo(_calcSingle(a, _subtotal)));
+        globals.sort(
+          (a, b) =>
+              _calcSingle(b, _subtotal).compareTo(_calcSingle(a, _subtotal)),
+        );
         _selectedVouchers.add(globals.first);
       }
 
@@ -815,8 +813,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             final discount = _itemDiscountFor(item);
             final hasDiscount = discount > 0;
             final effective = (base - discount).clamp(0, base);
-            final percent =
-                hasDiscount ? ((discount / base) * 100).round() : 0;
+            final percent = hasDiscount ? ((discount / base) * 100).round() : 0;
             final unitDisplay = hasDiscount
                 ? effective / item.quantity
                 : item.originalPrice;
@@ -976,8 +973,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final accent = v.scope == 'GLOBAL'
         ? const Color(0xFFB91C1C)
         : v.scope == 'CATEGORY'
-            ? const Color(0xFF1565C0)
-            : const Color(0xFF6A1B9A);
+        ? const Color(0xFF1565C0)
+        : const Color(0xFF6A1B9A);
 
     // Saving thực tế
     double saving = 0;
@@ -1034,9 +1031,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: CustomPaint(
                   size: const Size(1, double.infinity),
-                  painter: _DashedLinePainter(
-                    color: const Color(0xFFE5E7EB),
-                  ),
+                  painter: _DashedLinePainter(color: const Color(0xFFE5E7EB)),
                 ),
               ),
               // Body
@@ -1174,7 +1169,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                     children: [
                       TextSpan(
-                        text: 'Bạn có ${eligibleGlobals.length} mã giảm toàn đơn. ',
+                        text:
+                            'Bạn có ${eligibleGlobals.length} mã giảm toàn đơn. ',
                       ),
                       const TextSpan(text: 'Tiết kiệm thêm tới '),
                       TextSpan(
@@ -1483,9 +1479,7 @@ class _VoucherBottomSheet extends StatelessWidget {
       final base = it.originalTotalPrice;
       double itemDiscount = 0;
       for (final v in vouchers) {
-        if (v.scope != 'GLOBAL' &&
-            _matchesItem(v, it) &&
-            _meetsMin(v, base)) {
+        if (v.scope != 'GLOBAL' && _matchesItem(v, it) && _meetsMin(v, base)) {
           itemDiscount = max(itemDiscount, _calcSingle(v, base));
         }
       }
@@ -1661,8 +1655,10 @@ class _VoucherBottomSheet extends StatelessWidget {
                                 v,
                                 currFmt,
                                 dateFmt,
-                                isBestGlobal: bestGlobal != null &&
-                                    v.userDiscountId == bestGlobal!.userDiscountId,
+                                isBestGlobal:
+                                    bestGlobal != null &&
+                                    v.userDiscountId ==
+                                        bestGlobal.userDiscountId,
                               ),
                             ),
                           ),
@@ -1717,8 +1713,8 @@ class _VoucherBottomSheet extends StatelessWidget {
     final accent = v.scope == 'GLOBAL'
         ? const Color(0xFFB91C1C) // GLOBAL red
         : v.scope == 'CATEGORY'
-            ? const Color(0xFF1565C0) // CATEGORY blue
-            : const Color(0xFF6A1B9A); // SPECIFIC purple
+        ? const Color(0xFF1565C0) // CATEGORY blue
+        : const Color(0xFF6A1B9A); // SPECIFIC purple
 
     return Opacity(
       opacity: eligible ? 1.0 : 0.55,
@@ -1883,8 +1879,8 @@ class _VoucherBottomSheet extends StatelessWidget {
                                 child: Text(
                                   eligible
                                       ? (v.scope == 'GLOBAL'
-                                          ? 'Đủ điều kiện'
-                                          : 'Áp dụng được')
+                                            ? 'Đủ điều kiện'
+                                            : 'Áp dụng được')
                                       : disabledReason,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
@@ -1946,11 +1942,7 @@ class _DashedLinePainter extends CustomPainter {
       ..color = color
       ..strokeWidth = 1;
     while (startY < size.height) {
-      canvas.drawLine(
-        Offset(0, startY),
-        Offset(0, startY + dashHeight),
-        paint,
-      );
+      canvas.drawLine(Offset(0, startY), Offset(0, startY + dashHeight), paint);
       startY += dashHeight + dashSpace;
     }
   }

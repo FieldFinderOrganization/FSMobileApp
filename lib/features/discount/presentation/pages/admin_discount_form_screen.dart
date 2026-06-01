@@ -46,11 +46,12 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
     _descCtrl = TextEditingController(text: d?.description ?? '');
     _valueCtrl = TextEditingController(text: d?.value.toStringAsFixed(0) ?? '');
     _minOrderCtrl = TextEditingController(
-        text: d?.minOrderValue?.toStringAsFixed(0) ?? '');
+      text: d?.minOrderValue?.toStringAsFixed(0) ?? '',
+    );
     _maxDiscountCtrl = TextEditingController(
-        text: d?.maxDiscountAmount?.toStringAsFixed(0) ?? '');
-    _quantityCtrl =
-        TextEditingController(text: d?.quantity.toString() ?? '1');
+      text: d?.maxDiscountAmount?.toStringAsFixed(0) ?? '',
+    );
+    _quantityCtrl = TextEditingController(text: d?.quantity.toString() ?? '1');
     if (d != null) {
       _discountType = d.discountType;
       _scope = d.scope;
@@ -82,7 +83,9 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
       builder: (ctx, child) => Theme(
         data: ThemeData.dark().copyWith(
           colorScheme: const ColorScheme.dark(
-              primary: AppColors.primaryRed, surface: Color(0xFF1A1A2E)),
+            primary: AppColors.primaryRed,
+            surface: Color(0xFF1A1A2E),
+          ),
         ),
         child: child!,
       ),
@@ -103,8 +106,10 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
     if (_scope == 'SPECIFIC_PRODUCT' && _selectedProductIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Vui lòng chọn ít nhất 1 sản phẩm',
-              style: GoogleFonts.inter(color: Colors.white)),
+          content: Text(
+            'Vui lòng chọn ít nhất 1 sản phẩm',
+            style: GoogleFonts.inter(color: Colors.white),
+          ),
           backgroundColor: Colors.red[700],
           behavior: SnackBarBehavior.floating,
         ),
@@ -114,8 +119,10 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
     if (_scope == 'CATEGORY' && _selectedCategoryIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Vui lòng chọn ít nhất 1 danh mục',
-              style: GoogleFonts.inter(color: Colors.white)),
+          content: Text(
+            'Vui lòng chọn ít nhất 1 danh mục',
+            style: GoogleFonts.inter(color: Colors.white),
+          ),
           backgroundColor: Colors.red[700],
           behavior: SnackBarBehavior.floating,
         ),
@@ -138,10 +145,10 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
       'startDate': _startDate.toIso8601String().substring(0, 10),
       'endDate': _endDate.toIso8601String().substring(0, 10),
       'status': _status,
-      'applicableProductIds':
-          _scope == 'SPECIFIC_PRODUCT' ? _selectedProductIds : [],
-      'applicableCategoryIds':
-          _scope == 'CATEGORY' ? _selectedCategoryIds : [],
+      'applicableProductIds': _scope == 'SPECIFIC_PRODUCT'
+          ? _selectedProductIds
+          : [],
+      'applicableCategoryIds': _scope == 'CATEGORY' ? _selectedCategoryIds : [],
     };
     final cubit = context.read<AdminDiscountCubit>();
     if (_isEdit) {
@@ -195,15 +202,21 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
         backgroundColor: const Color(0xFF1A1A2E),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              size: 20, color: Colors.white),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            size: 20,
+            color: Colors.white,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(_isEdit ? 'Sửa mã khuyến mãi' : 'Tạo mã khuyến mãi',
-            style: GoogleFonts.inter(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 17)),
+        title: Text(
+          _isEdit ? 'Sửa mã khuyến mãi' : 'Tạo mã khuyến mãi',
+          style: GoogleFonts.inter(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 17,
+          ),
+        ),
       ),
       body: Form(
         key: _formKey,
@@ -217,8 +230,7 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
                   label: 'Mã code',
                   controller: _codeCtrl,
                   hint: 'VD: SUMMER2025',
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Bắt buộc' : null,
+                  validator: (v) => v == null || v.isEmpty ? 'Bắt buộc' : null,
                 ),
                 const SizedBox(height: 12),
                 _Field(
@@ -248,8 +260,7 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
                   controller: _valueCtrl,
                   hint: _discountType == 'PERCENTAGE' ? '20' : '50000',
                   keyboardType: TextInputType.number,
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Bắt buộc' : null,
+                  validator: (v) => v == null || v.isEmpty ? 'Bắt buộc' : null,
                 ),
                 const SizedBox(height: 12),
                 _Field(
@@ -306,8 +317,7 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
                   controller: _quantityCtrl,
                   hint: '100',
                   keyboardType: TextInputType.number,
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Bắt buộc' : null,
+                  validator: (v) => v == null || v.isEmpty ? 'Bắt buộc' : null,
                 ),
               ],
             ),
@@ -357,7 +367,8 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryRed,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       elevation: 0,
                     ),
                     child: state.status == AdminDiscountStatus.loading
@@ -365,13 +376,17 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 2))
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
                         : Text(
                             _isEdit ? 'Cập nhật' : 'Tạo mã',
                             style: GoogleFonts.inter(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15),
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                            ),
                           ),
                   ),
                 );
@@ -403,12 +418,15 @@ class _Section extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: GoogleFonts.inter(
-                  color: Colors.grey[400],
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.8)),
+          Text(
+            title,
+            style: GoogleFonts.inter(
+              color: Colors.grey[400],
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.8,
+            ),
+          ),
           const SizedBox(height: 12),
           ...children,
         ],
@@ -439,9 +457,10 @@ class _Field extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: GoogleFonts.inter(
-                color: Colors.grey[400], fontSize: 12)),
+        Text(
+          label,
+          style: GoogleFonts.inter(color: Colors.grey[400], fontSize: 12),
+        ),
         const SizedBox(height: 6),
         TextFormField(
           controller: controller,
@@ -451,28 +470,26 @@ class _Field extends StatelessWidget {
           style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle:
-                GoogleFonts.inter(color: Colors.grey[600], fontSize: 14),
+            hintStyle: GoogleFonts.inter(color: Colors.grey[600], fontSize: 14),
             filled: true,
             fillColor: const Color(0xFF0F0F1E),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide:
-                  const BorderSide(color: Color(0xFF2A2A4A)),
+              borderSide: const BorderSide(color: Color(0xFF2A2A4A)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide:
-                  const BorderSide(color: Color(0xFF2A2A4A)),
+              borderSide: const BorderSide(color: Color(0xFF2A2A4A)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide:
-                  const BorderSide(color: AppColors.primaryRed),
+              borderSide: const BorderSide(color: AppColors.primaryRed),
             ),
             isDense: true,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
           ),
         ),
       ],
@@ -500,9 +517,10 @@ class _SegmentedRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: GoogleFonts.inter(
-                color: Colors.grey[400], fontSize: 12)),
+        Text(
+          label,
+          style: GoogleFonts.inter(color: Colors.grey[400], fontSize: 12),
+        ),
         const SizedBox(height: 6),
         Row(
           children: options.asMap().entries.map((e) {
@@ -512,7 +530,8 @@ class _SegmentedRow extends StatelessWidget {
                 onTap: () => onChanged(e.value),
                 child: Container(
                   margin: EdgeInsets.only(
-                      right: e.key < options.length - 1 ? 6 : 0),
+                    right: e.key < options.length - 1 ? 6 : 0,
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
                     color: isSelected
@@ -520,18 +539,19 @@ class _SegmentedRow extends StatelessWidget {
                         : const Color(0xFF0F0F1E),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                        color: isSelected
-                            ? AppColors.primaryRed
-                            : const Color(0xFF2A2A4A)),
+                      color: isSelected
+                          ? AppColors.primaryRed
+                          : const Color(0xFF2A2A4A),
+                    ),
                   ),
                   child: Text(
                     labels[e.key],
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
-                        color:
-                            isSelected ? Colors.white : Colors.grey[400],
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600),
+                      color: isSelected ? Colors.white : Colors.grey[400],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -563,14 +583,15 @@ class _PickerTile extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: GoogleFonts.inter(color: Colors.grey[400], fontSize: 12)),
+        Text(
+          label,
+          style: GoogleFonts.inter(color: Colors.grey[400], fontSize: 12),
+        ),
         const SizedBox(height: 6),
         GestureDetector(
           onTap: onTap,
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: const Color(0xFF0F0F1E),
               borderRadius: BorderRadius.circular(8),
@@ -599,8 +620,11 @@ class _PickerTile extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded,
-                    size: 18, color: Colors.grey),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: Colors.grey,
+                ),
               ],
             ),
           ),
@@ -616,8 +640,10 @@ class _ProductPickerSheet extends StatefulWidget {
   final ProductRepository repo;
   final List<int> initialSelected;
 
-  const _ProductPickerSheet(
-      {required this.repo, required this.initialSelected});
+  const _ProductPickerSheet({
+    required this.repo,
+    required this.initialSelected,
+  });
 
   @override
   State<_ProductPickerSheet> createState() => _ProductPickerSheetState();
@@ -641,7 +667,11 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
     try {
       final res = await widget.repo.getAllProducts(size: 200);
       final list = (res['products'] as List?)?.cast<ProductEntity>() ?? [];
-      if (mounted) setState(() { _products = list; _loading = false; });
+      if (mounted)
+        setState(() {
+          _products = list;
+          _loading = false;
+        });
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -658,10 +688,12 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
     final filtered = _search.isEmpty
         ? _products
         : _products
-            .where((p) =>
-                p.name.toLowerCase().contains(_search.toLowerCase()) ||
-                p.id.toString().contains(_search))
-            .toList();
+              .where(
+                (p) =>
+                    p.name.toLowerCase().contains(_search.toLowerCase()) ||
+                    p.id.toString().contains(_search),
+              )
+              .toList();
 
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
@@ -686,38 +718,44 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
             ),
             // Header
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
                   Expanded(
-                    child: Text('Chọn sản phẩm',
-                        style: GoogleFonts.inter(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16)),
+                    child: Text(
+                      'Chọn sản phẩm',
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
                   ),
                   if (_selected.isNotEmpty)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.primaryRed,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Text('${_selected.length}',
-                          style: GoogleFonts.inter(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700)),
+                      child: Text(
+                        '${_selected.length}',
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                 ],
               ),
             ),
             // Search
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: TextField(
                 controller: _searchCtrl,
                 style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
@@ -725,35 +763,41 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                 decoration: InputDecoration(
                   hintText: 'Tìm sản phẩm...',
                   hintStyle: GoogleFonts.inter(
-                      color: Colors.grey[600], fontSize: 14),
-                  prefixIcon: const Icon(Icons.search_rounded,
-                      color: Colors.grey, size: 18),
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    color: Colors.grey,
+                    size: 18,
+                  ),
                   suffixIcon: _search.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear_rounded,
-                              color: Colors.grey, size: 18),
+                          icon: const Icon(
+                            Icons.clear_rounded,
+                            color: Colors.grey,
+                            size: 18,
+                          ),
                           onPressed: () {
                             _searchCtrl.clear();
                             setState(() => _search = '');
-                          })
+                          },
+                        )
                       : null,
                   filled: true,
                   fillColor: const Color(0xFF0F0F1E),
                   contentPadding: const EdgeInsets.symmetric(vertical: 8),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide:
-                        const BorderSide(color: Color(0xFF2A2A4A)),
+                    borderSide: const BorderSide(color: Color(0xFF2A2A4A)),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide:
-                        const BorderSide(color: Color(0xFF2A2A4A)),
+                    borderSide: const BorderSide(color: Color(0xFF2A2A4A)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide:
-                        const BorderSide(color: AppColors.primaryRed),
+                    borderSide: const BorderSide(color: AppColors.primaryRed),
                   ),
                 ),
               ),
@@ -764,80 +808,92 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
               child: _loading
                   ? const Center(
                       child: CircularProgressIndicator(
-                          color: AppColors.primaryRed))
+                        color: AppColors.primaryRed,
+                      ),
+                    )
                   : filtered.isEmpty
-                      ? Center(
-                          child: Text('Không tìm thấy sản phẩm',
-                              style: GoogleFonts.inter(
-                                  color: Colors.grey[500])))
-                      : ListView.separated(
-                          controller: scrollCtrl,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          itemCount: filtered.length,
-                          separatorBuilder: (_, __) => const Divider(
-                              color: Color(0xFF2A2A4A),
-                              height: 1,
-                              indent: 16),
-                          itemBuilder: (_, i) {
-                            final p = filtered[i];
-                            final pid = int.tryParse(p.id) ?? 0;
-                            final isSelected = _selected.contains(pid);
-                            return ListTile(
-                              dense: true,
-                              leading: ClipRRect(
-                                borderRadius: BorderRadius.circular(6),
-                                child: Image.network(
-                                  p.imageUrl,
-                                  width: 40,
-                                  height: 40,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Container(
-                                    width: 40,
-                                    height: 40,
-                                    color: const Color(0xFF0F0F1E),
-                                    child: const Icon(
-                                        Icons.image_not_supported_outlined,
-                                        size: 18,
-                                        color: Colors.grey),
-                                  ),
+                  ? Center(
+                      child: Text(
+                        'Không tìm thấy sản phẩm',
+                        style: GoogleFonts.inter(color: Colors.grey[500]),
+                      ),
+                    )
+                  : ListView.separated(
+                      controller: scrollCtrl,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, _) => const Divider(
+                        color: Color(0xFF2A2A4A),
+                        height: 1,
+                        indent: 16,
+                      ),
+                      itemBuilder: (_, i) {
+                        final p = filtered[i];
+                        final pid = int.tryParse(p.id) ?? 0;
+                        final isSelected = _selected.contains(pid);
+                        return ListTile(
+                          dense: true,
+                          leading: ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: Image.network(
+                              p.imageUrl,
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => Container(
+                                width: 40,
+                                height: 40,
+                                color: const Color(0xFF0F0F1E),
+                                child: const Icon(
+                                  Icons.image_not_supported_outlined,
+                                  size: 18,
+                                  color: Colors.grey,
                                 ),
                               ),
-                              title: Text(p.name,
-                                  style: GoogleFonts.inter(
-                                      color: Colors.white,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500)),
-                              subtitle: Text(
-                                  '${p.brand} • #${p.id}',
-                                  style: GoogleFonts.inter(
-                                      color: Colors.grey[500],
-                                      fontSize: 11)),
-                              trailing: isSelected
-                                  ? const Icon(
-                                      Icons.check_circle_rounded,
-                                      color: AppColors.primaryRed,
-                                      size: 22)
-                                  : Icon(
-                                      Icons.radio_button_unchecked_rounded,
-                                      color: Colors.grey[600],
-                                      size: 22),
-                              onTap: () => setState(() {
-                                if (isSelected) {
-                                  _selected.remove(pid);
-                                } else {
-                                  _selected.add(pid);
-                                }
-                              }),
-                            );
-                          },
-                        ),
+                            ),
+                          ),
+                          title: Text(
+                            p.name,
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '${p.brand} • #${p.id}',
+                            style: GoogleFonts.inter(
+                              color: Colors.grey[500],
+                              fontSize: 11,
+                            ),
+                          ),
+                          trailing: isSelected
+                              ? const Icon(
+                                  Icons.check_circle_rounded,
+                                  color: AppColors.primaryRed,
+                                  size: 22,
+                                )
+                              : Icon(
+                                  Icons.radio_button_unchecked_rounded,
+                                  color: Colors.grey[600],
+                                  size: 22,
+                                ),
+                          onTap: () => setState(() {
+                            if (isSelected) {
+                              _selected.remove(pid);
+                            } else {
+                              _selected.add(pid);
+                            }
+                          }),
+                        );
+                      },
+                    ),
             ),
             // Confirm button
             SafeArea(
               top: false,
               child: Padding(
-                padding:
-                    const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                 child: SizedBox(
                   width: double.infinity,
                   height: 48,
@@ -846,7 +902,8 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryRed,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       elevation: 0,
                     ),
                     child: Text(
@@ -854,9 +911,10 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                           ? 'Xác nhận (chưa chọn)'
                           : 'Xác nhận ${_selected.length} sản phẩm',
                       style: GoogleFonts.inter(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14),
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ),
@@ -875,8 +933,10 @@ class _CategoryPickerSheet extends StatefulWidget {
   final ProductRepository repo;
   final List<int> initialSelected;
 
-  const _CategoryPickerSheet(
-      {required this.repo, required this.initialSelected});
+  const _CategoryPickerSheet({
+    required this.repo,
+    required this.initialSelected,
+  });
 
   @override
   State<_CategoryPickerSheet> createState() => _CategoryPickerSheetState();
@@ -897,7 +957,11 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
   Future<void> _loadCategories() async {
     try {
       final list = await widget.repo.fetchCategories();
-      if (mounted) setState(() { _categories = list; _loading = false; });
+      if (mounted)
+        setState(() {
+          _categories = list;
+          _loading = false;
+        });
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -928,30 +992,37 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
             ),
             // Header
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
                   Expanded(
-                    child: Text('Chọn danh mục',
-                        style: GoogleFonts.inter(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16)),
+                    child: Text(
+                      'Chọn danh mục',
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
                   ),
                   if (_selected.isNotEmpty)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.primaryRed,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Text('${_selected.length}',
-                          style: GoogleFonts.inter(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700)),
+                      child: Text(
+                        '${_selected.length}',
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -962,73 +1033,86 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
               child: _loading
                   ? const Center(
                       child: CircularProgressIndicator(
-                          color: AppColors.primaryRed))
+                        color: AppColors.primaryRed,
+                      ),
+                    )
                   : _categories.isEmpty
-                      ? Center(
-                          child: Text('Không có danh mục',
-                              style: GoogleFonts.inter(
-                                  color: Colors.grey[500])))
-                      : ListView.separated(
-                          controller: scrollCtrl,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          itemCount: _categories.length,
-                          separatorBuilder: (_, __) => const Divider(
-                              color: Color(0xFF2A2A4A),
-                              height: 1,
-                              indent: 16),
-                          itemBuilder: (_, i) {
-                            final cat = _categories[i];
-                            final cid = int.tryParse(cat.id) ?? 0;
-                            final isSelected = _selected.contains(cid);
-                            return ListTile(
-                              dense: true,
-                              leading: Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? AppColors.primaryRed.withOpacity(0.15)
-                                      : const Color(0xFF0F0F1E),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                  Icons.category_outlined,
-                                  size: 18,
-                                  color: isSelected
-                                      ? AppColors.primaryRed
-                                      : Colors.grey[500],
-                                ),
-                              ),
-                              title: Text(cat.name,
+                  ? Center(
+                      child: Text(
+                        'Không có danh mục',
+                        style: GoogleFonts.inter(color: Colors.grey[500]),
+                      ),
+                    )
+                  : ListView.separated(
+                      controller: scrollCtrl,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: _categories.length,
+                      separatorBuilder: (_, _) => const Divider(
+                        color: Color(0xFF2A2A4A),
+                        height: 1,
+                        indent: 16,
+                      ),
+                      itemBuilder: (_, i) {
+                        final cat = _categories[i];
+                        final cid = int.tryParse(cat.id) ?? 0;
+                        final isSelected = _selected.contains(cid);
+                        return ListTile(
+                          dense: true,
+                          leading: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.primaryRed.withOpacity(0.15)
+                                  : const Color(0xFF0F0F1E),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.category_outlined,
+                              size: 18,
+                              color: isSelected
+                                  ? AppColors.primaryRed
+                                  : Colors.grey[500],
+                            ),
+                          ),
+                          title: Text(
+                            cat.name,
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          subtitle: cat.parentName != null
+                              ? Text(
+                                  cat.parentName!,
                                   style: GoogleFonts.inter(
-                                      color: Colors.white,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500)),
-                              subtitle: cat.parentName != null
-                                  ? Text(cat.parentName!,
-                                      style: GoogleFonts.inter(
-                                          color: Colors.grey[500],
-                                          fontSize: 11))
-                                  : null,
-                              trailing: isSelected
-                                  ? const Icon(
-                                      Icons.check_circle_rounded,
-                                      color: AppColors.primaryRed,
-                                      size: 22)
-                                  : Icon(
-                                      Icons.radio_button_unchecked_rounded,
-                                      color: Colors.grey[600],
-                                      size: 22),
-                              onTap: () => setState(() {
-                                if (isSelected) {
-                                  _selected.remove(cid);
-                                } else {
-                                  _selected.add(cid);
-                                }
-                              }),
-                            );
-                          },
-                        ),
+                                    color: Colors.grey[500],
+                                    fontSize: 11,
+                                  ),
+                                )
+                              : null,
+                          trailing: isSelected
+                              ? const Icon(
+                                  Icons.check_circle_rounded,
+                                  color: AppColors.primaryRed,
+                                  size: 22,
+                                )
+                              : Icon(
+                                  Icons.radio_button_unchecked_rounded,
+                                  color: Colors.grey[600],
+                                  size: 22,
+                                ),
+                          onTap: () => setState(() {
+                            if (isSelected) {
+                              _selected.remove(cid);
+                            } else {
+                              _selected.add(cid);
+                            }
+                          }),
+                        );
+                      },
+                    ),
             ),
             // Confirm
             SafeArea(
@@ -1043,7 +1127,8 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryRed,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       elevation: 0,
                     ),
                     child: Text(
@@ -1051,9 +1136,10 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                           ? 'Xác nhận (chưa chọn)'
                           : 'Xác nhận ${_selected.length} danh mục',
                       style: GoogleFonts.inter(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14),
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ),
@@ -1071,8 +1157,11 @@ class _DateTile extends StatelessWidget {
   final String value;
   final VoidCallback onTap;
 
-  const _DateTile(
-      {required this.label, required this.value, required this.onTap});
+  const _DateTile({
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1088,20 +1177,27 @@ class _DateTile extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label,
-                style: GoogleFonts.inter(
-                    color: Colors.grey[500], fontSize: 10)),
+            Text(
+              label,
+              style: GoogleFonts.inter(color: Colors.grey[500], fontSize: 10),
+            ),
             const SizedBox(height: 4),
             Row(
               children: [
-                const Icon(Icons.calendar_today_outlined,
-                    size: 14, color: AppColors.primaryRed),
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  size: 14,
+                  color: AppColors.primaryRed,
+                ),
                 const SizedBox(width: 6),
-                Text(value,
-                    style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600)),
+                Text(
+                  value,
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ],

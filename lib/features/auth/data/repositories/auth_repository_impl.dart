@@ -125,6 +125,8 @@ class AuthRepositoryImpl implements AuthRepository {
     String? occupation,
     String? preferredPitchType,
     String? preferredPlayTime,
+    double? latitude,
+    double? longitude,
   }) async {
     try {
       return await _datasource.updateProfile(
@@ -142,6 +144,8 @@ class AuthRepositoryImpl implements AuthRepository {
         occupation: occupation,
         preferredPitchType: preferredPitchType,
         preferredPlayTime: preferredPlayTime,
+        latitude: latitude,
+        longitude: longitude,
       );
     } on DioException catch (e) {
       throw _mapDioError(e);

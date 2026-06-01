@@ -8,7 +8,7 @@ class HomeFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFF8F8F8),
+      color: Colors.transparent,
       padding: const EdgeInsets.fromLTRB(24, 28, 24, 36),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,7 +45,7 @@ class HomeFooter extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          const Divider(color: Color(0xFFE8E8E8)),
+          const Divider(color: AppColors.hairline),
           const SizedBox(height: 16),
           Row(
             children: [

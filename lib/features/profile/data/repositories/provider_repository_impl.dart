@@ -27,17 +27,23 @@ class ProviderRepositoryImpl implements ProviderRepository {
   }
 
   @override
-  Future<ProviderAddressEntity> addAddress(String providerId, String address) async {
+  Future<ProviderAddressEntity> addAddress(String providerId, String address,
+      {double? latitude, double? longitude}) async {
     return await remoteDatasource.addAddress({
       'providerId': providerId,
       'address': address,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
     });
   }
 
   @override
-  Future<ProviderAddressEntity> updateAddress(String addressId, String address) async {
+  Future<ProviderAddressEntity> updateAddress(String addressId, String address,
+      {double? latitude, double? longitude}) async {
     return await remoteDatasource.updateAddress(addressId, {
       'address': address,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
     });
   }
 

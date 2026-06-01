@@ -56,8 +56,9 @@ class _AdminDiscountListScreenState extends State<AdminDiscountListScreen> {
   // ── Sort: active (sắp hết hạn trước) → inactive → expired (mới nhất trước)
   List<AdminDiscountEntity> _sortedAndFiltered(List<AdminDiscountEntity> all) {
     final filtered = all.where((d) {
-      if (_filterStatus != 'ALL' && d.effectiveStatus != _filterStatus)
+      if (_filterStatus != 'ALL' && d.effectiveStatus != _filterStatus) {
         return false;
+      }
       if (_filterType != 'ALL' && d.discountType != _filterType) return false;
       if (_searchQuery.isNotEmpty) {
         final q = _searchQuery.toLowerCase();
@@ -80,8 +81,9 @@ class _AdminDiscountListScreenState extends State<AdminDiscountListScreen> {
       // Trong cùng nhóm ACTIVE: sắp xếp endDate tăng dần (sắp hết hạn lên đầu)
       if (a.effectiveStatus == 'ACTIVE') return a.endDate.compareTo(b.endDate);
       // INACTIVE: startDate giảm dần (mới nhất lên đầu)
-      if (a.effectiveStatus == 'INACTIVE')
+      if (a.effectiveStatus == 'INACTIVE') {
         return b.startDate.compareTo(a.startDate);
+      }
       // EXPIRED: endDate giảm dần (mới hết nhất lên đầu)
       return b.endDate.compareTo(a.endDate);
     });

@@ -506,8 +506,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     String pct(double v) {
       final formatted = v.toStringAsFixed(1);
-      if (formatted == '0.0' || formatted == '-0.0')
+      if (formatted == '0.0' || formatted == '-0.0') {
         return ''; // Nếu là 0 thì trả về chuỗi rỗng
+      }
       return '${v > 0 ? '+' : ''}$formatted%';
     }
 
@@ -1266,8 +1267,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             getTitlesWidget: (value, meta) {
                               final index = value.toInt() - 1;
                               final total = data.length;
-                              if (index < 0 || index >= total)
+                              if (index < 0 || index >= total) {
                                 return const SizedBox();
+                              }
 
                               // Thuật toán: Chia mảng dữ liệu ra thành khoảng 5 khúc
                               int step = (total / 5).ceil();
@@ -1279,8 +1281,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                   (index == total - 1) ||
                                   (index % step == 0);
 
-                              if (!isVisible)
+                              if (!isVisible) {
                                 return const SizedBox(); // Ẩn các mốc còn lại để có khoảng trống
+                              }
 
                               String labelText = '';
                               final now = DateTime.now();

@@ -1,5 +1,6 @@
 import '../../domain/entities/pitch_entity.dart';
 import '../../domain/entities/review_entity.dart';
+import '../../domain/entities/suggested_pitches_entity.dart';
 import '../../domain/repositories/pitch_repository.dart';
 import '../datasources/pitch_remote_datasource.dart';
 import '../datasources/review_remote_datasource.dart';
@@ -41,5 +42,43 @@ class PitchRepositoryImpl implements PitchRepository {
   @override
   Future<void> deletePitch(String pitchId) async {
     await pitchRemoteDatasource.deletePitch(pitchId);
+  }
+
+  @override
+  Future<SuggestedPitchesEntity> getSuggested(
+    String pitchId, {
+    double? lat,
+    double? lng,
+    int limit = 10,
+  }) async {
+    final result = await pitchRemoteDatasource.fetchSuggested(
+      pitchId,
+      lat: lat,
+      lng: lng,
+      limit: limit,
+    );
+    return SuggestedPitchesEntity(
+      nearby: result['nearby'] ?? const [],
+      topRated: result['topRated'] ?? const [],
+      visited: result['visited'] ?? const [],
+    );
+  }
+
+  @override
+  Future<SuggestedPitchesEntity> getSuggestedForProduct({
+    double? lat,
+    double? lng,
+    int limit = 10,
+  }) async {
+    final result = await pitchRemoteDatasource.fetchSuggestedForProduct(
+      lat: lat,
+      lng: lng,
+      limit: limit,
+    );
+    return SuggestedPitchesEntity(
+      nearby: result['nearby'] ?? const [],
+      topRated: result['topRated'] ?? const [],
+      visited: result['visited'] ?? const [],
+    );
   }
 }

@@ -265,11 +265,12 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                               child: child!,
                             ),
                           );
-                          if (range != null)
+                          if (range != null) {
                             setSheet(() {
                               tempStart = range.start;
                               tempEnd = range.end;
                             });
+                          }
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(

@@ -88,9 +88,9 @@ class _HomeBodyState extends State<_HomeBody> {
         );
       },
       child: Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surfaceWarm,
       body: Container(
-        color: Colors.white,
+        color: AppColors.surfaceWarm,
         child: Stack(
         children: [
           // Parallax background — only this layer rebuilds on scroll
@@ -122,7 +122,13 @@ class _HomeBodyState extends State<_HomeBody> {
                       ),
                     ),
                     SliverToBoxAdapter(child: HeroBanner(state: state)),
-                    SliverToBoxAdapter(child: QuickActionsBar(state: state)),
+                    SliverToBoxAdapter(
+                      child: PremiumSurface(
+                        margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: QuickActionsBar(state: state),
+                      ),
+                    ),
                     SliverToBoxAdapter(
                       child: PremiumSurface(
                         child: FeaturedPitchesSection(state: state),

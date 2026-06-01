@@ -104,12 +104,22 @@ class ProductCard extends StatelessWidget {
     );
   }
 
+  // Shopee/Lazada-style: nền trắng, ảnh vuông, tên 2 dòng, giá đỏ nổi bật,
+  // dòng "đã bán" mờ. Chiều cao cố định gọn để không overflow trong list.
   Widget _buildHorizontalCard() {
     return Container(
-      width: 160,
+      width: 150,
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(4),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFEFEFEF)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -119,15 +129,15 @@ class ProductCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(4),
+                  top: Radius.circular(10),
                 ),
-                child: _buildImage(height: 140),
+                child: _buildImage(height: 150), // width 150 → ảnh vuông
               ),
               if (product.isOnSale) SaleBadge(percent: product.salePercent!),
             ],
           ),
           Padding(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -136,21 +146,76 @@ class ProductCard extends StatelessWidget {
                   product.name,
                   style: GoogleFonts.inter(
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textDark,
+                    height: 1.25,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 3),
-                _buildMetaDark(),
                 const SizedBox(height: 6),
-                _buildPriceRow(),
+                _buildHorizontalPriceRow(),
+                if (product.totalSold > 0) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Đã bán ${product.totalSold}',
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      color: AppColors.textGrey,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  // Giá đỏ nổi bật, giá gốc gạch ngang nằm cạnh (kiểu Shopee).
+  Widget _buildHorizontalPriceRow() {
+    if (product.isOnSale && product.salePrice != null) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Flexible(
+            child: Text(
+              '${product.salePrice!.toStringAsFixed(0)}k',
+              style: GoogleFonts.inter(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primaryRed,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '${product.price.toStringAsFixed(0)}k',
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              color: AppColors.textGrey,
+              decoration: TextDecoration.lineThrough,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      );
+    }
+    return Text(
+      '${product.price.toStringAsFixed(0)}k',
+      style: GoogleFonts.inter(
+        fontSize: 15,
+        fontWeight: FontWeight.w800,
+        color: AppColors.textDark,
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 
@@ -405,20 +470,6 @@ class ProductCard extends StatelessWidget {
         fontWeight: FontWeight.w800,
         color: Colors.white,
       ),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-    );
-  }
-
-  Widget _buildMetaDark() {
-    final parts = <String>[
-      if (product.brand.isNotEmpty) product.brand,
-      if (product.sex.isNotEmpty) product.sex,
-    ];
-    if (parts.isEmpty) return const SizedBox.shrink();
-    return Text(
-      parts.join(' · '),
-      style: GoogleFonts.inter(fontSize: 11, color: Colors.white38),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );

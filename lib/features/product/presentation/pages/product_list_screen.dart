@@ -11,6 +11,7 @@ import '../cubit/product_cubit.dart';
 import '../cubit/product_state.dart';
 import '../widgets/product_card.dart';
 import '../widgets/filter_sheet.dart';
+import '../../../home/presentation/pages/search_screen.dart';
 
 class ProductListScreen extends StatelessWidget {
   const ProductListScreen({super.key});
@@ -93,7 +94,16 @@ class ProductListScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       child: TextField(
-        onChanged: (val) => context.read<ProductCubit>().updateSearchQuery(val),
+        readOnly: true,
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const SearchScreen(
+                initialMode: SearchMode.product,
+              ),
+            ),
+          );
+        },
         style: GoogleFonts.inter(fontSize: 14),
         decoration: InputDecoration(
           hintText: 'Tìm kiếm sản phẩm...',

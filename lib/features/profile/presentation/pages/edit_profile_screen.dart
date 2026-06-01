@@ -9,6 +9,7 @@ import '../../../auth/domain/entities/user_entity.dart';
 import '../../../auth/login/presentation/bloc/auth_cubit.dart';
 import '../../../auth/login/presentation/bloc/auth_state.dart';
 import '../../../auth/shared/auth_widgets.dart';
+import '../../../../core/location/map_picker_screen.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final UserEntity user;
@@ -32,6 +33,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   DateTime? _dateOfBirth;
   String? _preferredPitchType; // FIVE_A_SIDE/SEVEN_A_SIDE/ELEVEN_A_SIDE
   String? _preferredPlayTime;  // MORNING/AFTERNOON/EVENING/NIGHT
+  double? _pickedLat;
+  double? _pickedLng;
 
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
@@ -46,6 +49,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _provinceController = TextEditingController(text: widget.user.province ?? '');
     _districtController = TextEditingController(text: widget.user.district ?? '');
     _occupationController = TextEditingController(text: widget.user.occupation ?? '');
+    _pickedLat = widget.user.latitude;
+    _pickedLng = widget.user.longitude;
 
     _gender = widget.user.gender;
     _dateOfBirth = widget.user.dateOfBirth;
@@ -134,6 +139,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       occupation: _occupationController.text.trim(),
       preferredPitchType: _preferredPitchType,
       preferredPlayTime: _preferredPlayTime,
+      latitude: _pickedLat,
+      longitude: _pickedLng,
     );
   }
 
@@ -352,6 +359,55 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           icon: Icons.location_on_outlined,
           keyboardType: TextInputType.streetAddress,
         ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.map_outlined, size: 18),
+          label: Text(
+            _pickedLat != null
+                ? 'Đã ghim vị trí trên bản đồ'
+                : 'Ghim vị trí trên bản đồ (chính xác hơn)',
+            style: GoogleFonts.inter(fontSize: 13),
+          ),
+          style: OutlinedButton.styleFrom(
+            foregroundColor:
+                _pickedLat != null ? Colors.green[700] : AppColors.primaryRed,
+            minimumSize: const Size.fromHeight(46),
+          ),
+          onPressed: () async {
+            final result = await Navigator.of(context).push<MapPickResult>(
+              MaterialPageRoute(
+                builder: (_) => MapPickerScreen(
+                  initialLat: _pickedLat,
+                  initialLng: _pickedLng,
+                  title: 'Ghim vị trí của bạn',
+                ),
+              ),
+            );
+            if (result != null) {
+              setState(() {
+                _pickedLat = result.latLng.latitude;
+                _pickedLng = result.latLng.longitude;
+                if (result.address != null) {
+                  _addressController.text = result.address!;
+                }
+                if (result.district != null) {
+                  _districtController.text = result.district!;
+                }
+                if (result.province != null) {
+                  _provinceController.text = result.province!;
+                }
+              });
+            }
+          },
+        ),
+        if (_pickedLat != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 4),
+            child: Text(
+              '${_pickedLat!.toStringAsFixed(5)}, ${_pickedLng!.toStringAsFixed(5)}',
+              style: GoogleFonts.inter(fontSize: 11, color: AppColors.textGrey),
+            ),
+          ),
         const SizedBox(height: 20),
         _buildFieldLabel('Quận / Huyện'),
         AuthTextField(

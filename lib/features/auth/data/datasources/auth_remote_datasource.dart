@@ -102,6 +102,8 @@ class AuthRemoteDatasource {
     String? occupation,
     String? preferredPitchType,
     String? preferredPlayTime,
+    double? latitude,
+    double? longitude,
   }) async {
     final body = <String, dynamic>{};
     if (name != null)               body['name'] = name;
@@ -117,6 +119,8 @@ class AuthRemoteDatasource {
     if (occupation != null)         body['occupation'] = occupation;
     if (preferredPitchType != null) body['preferredPitchType'] = preferredPitchType;
     if (preferredPlayTime != null)  body['preferredPlayTime'] = preferredPlayTime;
+    if (latitude != null)           body['latitude'] = latitude;
+    if (longitude != null)          body['longitude'] = longitude;
 
     final response = await _dio.put(
       ApiConstants.userUpdate(userId),

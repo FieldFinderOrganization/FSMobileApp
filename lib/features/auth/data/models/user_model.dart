@@ -18,6 +18,8 @@ class UserModel extends UserEntity {
     super.occupation,
     super.preferredPitchType,
     super.preferredPlayTime,
+    super.latitude,
+    super.longitude,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -47,6 +49,8 @@ class UserModel extends UserEntity {
       occupation: json['occupation'] as String?,
       preferredPitchType: json['preferredPitchType'] as String?,
       preferredPlayTime: json['preferredPlayTime'] as String?,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
     );
   }
 }

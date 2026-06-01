@@ -5,14 +5,10 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../features/auth/domain/entities/user_entity.dart';
 import '../../../../features/auth/login/presentation/bloc/auth_cubit.dart';
 import '../../../../features/auth/login/presentation/bloc/auth_state.dart';
-import '../../../../features/auth/login/presentation/pages/login_screen.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../pitch/presentation/pages/booking_history_screen.dart';
 import '../../../order/presentation/pages/order_history_screen.dart';
 import '../../../review/presentation/pages/my_reviews_screen.dart';
-import '../../../home/presentation/cubit/home_cubit.dart';
-import '../../../product/presentation/cubit/product_cubit.dart';
-import '../../../cart/presentation/cubit/cart_cubit.dart';
 import 'edit_profile_screen.dart';
 import 'change_password_screen.dart';
 import 'provider_management_screen.dart';
@@ -45,11 +41,17 @@ class _ProfileBody extends StatelessWidget {
         listener: (context, state) {
           if (state is AuthPasskeyRegistered) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Đăng ký Passkey thành công!'), backgroundColor: Colors.green),
+              const SnackBar(
+                content: Text('Đăng ký Passkey thành công!'),
+                backgroundColor: Colors.green,
+              ),
             );
           } else if (state is AuthPasskeyRegisterFailure) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Lỗi: ${state.message}'), backgroundColor: Colors.red),
+              SnackBar(
+                content: Text('Lỗi: ${state.message}'),
+                backgroundColor: Colors.red,
+              ),
             );
           } else if (state is AuthLoading) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -59,7 +61,10 @@ class _ProfileBody extends StatelessWidget {
                     SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     ),
                     SizedBox(width: 12),
                     Text('Đang xử lý...'),
@@ -368,29 +373,42 @@ class _ProfileBody extends StatelessWidget {
 
   String _localizeGender(String? g) {
     switch ((g ?? '').toUpperCase()) {
-      case 'MALE': return 'Nam';
-      case 'FEMALE': return 'Nữ';
-      case 'OTHER': return 'Khác';
-      default: return 'Chưa cập nhật';
+      case 'MALE':
+        return 'Nam';
+      case 'FEMALE':
+        return 'Nữ';
+      case 'OTHER':
+        return 'Khác';
+      default:
+        return 'Chưa cập nhật';
     }
   }
 
   String _localizePitchType(String? p) {
     switch ((p ?? '').toUpperCase()) {
-      case 'FIVE_A_SIDE': return 'Sân 5';
-      case 'SEVEN_A_SIDE': return 'Sân 7';
-      case 'ELEVEN_A_SIDE': return 'Sân 11';
-      default: return 'Chưa chọn';
+      case 'FIVE_A_SIDE':
+        return 'Sân 5';
+      case 'SEVEN_A_SIDE':
+        return 'Sân 7';
+      case 'ELEVEN_A_SIDE':
+        return 'Sân 11';
+      default:
+        return 'Chưa chọn';
     }
   }
 
   String _localizePlayTime(String? t) {
     switch ((t ?? '').toUpperCase()) {
-      case 'MORNING': return 'Sáng';
-      case 'AFTERNOON': return 'Chiều';
-      case 'EVENING': return 'Tối';
-      case 'NIGHT': return 'Đêm';
-      default: return 'Chưa chọn';
+      case 'MORNING':
+        return 'Sáng';
+      case 'AFTERNOON':
+        return 'Chiều';
+      case 'EVENING':
+        return 'Tối';
+      case 'NIGHT':
+        return 'Đêm';
+      default:
+        return 'Chưa chọn';
     }
   }
 
@@ -398,9 +416,11 @@ class _ProfileBody extends StatelessWidget {
       (v == null || v.trim().isEmpty) ? 'Chưa cập nhật' : v.trim();
 
   Widget _buildPersonalInfoSection(BuildContext context) {
-    final addressFull = [user.address, user.district, user.province]
-        .where((s) => s != null && s.trim().isNotEmpty)
-        .join(', ');
+    final addressFull = [
+      user.address,
+      user.district,
+      user.province,
+    ].where((s) => s != null && s.trim().isNotEmpty).join(', ');
 
     return Container(
       decoration: BoxDecoration(
@@ -442,7 +462,10 @@ class _ProfileBody extends StatelessWidget {
                     );
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primaryRed.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(20),
@@ -604,9 +627,7 @@ class _ProfileBody extends StatelessWidget {
                 context.read<AdminDashboardCubit>().loadDashboard();
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => AdminShell(user: user),
-                  ),
+                  MaterialPageRoute(builder: (_) => AdminShell(user: user)),
                 );
               },
             ),

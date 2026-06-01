@@ -3,30 +3,63 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/network/dio_client.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../../pitch/domain/entities/pitch_entity.dart';
 import '../../../pitch/presentation/pages/pitch_detail_screen.dart';
 import '../../../pitch/presentation/widgets/filter_sheet.dart';
 import '../../../product/domain/entities/product_entity.dart';
+import '../../../product/presentation/pages/product_detail_screen.dart';
+import '../../data/datasources/search_history_remote_datasource.dart';
+import '../../domain/entities/search_history_entity.dart';
 import '../cubit/home_cubit.dart';
+import '../cubit/search_history_cubit.dart';
+import 'search_history_screen.dart';
 
 enum SearchMode { product, pitch }
 
-class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key});
+class SearchScreen extends StatelessWidget {
+  final SearchMode initialMode;
+
+  const SearchScreen({super.key, this.initialMode = SearchMode.pitch});
 
   @override
-  State<SearchScreen> createState() => _SearchScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (ctx) {
+        final dioClient = ctx.read<DioClient>();
+        return SearchHistoryCubit(SearchHistoryRemoteDatasource(dioClient.dio))
+          ..load();
+      },
+      child: _SearchScreenBody(initialMode: initialMode),
+    );
+  }
 }
 
-class _SearchScreenState extends State<SearchScreen> {
+class _SearchScreenBody extends StatefulWidget {
+  final SearchMode initialMode;
+  const _SearchScreenBody({required this.initialMode});
+
+  @override
+  State<_SearchScreenBody> createState() => _SearchScreenBodyState();
+}
+
+class _SearchScreenBodyState extends State<_SearchScreenBody> {
   final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
   String _query = '';
-  SearchMode _mode = SearchMode.pitch;
+  late SearchMode _mode;
+
+  @override
+  void initState() {
+    super.initState();
+    _mode = widget.initialMode;
+  }
 
   @override
   void dispose() {
     _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -34,6 +67,36 @@ class _SearchScreenState extends State<SearchScreen> {
     setState(() {
       _query = value.trim();
     });
+  }
+
+  void _commitSearch(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return;
+    context.read<SearchHistoryCubit>().add(trimmed);
+  }
+
+  void _useKeyword(String keyword) {
+    _controller.text = keyword;
+    _controller.selection =
+        TextSelection.fromPosition(TextPosition(offset: keyword.length));
+    _onQueryChanged(keyword);
+    _commitSearch(keyword);
+    _focusNode.unfocus();
+  }
+
+  Future<void> _openHistoryPage() async {
+    final cubit = context.read<SearchHistoryCubit>();
+    final picked = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: cubit,
+          child: const SearchHistoryScreen(),
+        ),
+      ),
+    );
+    if (picked != null && picked.isNotEmpty) {
+      _useKeyword(picked);
+    }
   }
 
   void _showFilterSheet() {
@@ -63,7 +126,11 @@ class _SearchScreenState extends State<SearchScreen> {
           children: [
             _buildSearchBar(state),
             const SizedBox(height: 12),
-            _buildModeToggle(),
+            if (_query.isEmpty) ...[
+              _buildRecentKeywords(),
+            ] else
+              _buildAutocomplete(state, resultsPitches, productsResults),
+            const SizedBox(height: 12),
             Expanded(
               child: _mode == SearchMode.pitch
                   ? _buildPitchList(resultsPitches)
@@ -110,7 +177,6 @@ class _SearchScreenState extends State<SearchScreen> {
             },
             icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
           ),
-
           Expanded(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -129,8 +195,13 @@ class _SearchScreenState extends State<SearchScreen> {
                   Expanded(
                     child: TextField(
                       controller: _controller,
+                      focusNode: _focusNode,
                       autofocus: true,
                       onChanged: _onQueryChanged,
+                      onSubmitted: (value) {
+                        _commitSearch(value);
+                      },
+                      textInputAction: TextInputAction.search,
                       style: GoogleFonts.inter(fontSize: 14),
                       decoration: InputDecoration(
                         hintText: _mode == SearchMode.pitch
@@ -195,39 +266,154 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildModeToggle() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          _modeChip('Sân bóng', SearchMode.pitch),
-          const SizedBox(width: 8),
-          _modeChip('Sản phẩm', SearchMode.product),
-        ],
+  Widget _buildRecentKeywords() {
+    return BlocBuilder<SearchHistoryCubit, SearchHistoryState>(
+      builder: (context, hState) {
+        if (hState.items.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Tìm gần đây',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _openHistoryPage,
+                    child: Text(
+                      'Xem tất cả',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: AppColors.primaryRed,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: hState.items
+                    .map((item) => _recentChip(context, item))
+                    .toList(),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _recentChip(BuildContext context, SearchHistoryEntity item) {
+    return GestureDetector(
+      onTap: () => _useKeyword(item.keyword),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF6F6F6),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.history_rounded,
+                size: 14, color: AppColors.textGrey),
+            const SizedBox(width: 6),
+            Text(
+              item.keyword,
+              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textDark),
+            ),
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: () =>
+                  context.read<SearchHistoryCubit>().remove(item.id),
+              child: const Icon(Icons.close_rounded,
+                  size: 14, color: AppColors.textGrey),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _modeChip(String label, SearchMode mode) {
-    final isSel = _mode == mode;
-    return GestureDetector(
-      onTap: () => setState(() => _mode = mode),
+  Widget _buildAutocomplete(
+    HomeState state,
+    List<PitchEntity> pitches,
+    List<ProductEntity> products,
+  ) {
+    final normalizedQuery = StringUtils.removeDiacritics(_query.toLowerCase());
+    final hCubit = context.read<SearchHistoryCubit>();
+    final recentMatches = hCubit.state.items
+        .where((e) => StringUtils.removeDiacritics(e.keyword.toLowerCase())
+            .startsWith(normalizedQuery))
+        .take(5)
+        .map((e) => e.keyword)
+        .toList();
+    // Gợi ý theo đúng mode của tab: Sân → tên sân, Sản phẩm → tên sản phẩm.
+    final Iterable<String> names = _mode == SearchMode.pitch
+        ? pitches.map((p) => p.name)
+        : products.map((p) => p.name);
+    final nameMatches = names
+        .where((n) =>
+            StringUtils.removeDiacritics(n.toLowerCase())
+                .contains(normalizedQuery))
+        .toSet()
+        .take(5)
+        .toList();
+
+    final suggestions = <String>{
+      ...recentMatches,
+      ...nameMatches,
+    }.toList();
+
+    if (suggestions.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
-          color: isSel ? AppColors.textDark : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSel ? AppColors.textDark : const Color(0xFFEEEEEE),
-          ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFEEEEEE)),
         ),
-        child: Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            fontWeight: isSel ? FontWeight.w600 : FontWeight.w400,
-            color: isSel ? Colors.white : AppColors.textGrey,
-          ),
+        child: Column(
+          children: [
+            for (final s in suggestions)
+              InkWell(
+                onTap: () => _useKeyword(s),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 10),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search_rounded,
+                          size: 16, color: AppColors.textGrey),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          s,
+                          style: GoogleFonts.inter(fontSize: 13),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const Icon(Icons.north_west_rounded,
+                          size: 14, color: AppColors.textGrey),
+                    ],
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -238,7 +424,10 @@ class _SearchScreenState extends State<SearchScreen> {
     return ListView.builder(
       padding: const EdgeInsets.all(20),
       itemCount: pitches.length,
-      itemBuilder: (context, index) => _PitchCard(pitch: pitches[index]),
+      itemBuilder: (context, index) => _PitchCard(
+        pitch: pitches[index],
+        onTap: () => _commitSearch(_query),
+      ),
     );
   }
 
@@ -253,7 +442,10 @@ class _SearchScreenState extends State<SearchScreen> {
         mainAxisSpacing: 16,
       ),
       itemCount: products.length,
-      itemBuilder: (context, index) => _ProductCard(product: products[index]),
+      itemBuilder: (context, index) => _ProductCard(
+        product: products[index],
+        onTap: () => _commitSearch(_query),
+      ),
     );
   }
 
@@ -276,14 +468,18 @@ class _SearchScreenState extends State<SearchScreen> {
 
 class _PitchCard extends StatelessWidget {
   final PitchEntity pitch;
-  const _PitchCard({required this.pitch});
+  final VoidCallback? onTap;
+  const _PitchCard({required this.pitch, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => PitchDetailScreen(pitch: pitch)),
-      ),
+      onTap: () {
+        onTap?.call();
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => PitchDetailScreen(pitch: pitch)),
+        );
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 20),
         decoration: BoxDecoration(
@@ -383,61 +579,72 @@ class _PitchCard extends StatelessWidget {
 
 class _ProductCard extends StatelessWidget {
   final ProductEntity product;
-  const _ProductCard({required this.product});
+  final VoidCallback? onTap;
+  const _ProductCard({required this.product, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
+    return GestureDetector(
+      onTap: () {
+        onTap?.call();
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ProductDetailScreen(productId: product.id),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: product.imageUrl.isNotEmpty
-                  ? Image.network(
-                      product.imageUrl,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => _placeholder(),
-                    )
-                  : _placeholder(),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  product.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  NumberFormat.currency(locale: 'vi_VN', symbol: 'đ').format(product.price),
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: AppColors.primaryRed,
-                    fontWeight: FontWeight.bold,
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                child: product.imageUrl.isNotEmpty
+                    ? Image.network(
+                        product.imageUrl,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => _placeholder(),
+                      )
+                    : _placeholder(),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  Text(
+                    NumberFormat.currency(locale: 'vi_VN', symbol: 'đ').format(product.price),
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: AppColors.primaryRed,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

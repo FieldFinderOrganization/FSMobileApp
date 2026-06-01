@@ -28,7 +28,6 @@ class TopProductsSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Divider(height: 1, thickness: 1, color: Color(0xFFEFEFEF)),
             const SectionHeader(
               title: 'Bán chạy nhất',
               onSeeAll: null,
@@ -41,7 +40,7 @@ class TopProductsSection extends StatelessWidget {
               const SizedBox.shrink()
             else
               _buildPodium(context, state.topProducts),
-            const SizedBox(height: 40),
+            const SizedBox(height: 12),
           ],
         ),
       ),

@@ -13,6 +13,14 @@ import '../../../cart/presentation/cubit/cart_cubit.dart';
 import '../../../cart/presentation/cubit/cart_state.dart';
 import '../../../cart/presentation/pages/cart_screen.dart';
 import '../widgets/add_to_cart_modal.dart';
+import '../widgets/product_card.dart';
+import '../../domain/entities/suggested_products_entity.dart';
+import '../../../pitch/domain/repositories/pitch_repository.dart';
+import '../../../pitch/domain/entities/suggested_pitches_entity.dart';
+import '../../../pitch/domain/entities/pitch_entity.dart';
+import '../../../pitch/presentation/widgets/suggested_pitch_card.dart';
+import '../../../../core/location/location_helper.dart';
+import '../../../home/presentation/widgets/shimmer_card.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   final String productId;
@@ -22,16 +30,24 @@ class ProductDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) =>
-          ProductDetailCubit(repository: context.read<ProductRepository>())
-            ..loadProduct(productId),
+      create: (context) => ProductDetailCubit(
+        repository: context.read<ProductRepository>(),
+        pitchRepository: context.read<PitchRepository>(),
+      )..loadProduct(productId),
       child: const _ProductDetailView(),
     );
   }
 }
 
-class _ProductDetailView extends StatelessWidget {
+class _ProductDetailView extends StatefulWidget {
   const _ProductDetailView();
+
+  @override
+  State<_ProductDetailView> createState() => _ProductDetailViewState();
+}
+
+class _ProductDetailViewState extends State<_ProductDetailView> {
+  bool _suggestedRequested = false;
 
   @override
   Widget build(BuildContext context) {
@@ -85,47 +101,62 @@ class _ProductDetailView extends StatelessWidget {
       },
       child: Scaffold(
         backgroundColor: Colors.white,
-        body: BlocBuilder<ProductDetailCubit, ProductDetailState>(
-        builder: (context, state) {
-          if (state.status == ProductDetailStatus.loading ||
-              state.status == ProductDetailStatus.initial) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryRed),
-            );
-          }
-          if (state.status == ProductDetailStatus.failure) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.error_outline,
-                    size: 48,
-                    color: AppColors.textGrey,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    state.errorMessage,
-                    style: GoogleFonts.inter(color: AppColors.textGrey),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () => context
-                        .read<ProductDetailCubit>()
-                        .loadProduct(state.product?.id ?? ''),
-                    child: const Text('Thử lại'),
-                  ),
-                ],
-              ),
-            );
-          }
+        body: BlocConsumer<ProductDetailCubit, ProductDetailState>(
+          listenWhen: (prev, curr) =>
+              curr.status == ProductDetailStatus.success && !_suggestedRequested,
+          listener: (context, state) async {
+            if (state.status == ProductDetailStatus.success && !_suggestedRequested) {
+              _suggestedRequested = true;
+              final pos = await LocationHelper.currentPosition();
+              if (context.mounted) {
+                context.read<ProductDetailCubit>().loadSuggested(
+                  state.product!.id,
+                  lat: pos?.latitude,
+                  lng: pos?.longitude,
+                );
+              }
+            }
+          },
+          builder: (context, state) {
+            if (state.status == ProductDetailStatus.loading ||
+                state.status == ProductDetailStatus.initial) {
+              return const Center(
+                child: CircularProgressIndicator(color: AppColors.primaryRed),
+              );
+            }
+            if (state.status == ProductDetailStatus.failure) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: AppColors.textGrey,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      state.errorMessage,
+                      style: GoogleFonts.inter(color: AppColors.textGrey),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: () => context
+                          .read<ProductDetailCubit>()
+                          .loadProduct(state.product?.id ?? ''),
+                      child: const Text('Thử lại'),
+                    ),
+                  ],
+                ),
+              );
+            }
 
-          final product = state.product!;
-          return _ProductContent(product: product, state: state);
-        },
-      ),
-    ),  // end Scaffold
+            final product = state.product!;
+            return _ProductContent(product: product, state: state);
+          },
+        ),
+      ),  // end Scaffold
     );  // end BlocListener
   }
 }
@@ -183,7 +214,13 @@ class _ProductContent extends StatelessWidget {
                     if (product.tags.isNotEmpty) _TagsRow(tags: product.tags),
                     const SizedBox(height: 12),
                     _SoldCount(totalSold: product.totalSold),
-                    const SizedBox(height: 100), // bottom bar clearance
+                    if (state.suggestedLoading &&
+                        state.suggested.isEmpty &&
+                        state.suggestedPitches.isEmpty)
+                      const _SuggestedLoadingPlaceholder(),
+                    _buildSuggestedProducts(context, state.suggested),
+                    _buildSuggestedPitches(context, state.suggestedPitches),
+                    const SizedBox(height: 150), // bottom bar clearance
                   ],
                 ),
               ),
@@ -202,6 +239,109 @@ class _ProductContent extends StatelessWidget {
           left: 0,
           right: 0,
           child: _BottomBar(state: state),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSuggestedProducts(BuildContext context, SuggestedProductsEntity suggested) {
+    if (suggested.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 32),
+        const Divider(height: 1, color: Color(0xFFEEEEEE)),
+        const SizedBox(height: 24),
+        if (suggested.similar.isNotEmpty)
+          _suggestedSection(context, 'Sản phẩm tương tự', suggested.similar),
+        if (suggested.historyBased.isNotEmpty)
+          _suggestedSection(context, 'Gợi ý cho bạn', suggested.historyBased),
+        if (suggested.topSelling.isNotEmpty)
+          _suggestedSection(context, 'Bán chạy nhất', suggested.topSelling),
+      ],
+    );
+  }
+
+  Widget _suggestedSection(BuildContext context, String title, List<ProductEntity> products) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12, top: 16),
+          child: Text(
+            title,
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textDark,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 252,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: products.length,
+            itemBuilder: (_, i) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: ProductCard(
+                  product: products[i],
+                  mode: ProductCardMode.horizontal,
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSuggestedPitches(BuildContext context, SuggestedPitchesEntity suggested) {
+    if (suggested.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 32),
+        const Divider(height: 1, color: Color(0xFFEEEEEE)),
+        const SizedBox(height: 24),
+        if (suggested.nearby.isNotEmpty)
+          _suggestedPitchesSection(context, 'Sân bóng gần bạn để trải nghiệm', suggested.nearby),
+        if (suggested.topRated.isNotEmpty)
+          _suggestedPitchesSection(context, 'Sân bóng đánh giá cao', suggested.topRated),
+        if (suggested.visited.isNotEmpty)
+          _suggestedPitchesSection(context, 'Sân bóng bạn đã xem', suggested.visited),
+      ],
+    );
+  }
+
+  Widget _suggestedPitchesSection(BuildContext context, String title, List<PitchEntity> pitches) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12, top: 16),
+          child: Text(
+            title,
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textDark,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 210,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: pitches.length,
+            itemBuilder: (_, i) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: SuggestedPitchCard(pitch: pitches[i]),
+              );
+            },
+          ),
         ),
       ],
     );
@@ -949,6 +1089,40 @@ class _PersonalizedDiscountBadge extends StatelessWidget {
             ),
           )
           .toList(),
+    );
+  }
+}
+
+// ── Suggested loading placeholder ─────────────────────────────────────────────
+class _SuggestedLoadingPlaceholder extends StatelessWidget {
+  const _SuggestedLoadingPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ShimmerCard(
+            width: 160,
+            height: 18,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 210,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: 3,
+              itemBuilder: (context, index) => const Padding(
+                padding: EdgeInsets.only(right: 12),
+                child: ShimmerCard(width: 150, height: 210),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

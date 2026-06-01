@@ -30,6 +30,10 @@ class AdminPitchItem {
   final String providerName;
   final double price;
   final String environment;
+  final String? providerAddressId;
+  final String? address;
+  final double? latitude;
+  final double? longitude;
 
   const AdminPitchItem({
     required this.pitchId,
@@ -38,6 +42,10 @@ class AdminPitchItem {
     required this.providerName,
     required this.price,
     required this.environment,
+    this.providerAddressId,
+    this.address,
+    this.latitude,
+    this.longitude,
   });
 
   factory AdminPitchItem.fromJson(Map<String, dynamic> json) {
@@ -48,6 +56,10 @@ class AdminPitchItem {
       providerName: json['providerName']?.toString() ?? '—',
       price: (json['price'] as num? ?? 0).toDouble(),
       environment: json['environment']?.toString() ?? '',
+      providerAddressId: json['providerAddressId']?.toString(),
+      address: json['address']?.toString(),
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
     );
   }
 }
