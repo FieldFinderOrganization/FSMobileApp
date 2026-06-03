@@ -2,7 +2,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../../core/storage/token_storage.dart';
 import '../../../domain/entities/auth_token_entity.dart';
 import '../../../domain/repositories/auth_repository.dart';
@@ -202,9 +201,9 @@ class AuthCubit extends Cubit<AuthState> {
     }
     await _tokenStorage.clearAll();
 
-    // Clear local chat history upon logout
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('ai_chat_sessions');
+    // Chat history is namespaced per-user (ai_chat_sessions_<userId>), so it is NOT wiped on
+    // logout: the same user keeps their history on re-login, and another account on this
+    // device reads its own bucket (no cross-user leak).
 
     emit(const AuthInitial());
   }
