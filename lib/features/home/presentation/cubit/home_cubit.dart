@@ -155,7 +155,7 @@ class HomeCubit extends Cubit<HomeState> {
 
       final result = await _repository.fetchProducts(
         page: 0,
-        size: 10,
+        size: 20,
         categoryId: _getCategoryIdFromName(categoryNameToUse),
         brand: state.selectedBrand,
         genders: state.selectedGenders,
@@ -189,7 +189,7 @@ class HomeCubit extends Cubit<HomeState> {
 
       final result = await _repository.fetchProducts(
         page: nextPage,
-        size: 10,
+        size: 20,
         categoryId: _getCategoryIdFromName(categoryNameToUse),
         brand: state.selectedBrand,
         genders: state.selectedGenders,

@@ -73,7 +73,7 @@ class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen> {
     if (_sending) return;
     _sending = true;
     try {
-      final pos = await loc.LocationHelper.currentPosition();
+      final pos = await loc.LocationHelper.currentPositionFull();
       if (pos == null || !mounted) return;
       final p = LatLng(pos.latitude, pos.longitude);
       setState(() => _me = p);
@@ -81,6 +81,9 @@ class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen> {
         orderId: widget.order.orderId.toString(),
         lat: p.latitude,
         lng: p.longitude,
+        speed: pos.speed,
+        bearing: pos.heading,
+        ts: pos.timestamp.millisecondsSinceEpoch,
       );
       _mapController.move(p, _mapController.camera.zoom);
     } finally {

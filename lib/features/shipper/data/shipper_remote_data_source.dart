@@ -41,4 +41,26 @@ class ShipperRemoteDataSource {
     if (res.statusCode == 204 || res.data == null) return null;
     return res.data as Map<String, dynamic>;
   }
+
+  /// Tuyến đường shipper→đích từ OSRM (qua BE). null nếu OSRM tắt/lỗi.
+  /// Trả {geometry: polyline encoded, distanceMeters, durationSeconds}.
+  Future<Map<String, dynamic>?> getRoute(
+    int orderId, {
+    required double fromLat,
+    required double fromLng,
+    required double toLat,
+    required double toLng,
+  }) async {
+    final res = await dioClient.dio.get(
+      '/orders/$orderId/route',
+      queryParameters: {
+        'fromLat': fromLat,
+        'fromLng': fromLng,
+        'toLat': toLat,
+        'toLng': toLng,
+      },
+    );
+    if (res.statusCode == 204 || res.data == null) return null;
+    return res.data as Map<String, dynamic>;
+  }
 }

@@ -13,6 +13,7 @@ import '../../../chat/presentation/pages/chat_screen.dart';
 import '../../../home/presentation/cubit/home_cubit.dart';
 import '../../../home/presentation/pages/home_screen.dart';
 import '../../../pitch/presentation/pages/pitch_tab_screen.dart';
+import '../../../product/presentation/cubit/product_cubit.dart';
 import '../../../product/presentation/pages/product_list_screen.dart';
 import '../../../profile/presentation/pages/profile_screen.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -50,9 +51,19 @@ class _MainShellState extends State<MainShell>
       vsync: this,
       duration: const Duration(milliseconds: 200),
     );
-    // Load giỏ hàng ngay khi vào app để cập nhật badge và trạng thái size
+    // Load giỏ hàng ngay khi vào app để cập nhật badge và trạng thái size.
+    // Đồng thời load Shop nếu catalog chưa nạp: ProductCubit là provider toàn cục
+    // (không dispose), reset() khi logout đưa status về `initial` nhưng KHÔNG reload,
+    // nên lần login lại cascade `..loadProducts()` ở main.dart không chạy lại →
+    // tab Shop xoay mãi. initState chạy 1 lần mỗi mount (không phải mỗi lần đổi tab)
+    // nên không phá vỡ ý đồ giữ state của IndexedStack.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) context.read<CartCubit>().loadCart();
+      if (!mounted) return;
+      context.read<CartCubit>().loadCart();
+      final productCubit = context.read<ProductCubit>();
+      if (productCubit.state.status == LoadStatus.initial) {
+        productCubit.loadProducts();
+      }
     });
   }
 

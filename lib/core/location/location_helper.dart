@@ -7,7 +7,8 @@ class LatLng {
 }
 
 class LocationHelper {
-  static Future<LatLng?> currentPosition({
+  /// Vị trí đầy đủ kèm speed (m/s), heading (độ), timestamp — cho tracking shipper.
+  static Future<Position?> currentPositionFull({
     Duration timeout = const Duration(seconds: 10),
   }) async {
     try {
@@ -23,16 +24,23 @@ class LocationHelper {
         return null;
       }
 
-      final pos = await Geolocator.getCurrentPosition(
+      return await Geolocator.getCurrentPosition(
         locationSettings: LocationSettings(
           accuracy: LocationAccuracy.high,
           timeLimit: timeout,
         ),
       );
-      return LatLng(pos.latitude, pos.longitude);
     } catch (_) {
       return null;
     }
+  }
+
+  /// Chỉ lat/lng — giữ cho các nơi gọi cũ (map picker, v.v.).
+  static Future<LatLng?> currentPosition({
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
+    final pos = await currentPositionFull(timeout: timeout);
+    return pos == null ? null : LatLng(pos.latitude, pos.longitude);
   }
 
   /// Trạng thái quyền hiện tại (để UI quyết định hiện nút "mở Cài đặt").

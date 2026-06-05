@@ -31,6 +31,7 @@ class ProductState {
   final String selectedCategory; // Parent category name
   final Set<String> selectedSubCategoryNames;
   final RangeValues priceRange;
+  final bool priceTouched; // true once the user moves the price slider
   final SortOption sortOption;
   final int currentPage;
   final bool hasMore;
@@ -47,6 +48,7 @@ class ProductState {
     this.selectedCategory = '',
     this.selectedSubCategoryNames = const {},
     this.priceRange = const RangeValues(0, 1000),
+    this.priceTouched = false,
     this.sortOption = SortOption.none,
     this.currentPage = 0,
     this.hasMore = true,
@@ -72,8 +74,7 @@ class ProductState {
   bool get isFilteringOrSearching =>
       searchQuery.isNotEmpty ||
       selectedBrands.isNotEmpty ||
-      priceRange.start > 0 ||
-      priceRange.end < maxPriceInList;
+      priceTouched;
 
   List<ProductEntity> _applyOtherFilters(List<ProductEntity> input) {
     var result = input;
@@ -83,11 +84,15 @@ class ProductState {
       result = result.where((p) => p.name.toLowerCase().contains(query)).toList();
     }
 
-    // Filter by Price Range (client-side slider)
-    result = result.where((p) {
-      final effectivePrice = p.salePrice ?? p.price;
-      return effectivePrice >= priceRange.start && effectivePrice <= priceRange.end;
-    }).toList();
+    // Filter by Price Range (client-side slider) — ONLY when the user actually moved it.
+    // Otherwise priceRange.end (initialized from page-0's max price) hides pricier products
+    // loaded on later pages → "count not enough" + infinite-scroll spinner.
+    if (priceTouched) {
+      result = result.where((p) {
+        final effectivePrice = p.salePrice ?? p.price;
+        return effectivePrice >= priceRange.start && effectivePrice <= priceRange.end;
+      }).toList();
+    }
     return result;
   }
 
@@ -159,6 +164,7 @@ class ProductState {
     String? selectedCategory,
     Set<String>? selectedSubCategoryNames,
     RangeValues? priceRange,
+    bool? priceTouched,
     SortOption? sortOption,
     int? currentPage,
     bool? hasMore,
@@ -175,6 +181,7 @@ class ProductState {
       selectedCategory: selectedCategory ?? this.selectedCategory,
       selectedSubCategoryNames: selectedSubCategoryNames ?? this.selectedSubCategoryNames,
       priceRange: priceRange ?? this.priceRange,
+      priceTouched: priceTouched ?? this.priceTouched,
       sortOption: sortOption ?? this.sortOption,
       currentPage: currentPage ?? this.currentPage,
       hasMore: hasMore ?? this.hasMore,

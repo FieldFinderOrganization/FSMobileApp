@@ -58,7 +58,7 @@ class _HomeBodyState extends State<_HomeBody> {
     final state = context.read<HomeCubit>().state;
     if (state.isProductsExpanded &&
         _scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 300) {
+            _scrollController.position.maxScrollExtent - 600) {
       context.read<HomeCubit>().loadNextPageProducts();
     }
   }

@@ -9,12 +9,27 @@ class TrackingPoint {
   final double lat;
   final double lng;
   final int ts;
-  const TrackingPoint({required this.lat, required this.lng, required this.ts});
+
+  /// Tốc độ (m/s). < 0 nếu thiết bị không cung cấp.
+  final double speed;
+
+  /// Hướng di chuyển (độ, 0..360). < 0 nếu không rõ.
+  final double bearing;
+
+  const TrackingPoint({
+    required this.lat,
+    required this.lng,
+    required this.ts,
+    this.speed = -1,
+    this.bearing = -1,
+  });
 
   factory TrackingPoint.fromJson(Map<String, dynamic> json) => TrackingPoint(
         lat: (json['lat'] as num).toDouble(),
         lng: (json['lng'] as num).toDouble(),
         ts: (json['ts'] as num?)?.toInt() ?? 0,
+        speed: (json['speed'] as num?)?.toDouble() ?? -1,
+        bearing: (json['bearing'] as num?)?.toDouble() ?? -1,
       );
 }
 
@@ -98,15 +113,26 @@ class TrackingWebSocketService {
   }
 
   /// Shipper gửi toạ độ hiện tại tới /app/tracking.
+  /// [speed] m/s, [bearing] độ, [ts] epoch ms — kèm theo để client nội suy mượt.
   void sendLocation({
     required String orderId,
     required double lat,
     required double lng,
+    double? speed,
+    double? bearing,
+    int? ts,
   }) {
     if (!isConnected) return;
     _client!.send(
       destination: '/app/tracking',
-      body: jsonEncode({'orderId': orderId, 'lat': lat, 'lng': lng}),
+      body: jsonEncode({
+        'orderId': orderId,
+        'lat': lat,
+        'lng': lng,
+        'speed': ?speed,
+        'bearing': ?bearing,
+        'ts': ?ts,
+      }),
     );
   }
 

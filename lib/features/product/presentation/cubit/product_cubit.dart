@@ -60,6 +60,7 @@ class ProductCubit extends Cubit<ProductState> {
       hasMore: true,
       products: [],
       priceRange: const RangeValues(0, 1000),
+      priceTouched: false,
     ));
     try {
       final result = await _repository.getAllProducts(page: 0, size: 10, categoryId: categoryId, brand: brand, sort: sort);
@@ -194,7 +195,7 @@ class ProductCubit extends Cubit<ProductState> {
   }
 
   void updatePriceRange(RangeValues values) {
-    emit(state.copyWith(priceRange: values));
+    emit(state.copyWith(priceRange: values, priceTouched: true));
   }
 
   void setSortOption(SortOption option) {
@@ -215,6 +216,7 @@ class ProductCubit extends Cubit<ProductState> {
       selectedSubCategoryNames: const {},
       sortOption: SortOption.none,
       priceRange: RangeValues(0, state.maxPriceInList),
+      priceTouched: false,
     ));
     loadProducts();
   }
