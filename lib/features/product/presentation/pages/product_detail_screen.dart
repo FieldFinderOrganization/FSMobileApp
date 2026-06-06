@@ -21,6 +21,7 @@ import '../../../pitch/domain/entities/pitch_entity.dart';
 import '../../../pitch/presentation/widgets/suggested_pitch_card.dart';
 import '../../../../core/location/location_helper.dart';
 import '../../../home/presentation/widgets/shimmer_card.dart';
+import '../../../product_review/presentation/widgets/product_reviews_section.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   final String productId;
@@ -214,6 +215,7 @@ class _ProductContent extends StatelessWidget {
                     if (product.tags.isNotEmpty) _TagsRow(tags: product.tags),
                     const SizedBox(height: 12),
                     _SoldCount(totalSold: product.totalSold),
+                    ProductReviewsSection(productId: product.id),
                     if (state.suggestedLoading &&
                         state.suggested.isEmpty &&
                         state.suggestedPitches.isEmpty)

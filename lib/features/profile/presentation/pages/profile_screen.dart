@@ -9,6 +9,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../pitch/presentation/pages/booking_history_screen.dart';
 import '../../../order/presentation/pages/order_history_screen.dart';
 import '../../../review/presentation/pages/my_reviews_screen.dart';
+import '../../../product_review/presentation/pages/my_product_reviews_screen.dart';
 import 'edit_profile_screen.dart';
 import 'change_password_screen.dart';
 import 'provider_management_screen.dart';
@@ -575,6 +576,18 @@ class _ProfileBody extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (_) => MyReviewsScreen(userId: user.userId),
+                ),
+              );
+            },
+          ),
+          _ActionRow(
+            icon: Icons.rate_review_outlined,
+            label: 'Đánh giá sản phẩm',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => MyProductReviewsScreen(userId: user.userId),
                 ),
               );
             },

@@ -37,6 +37,9 @@ class ApiConstants {
   static const String reviews = '/reviews';
   static const String userReviews = '/reviews/user';
 
+  // Product (item) review endpoints
+  static const String itemReviews = '/item-reviews';
+
   // Booking endpoints
   static const String bookings = '/bookings';
   static const String bookingSlots = '/bookings/slots';
