@@ -7,6 +7,7 @@ import '../../../login/presentation/bloc/auth_cubit.dart';
 import '../../../login/presentation/bloc/auth_state.dart';
 import '../../../../home/presentation/pages/main_shell.dart';
 import '../../../../admin/presentation/pages/admin_shell.dart';
+import '../../../../shipper/presentation/pages/shipper_shell.dart';
 import '../../../shared/auth_widgets.dart';
 
 class OtpScreen extends StatefulWidget {
@@ -63,6 +64,13 @@ class _OtpScreenState extends State<OtpScreen>
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(
                   builder: (_) => AdminShell(user: state.authToken.user),
+                ),
+                (route) => false,
+              );
+            } else if (state.authToken.user.role == 'SHIPPER') {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (_) => ShipperShell(user: state.authToken.user),
                 ),
                 (route) => false,
               );

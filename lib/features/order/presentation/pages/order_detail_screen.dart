@@ -13,6 +13,7 @@ import '../../../auth/login/presentation/bloc/auth_cubit.dart';
 import '../../data/datasources/order_remote_data_source.dart';
 import '../../data/models/order_item_model.dart';
 import '../../data/models/order_model.dart';
+import 'order_tracking_screen.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final OrderModel order;
@@ -43,6 +44,39 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   bool get _canCancel => _isPending || _willRefund;
+
+  /// Có thể theo dõi shipper khi đơn đang giao (hoặc đã nhận) và có toạ độ đích.
+  bool get _canTrack {
+    final s = _order.status.toUpperCase();
+    return (s == 'SHIPPING' || s == 'CONFIRMED') &&
+        _order.destLat != null &&
+        _order.destLng != null;
+  }
+
+  Widget _buildTrackSection() {
+    return SizedBox(
+      width: double.infinity,
+      height: 46,
+      child: ElevatedButton.icon(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OrderTrackingScreen(order: _order),
+          ),
+        ),
+        icon: const Icon(Icons.location_on_rounded, color: Colors.white),
+        label: Text(
+          'Theo dõi shipper',
+          style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w700),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF1565C0),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: 0,
+        ),
+      ),
+    );
+  }
   DateTime? get _refundDeadline =>
       _order.paymentTime?.add(const Duration(hours: 24));
 
@@ -169,6 +203,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             const SizedBox(height: 20),
             _buildBillingCard(),
             const SizedBox(height: 20),
+            if (_canTrack) _buildTrackSection(),
+            if (_canTrack) const SizedBox(height: 20),
             if (_canCancel) _buildCancelSection(),
             const SizedBox(height: 30),
           ],
@@ -267,6 +303,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       statusColor = AppColors.primaryRed;
       statusIcon = Icons.cancel_rounded;
       statusText = 'Đã hủy đơn';
+    } else if (status == 'SHIPPING') {
+      statusColor = const Color(0xFF1565C0);
+      statusIcon = Icons.delivery_dining_rounded;
+      statusText = 'Đang giao';
     } else if (status == 'DELIVERED') {
       statusColor = const Color(0xFF1565C0);
       statusIcon = Icons.local_shipping_rounded;

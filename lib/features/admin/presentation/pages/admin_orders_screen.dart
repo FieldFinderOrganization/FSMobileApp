@@ -11,6 +11,8 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../../data/datasources/admin_statistics_datasource.dart';
 import '../../data/models/admin_order_list_model.dart';
+import '../../../order/data/models/order_model.dart';
+import '../../../order/presentation/pages/order_tracking_screen.dart';
 import 'admin_users_screen.dart' show buildAdminPaginationBar;
 
 class AdminOrdersScreen extends StatefulWidget {
@@ -37,6 +39,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
     'PENDING',
     'PAID',
     'CONFIRMED',
+    'SHIPPING',
     'DELIVERED',
     'CANCELED',
   ];
@@ -45,6 +48,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
     'Chờ TT',
     'Đã thanh toán',
     'Đã xác nhận',
+    'Đang giao',
     'Đã giao',
     'Đã hủy',
   ];
@@ -166,7 +170,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
 
   Color _statusColor(String s) => switch (s) {
     'PAID' || 'DELIVERED' => _kTeal,
-    'CONFIRMED' => _kPrimary,
+    'CONFIRMED' || 'SHIPPING' => _kPrimary,
     'PENDING' => _kWarning,
     _ => _kCoral,
   };
@@ -174,6 +178,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
   String _statusLabel(String s) => switch (s) {
     'PAID' => 'Đã TT',
     'DELIVERED' => 'Đã giao',
+    'SHIPPING' => 'Đang giao',
     'CONFIRMED' => 'Xác nhận',
     'PENDING' => 'Chờ TT',
     _ => 'Đã hủy',
@@ -1174,11 +1179,144 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
     );
   }
 
+  Future<void> _openOrderActions(AdminOrderItem item) async {
+    OrderModel? full;
+    String? err;
+    try {
+      full = await widget.datasource.getOrderById(item.orderId);
+    } catch (e) {
+      err = e.toString();
+    }
+    if (!mounted) return;
+    if (full == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Không tải được đơn: $err')),
+      );
+      return;
+    }
+    final order = full;
+
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) {
+        bool busy = false;
+        return StatefulBuilder(
+          builder: (sheetCtx, setSheet) {
+            final status = order.status.toUpperCase();
+            final canTrack = (status == 'SHIPPING' || status == 'CONFIRMED') &&
+                order.destLat != null &&
+                order.destLng != null;
+
+            Future<void> setStatus(String next) async {
+              setSheet(() => busy = true);
+              try {
+                await widget.datasource.updateOrderStatus(order.orderId, next);
+                if (sheetCtx.mounted) Navigator.pop(sheetCtx);
+                await _load(page: _currentPage);
+              } catch (e) {
+                setSheet(() => busy = false);
+                if (sheetCtx.mounted) {
+                  ScaffoldMessenger.of(sheetCtx).showSnackBar(
+                    SnackBar(content: Text('Lỗi đổi trạng thái: $e')),
+                  );
+                }
+              }
+            }
+
+            Widget actionBtn(String label, String next, Color c) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: busy ? null : () => setStatus(next),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: c,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: Text(label,
+                          style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                );
+
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                  16, 16, 16, MediaQuery.of(sheetCtx).viewInsets.bottom + 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Đơn #${order.orderId} · ${_statusLabel(status)}',
+                      style: GoogleFonts.inter(
+                          fontSize: 16, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 4),
+                  Text('Khách: ${order.userName}',
+                      style: GoogleFonts.inter(
+                          fontSize: 13, color: Colors.grey.shade600)),
+                  if (order.deliveryAddress != null) ...[
+                    const SizedBox(height: 2),
+                    Text('Giao: ${order.deliveryAddress}',
+                        style: GoogleFonts.inter(
+                            fontSize: 13, color: Colors.grey.shade600)),
+                  ],
+                  const SizedBox(height: 16),
+                  if (canTrack)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(sheetCtx);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    OrderTrackingScreen(order: order),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.location_on_rounded),
+                          label: const Text('Theo dõi shipper'),
+                        ),
+                      ),
+                    ),
+                  if (status == 'PENDING' || status == 'PAID')
+                    actionBtn('Xác nhận đơn', 'CONFIRMED', _kPrimary),
+                  if (status == 'CONFIRMED')
+                    actionBtn('Đánh dấu đang giao', 'SHIPPING', _kPrimary),
+                  if (status == 'SHIPPING')
+                    actionBtn('Đánh dấu đã giao', 'DELIVERED', _kTeal),
+                  if (status != 'DELIVERED' && status != 'CANCELED')
+                    actionBtn('Hủy đơn', 'CANCELED', _kCoral),
+                  if (busy)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 8),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildRow(AdminOrderItem order, bool isLast) {
     final color = _statusColor(order.status);
     return Column(
       children: [
-        Padding(
+        InkWell(
+          onTap: () => _openOrderActions(order),
+          child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
@@ -1243,6 +1381,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
               ),
             ],
           ),
+        ),
         ),
         if (!isLast)
           Divider(

@@ -13,11 +13,26 @@ import '../models/pitch_type_model.dart';
 import '../models/product_statistics_model.dart';
 import '../models/recent_booking_model.dart';
 import '../models/revenue_point_model.dart';
+import '../../../order/data/models/order_model.dart';
 
 class AdminStatisticsDatasource {
   final DioClient dioClient;
 
   const AdminStatisticsDatasource({required this.dioClient});
+
+  /// Chi tiết đơn đầy đủ (có toạ độ giao + shipper) để admin theo dõi/đổi trạng thái.
+  Future<OrderModel> getOrderById(int orderId) async {
+    final response = await dioClient.dio.get('/orders/$orderId');
+    return OrderModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<OrderModel> updateOrderStatus(int orderId, String status) async {
+    final response = await dioClient.dio.put(
+      '/orders/$orderId/status',
+      queryParameters: {'status': status},
+    );
+    return OrderModel.fromJson(response.data as Map<String, dynamic>);
+  }
 
   Future<AdminOverviewModel> getOverview() async {
     final response = await dioClient.dio.get(

@@ -64,9 +64,14 @@ class AllProductsSection extends StatelessWidget {
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
                 children: List.generate(
-                  state.products.length < state.visibleProductCount
+                  // When expanded (infinite-scroll mode) render ALL loaded products — the old
+                  // visibleProductCount=99 cap hid everything past 99 (catalog has 171), so paging
+                  // fetched more but nothing new appeared. Collapsed = preview window only.
+                  state.isProductsExpanded
                       ? state.products.length
-                      : state.visibleProductCount,
+                      : (state.products.length < state.visibleProductCount
+                          ? state.products.length
+                          : state.visibleProductCount),
                   (i) {
                     final product = state.products[i];
                     // Pattern: Index 0 is Large, then 1-2 small, 3 Large, 4-5 small...

@@ -9,6 +9,7 @@ import '../../../otp/presentation/pages/otp_screen.dart';
 import '../../../forgot_password/presentation/pages/forgot_password_screen.dart';
 import '../../../../home/presentation/pages/main_shell.dart';
 import '../../../../admin/presentation/pages/admin_shell.dart';
+import '../../../../shipper/presentation/pages/shipper_shell.dart';
 import '../../../shared/auth_widgets.dart';
 import '../bloc/auth_cubit.dart';
 import '../bloc/auth_state.dart';
@@ -98,6 +99,13 @@ class _LoginScreenBodyState extends State<_LoginScreenBody>
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (_) => AdminShell(user: state.authToken.user),
+        ),
+        (route) => false,
+      );
+    } else if (state.authToken.user.role == 'SHIPPER') {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => ShipperShell(user: state.authToken.user),
         ),
         (route) => false,
       );

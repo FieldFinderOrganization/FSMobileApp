@@ -32,10 +32,14 @@ class DioClient {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    final token = await _tokenStorage.getAccessToken();
-    if (token != null) {
-      options.headers['Authorization'] = 'Bearer $token';
-    }
+    // Luôn để request đi tiếp dù đọc token lỗi — nếu throw ở đây mà không gọi
+    // handler.next/reject thì dio treo request vĩnh viễn (xoay mãi, BE không nhận).
+    try {
+      final token = await _tokenStorage.getAccessToken();
+      if (token != null) {
+        options.headers['Authorization'] = 'Bearer $token';
+      }
+    } catch (_) {}
     handler.next(options);
   }
 

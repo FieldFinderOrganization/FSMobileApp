@@ -114,7 +114,7 @@ void main() async {
           BlocProvider<ChatCubit>(
             create: (context) => ChatCubit(
               remoteDatasource: aiChatDatasource,
-              localDatasource: ChatLocalDatasource(),
+              localDatasource: ChatLocalDatasource(tokenStorage),
             )..loadSessions(),
           ),
           BlocProvider<AdminDashboardCubit>(

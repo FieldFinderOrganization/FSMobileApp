@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/location/map_picker_screen.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../auth/login/presentation/bloc/auth_cubit.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
@@ -31,6 +32,8 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen> {
   String _paymentMethod = 'cash'; // 'cash' | 'transfer'
   final TextEditingController _addressController = TextEditingController();
+  double? _destLat;
+  double? _destLng;
   List<UserDiscountEntity> _walletVouchers = [];
   final List<UserDiscountEntity> _selectedVouchers = [];
   bool _walletLoading = false;
@@ -327,12 +330,47 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   bool _isPlacingOrder = false;
 
+  Future<void> _pickLocation() async {
+    final result = await Navigator.push<MapPickResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapPickerScreen(
+          initialLat: _destLat,
+          initialLng: _destLng,
+          title: 'Chọn điểm giao hàng',
+        ),
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      _destLat = result.latLng.latitude;
+      _destLng = result.latLng.longitude;
+      if (result.address != null && result.address!.isNotEmpty) {
+        _addressController.text = result.address!;
+      }
+    });
+  }
+
   Future<void> _placeOrder() async {
     if (_addressController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             'Vui lòng nhập địa chỉ giao hàng.',
+            style: GoogleFonts.inter(color: Colors.white),
+          ),
+          backgroundColor: AppColors.primaryRed,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (_destLat == null || _destLng == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Vui lòng chọn điểm giao trên bản đồ để shipper định vị.',
             style: GoogleFonts.inter(color: Colors.white),
           ),
           backgroundColor: AppColors.primaryRed,
@@ -368,6 +406,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         final orderData = await dataSource.createOrder({
           'userId': user.userId,
           'paymentMethod': 'BANK',
+          'deliveryAddress': _addressController.text.trim(),
+          'destLat': _destLat,
+          'destLng': _destLng,
           'items': widget.items
               .map(
                 (i) => {
@@ -425,6 +466,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         await dataSource.createOrder({
           'userId': user.userId,
           'paymentMethod': 'CASH',
+          'deliveryAddress': _addressController.text.trim(),
+          'destLat': _destLat,
+          'destLng': _destLng,
           'items': widget.items
               .map(
                 (i) => {
@@ -695,6 +739,52 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: _pickLocation,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: (_destLat != null
+                        ? Colors.green
+                        : AppColors.primaryRed)
+                    .withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: (_destLat != null
+                          ? Colors.green
+                          : AppColors.primaryRed)
+                      .withValues(alpha: 0.4),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _destLat != null ? Icons.check_circle : Icons.map_outlined,
+                    size: 18,
+                    color: _destLat != null ? Colors.green : AppColors.primaryRed,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _destLat != null
+                          ? 'Đã ghim điểm giao trên bản đồ'
+                          : 'Chọn điểm giao trên bản đồ (bắt buộc)',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: _destLat != null
+                            ? Colors.green.shade700
+                            : AppColors.primaryRed,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded,
+                      color: AppColors.textGrey),
+                ],
+              ),
+            ),
           ),
         ],
       ),
