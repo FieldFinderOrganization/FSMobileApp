@@ -15,6 +15,7 @@ import '../../domain/entities/search_history_entity.dart';
 import '../cubit/home_cubit.dart';
 import '../cubit/search_history_cubit.dart';
 import 'search_history_screen.dart';
+import '../../../../shared/widgets/voice_input_button.dart';
 
 enum SearchMode { product, pitch }
 
@@ -227,6 +228,10 @@ class _SearchScreenBodyState extends State<_SearchScreenBody> {
                         size: 18,
                       ),
                     ),
+                  VoiceInputButton(
+                    size: 20,
+                    onResult: _useKeyword,
+                  ),
                 ],
               ),
             ),

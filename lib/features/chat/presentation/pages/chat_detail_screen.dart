@@ -16,6 +16,7 @@ import '../../../pitch/presentation/pages/booking_screen.dart';
 import '../../../pitch/presentation/widgets/pitch_card.dart';
 import '../../../product/presentation/pages/product_detail_screen.dart';
 import '../widgets/chat_bubble.dart';
+import '../../../../shared/widgets/voice_input_button.dart';
 
 class ChatDetailScreen extends StatefulWidget {
   const ChatDetailScreen({super.key});
@@ -429,6 +430,12 @@ class _InputBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void setText(String text) {
+      controller.text = text;
+      controller.selection =
+          TextSelection.fromPosition(TextPosition(offset: text.length));
+    }
+
     return Container(
       padding: EdgeInsets.only(
         left: 12,
@@ -453,6 +460,12 @@ class _InputBar extends StatelessWidget {
               size: 24,
             ),
             tooltip: 'Gửi hình ảnh',
+          ),
+          VoiceInputButton(
+            enabled: !isLoading,
+            idleColor: AppColors.primaryRed,
+            onPartial: setText,
+            onResult: setText,
           ),
           Expanded(
             child: TextField(
