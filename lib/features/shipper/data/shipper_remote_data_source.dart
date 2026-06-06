@@ -42,6 +42,13 @@ class ShipperRemoteDataSource {
     return res.data as Map<String, dynamic>;
   }
 
+  /// Kho giao hàng cố định (cấu hình BE). Trả {lat,lng,name,address}, null nếu lỗi.
+  Future<Map<String, dynamic>?> getWarehouse() async {
+    final res = await dioClient.dio.get('/warehouse');
+    if (res.data == null) return null;
+    return res.data as Map<String, dynamic>;
+  }
+
   /// Tuyến đường shipper→đích từ OSRM (qua BE). null nếu OSRM tắt/lỗi.
   /// Trả {geometry: polyline encoded, distanceMeters, durationSeconds}.
   Future<Map<String, dynamic>?> getRoute(
