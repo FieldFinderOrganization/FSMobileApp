@@ -268,7 +268,9 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
           style: GoogleFonts.inter(fontWeight: FontWeight.w700),
         ),
       ),
-      body: Column(
+      body: SafeArea(
+        top: false,
+        child: Column(
         children: [
           Container(
             width: double.infinity,
@@ -353,6 +355,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
               ),
             ),
         ],
+      ),
       ),
       floatingActionButton: (!_follow && _shipper != null)
           ? FloatingActionButton.small(

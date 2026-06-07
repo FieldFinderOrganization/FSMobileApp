@@ -68,6 +68,11 @@ class _SearchScreenBodyState extends State<_SearchScreenBody> {
     setState(() {
       _query = value.trim();
     });
+    // Sản phẩm: tìm trên toàn DB qua server (debounce trong cubit).
+    // Sân: vẫn lọc client-side trên danh sách đã tải (giữ nguyên hành vi cũ).
+    if (_mode == SearchMode.product) {
+      context.read<HomeCubit>().searchProducts(_query);
+    }
   }
 
   void _commitSearch(String value) {
@@ -121,7 +126,7 @@ class _SearchScreenBodyState extends State<_SearchScreenBody> {
     final content = BlocBuilder<HomeCubit, HomeState>(
       builder: (context, state) {
         final resultsPitches = _getFilteredPitches(state);
-        final productsResults = _getFilteredProducts(state.products);
+        final productsResults = _getProductResults(state);
 
         return Column(
           children: [
@@ -135,7 +140,7 @@ class _SearchScreenBodyState extends State<_SearchScreenBody> {
             Expanded(
               child: _mode == SearchMode.pitch
                   ? _buildPitchList(resultsPitches)
-                  : _buildProductList(productsResults),
+                  : _buildProductSection(state, productsResults),
             ),
           ],
         );
@@ -158,13 +163,11 @@ class _SearchScreenBodyState extends State<_SearchScreenBody> {
     }).toList();
   }
 
-  List<ProductEntity> _getFilteredProducts(List<ProductEntity> products) {
-    if (_query.isEmpty) return products;
-    final normalizedQuery = StringUtils.removeDiacritics(_query.toLowerCase());
-    return products.where((p) {
-      final name = StringUtils.removeDiacritics(p.name.toLowerCase());
-      return name.contains(normalizedQuery);
-    }).toList();
+  /// Query rỗng: hiển thị danh sách đã tải (browse). Có query: dùng kết quả
+  /// search server-side trên toàn DB (`state.searchProducts`).
+  List<ProductEntity> _getProductResults(HomeState state) {
+    if (_query.isEmpty) return state.products;
+    return state.searchProducts;
   }
 
   Widget _buildSearchBar(HomeState state) {
@@ -434,6 +437,17 @@ class _SearchScreenBodyState extends State<_SearchScreenBody> {
         onTap: () => _commitSearch(_query),
       ),
     );
+  }
+
+  Widget _buildProductSection(HomeState state, List<ProductEntity> products) {
+    // Đang tìm trên server cho từ khóa hiện tại → hiện loading.
+    if (_query.isNotEmpty &&
+        state.searchProductsStatus == LoadStatus.loading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primaryRed),
+      );
+    }
+    return _buildProductList(products);
   }
 
   Widget _buildProductList(List<ProductEntity> products) {

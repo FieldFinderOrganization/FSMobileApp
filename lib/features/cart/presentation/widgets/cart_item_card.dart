@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../domain/entities/cart_item_entity.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/image_url.dart';
 
 class CartItemCard extends StatelessWidget {
   final CartItemEntity item;
@@ -48,16 +50,16 @@ class CartItemCard extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: item.imageUrl.isNotEmpty
-                    ? Image.network(
-                        item.imageUrl,
+                    ? CachedNetworkImage(
+                        // Dùng transform Cloudinary (f_auto,q_auto,w) như product
+                        // card/detail — URL gốc f_png/tách nền load chậm/lỗi → ảnh
+                        // không hiện trong giỏ hàng.
+                        imageUrl: ImageUrl.thumbnail(item.imageUrl, width: 200),
                         width: 82,
                         height: 82,
                         fit: BoxFit.cover,
-                        loadingBuilder: (_, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return _shimmer();
-                        },
-                        errorBuilder: (context2, e, stack) => _placeholder(),
+                        placeholder: (_, _) => _shimmer(),
+                        errorWidget: (_, _, _) => _placeholder(),
                       )
                     : _placeholder(),
               ),

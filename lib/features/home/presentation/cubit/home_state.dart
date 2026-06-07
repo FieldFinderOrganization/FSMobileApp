@@ -37,6 +37,11 @@ class HomeState {
 
   final List<ProductEntity> products;
   final List<ProductEntity> topProducts;
+
+  // Tìm kiếm sản phẩm server-side (thanh search tab Shop) — tách khỏi `products`
+  // (vốn là danh sách phân trang/đã load) để search trên toàn DB.
+  final List<ProductEntity> searchProducts;
+  final LoadStatus searchProductsStatus;
   final List<PitchEntity> pitches;
   final List<CategoryEntity> categories;
   final List<DiscountEntity> discounts;
@@ -78,6 +83,8 @@ class HomeState {
     this.discountsStatus = LoadStatus.initial,
     this.products = const [],
     this.topProducts = const [],
+    this.searchProducts = const [],
+    this.searchProductsStatus = LoadStatus.initial,
     this.pitches = const [],
     this.categories = const [],
     this.discounts = const [],
@@ -184,6 +191,8 @@ class HomeState {
     LoadStatus? discountsStatus,
     List<ProductEntity>? products,
     List<ProductEntity>? topProducts,
+    List<ProductEntity>? searchProducts,
+    LoadStatus? searchProductsStatus,
     List<PitchEntity>? pitches,
     List<CategoryEntity>? categories,
     List<DiscountEntity>? discounts,
@@ -216,6 +225,8 @@ class HomeState {
       discountsStatus: discountsStatus ?? this.discountsStatus,
       products: products ?? this.products,
       topProducts: topProducts ?? this.topProducts,
+      searchProducts: searchProducts ?? this.searchProducts,
+      searchProductsStatus: searchProductsStatus ?? this.searchProductsStatus,
       pitches: pitches ?? this.pitches,
       categories: categories ?? this.categories,
       discounts: discounts ?? this.discounts,

@@ -10,6 +10,7 @@ abstract class HomeRepository {
     Set<String>? genders,
     String? brand,
     String? sort,
+    String? name,
   });
   Future<List<ProductEntity>> fetchTopProducts();
   Future<Map<String, dynamic>> fetchPitches({

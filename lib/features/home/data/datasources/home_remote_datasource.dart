@@ -17,6 +17,7 @@ class HomeRemoteDatasource {
     Set<String>? genders,
     String? brand,
     String? sort, // format: "field,asc" or "field,desc"
+    String? name, // server-side keyword search trên tên/brand
   }) async {
     final Map<String, dynamic> params = {'page': page, 'size': size};
     if (categoryId != null) params['categoryId'] = categoryId;
@@ -25,6 +26,7 @@ class HomeRemoteDatasource {
     }
     if (brand != null && brand.isNotEmpty) params['brand'] = brand;
     if (sort != null && sort.isNotEmpty) params['sort'] = sort;
+    if (name != null && name.isNotEmpty) params['name'] = name;
 
     final response = await _dio.get(
       ApiConstants.products,

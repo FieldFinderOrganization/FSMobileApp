@@ -121,6 +121,8 @@ class _AiChatTabState extends State<_AiChatTab> {
                 );
               }
               return ListView.builder(
+                padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).padding.bottom + 80),
                 itemCount: state.sessions.length,
                 itemBuilder: (context, index) {
                   final session = state.sessions[index];

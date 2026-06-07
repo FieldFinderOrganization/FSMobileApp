@@ -10,6 +10,8 @@ export 'home_state.dart';
 class HomeCubit extends Cubit<HomeState> {
   final HomeRepository _repository;
   Timer? _searchDebounce;
+  Timer? _productSearchDebounce;
+  String _productSearchToken = '';
 
   HomeCubit({required HomeRepository repository})
       : _repository = repository,
@@ -335,8 +337,65 @@ class HomeCubit extends Cubit<HomeState> {
     _loadPitchesFirstPage();
   }
 
+  // ── Tìm kiếm sản phẩm (server-side, toàn DB) ───────────────────────────────
+
+  /// Tìm sản phẩm theo từ khóa trên toàn DB (debounce 350ms).
+  /// Khác với `products` (danh sách phân trang) — kết quả đổ vào `searchProducts`.
+  void searchProducts(String query) {
+    _productSearchDebounce?.cancel();
+    final q = query.trim();
+    _productSearchToken = q;
+
+    if (q.isEmpty) {
+      emit(state.copyWith(
+        searchProducts: [],
+        searchProductsStatus: LoadStatus.initial,
+      ));
+      return;
+    }
+
+    emit(state.copyWith(searchProductsStatus: LoadStatus.loading));
+    _productSearchDebounce = Timer(const Duration(milliseconds: 350), () async {
+      try {
+        final result = await _repository.fetchProducts(
+          page: 0,
+          size: 50,
+          name: q,
+        );
+        // Bỏ qua kết quả cũ nếu từ khóa đã thay đổi (tránh race khi gõ nhanh).
+        if (q != _productSearchToken) return;
+        emit(state.copyWith(
+          searchProducts: result['content'] as List<ProductEntity>,
+          searchProductsStatus: LoadStatus.success,
+        ));
+      } catch (e) {
+        if (q != _productSearchToken) return;
+        emit(state.copyWith(
+          searchProductsStatus: LoadStatus.failure,
+          errorMessage: e.toString(),
+        ));
+      }
+    });
+  }
+
+  void clearProductSearch() {
+    _productSearchDebounce?.cancel();
+    _productSearchToken = '';
+    emit(state.copyWith(
+      searchProducts: [],
+      searchProductsStatus: LoadStatus.initial,
+    ));
+  }
+
   void reset() => emit(const HomeState());
 
   Future<void> refresh() => loadAll();
+
+  @override
+  Future<void> close() {
+    _searchDebounce?.cancel();
+    _productSearchDebounce?.cancel();
+    return super.close();
+  }
 }
 

@@ -121,6 +121,9 @@ class ProductListScreen extends StatelessWidget {
       builder: (context, cartState) {
         final count = cartState.cart?.items.fold(0, (sum, i) => sum + i.quantity) ?? 0;
         return GestureDetector(
+          // opaque: đảm bảo cả vùng nút nhận tap (mặc định deferToChild khiến
+          // tap đôi khi không kích hoạt được → "bấm không phản ứng").
+          behavior: HitTestBehavior.opaque,
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const CartScreen()),
@@ -141,23 +144,26 @@ class ProductListScreen extends StatelessWidget {
                 Positioned(
                   top: -4,
                   right: -4,
-                  child: Container(
-                    width: 17,
-                    height: 17,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                          color: AppColors.primaryRed, width: 1.5),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      count > 99 ? '99+' : '$count',
-                      style: const TextStyle(
-                        color: AppColors.primaryRed,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        height: 1,
+                  // IgnorePointer: badge không nuốt tap của nút bên dưới.
+                  child: IgnorePointer(
+                    child: Container(
+                      width: 17,
+                      height: 17,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            color: AppColors.primaryRed, width: 1.5),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        count > 99 ? '99+' : '$count',
+                        style: const TextStyle(
+                          color: AppColors.primaryRed,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          height: 1,
+                        ),
                       ),
                     ),
                   ),
@@ -382,7 +388,7 @@ class _ProductContentState extends State<_ProductContent> {
               top: paddingTop,
               left: 16,
               right: 16,
-              bottom: 24,
+              bottom: 24 + MediaQuery.of(context).padding.bottom,
             ),
             itemCount: rows.length + (state.isLoadingMore ? 1 : 0),
             itemBuilder: (context, i) {

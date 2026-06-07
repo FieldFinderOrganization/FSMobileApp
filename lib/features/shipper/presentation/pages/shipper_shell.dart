@@ -153,7 +153,8 @@ class _ShipperShellState extends State<ShipperShell> {
     return RefreshIndicator(
       onRefresh: _refresh,
       child: ListView.separated(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.fromLTRB(
+            12, 12, 12, 12 + MediaQuery.of(context).padding.bottom),
         itemCount: orders.length,
         separatorBuilder: (_, _) => const SizedBox(height: 10),
         itemBuilder: (_, i) => _buildCard(orders[i], available: available),

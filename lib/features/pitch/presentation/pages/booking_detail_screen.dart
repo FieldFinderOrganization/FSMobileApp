@@ -187,7 +187,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.fromLTRB(
+            20, 20, 20, 20 + MediaQuery.of(context).padding.bottom),
         child: Column(
           children: [
             _buildStatusCard(),

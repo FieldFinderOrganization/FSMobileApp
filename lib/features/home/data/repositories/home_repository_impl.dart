@@ -19,6 +19,7 @@ class HomeRepositoryImpl implements HomeRepository {
     Set<String>? genders,
     String? brand,
     String? sort,
+    String? name,
   }) async {
     try {
       final result = await _datasource.fetchProducts(
@@ -28,6 +29,7 @@ class HomeRepositoryImpl implements HomeRepository {
         genders: genders,
         brand: brand,
         sort: sort,
+        name: name,
       );
       return {
         'content': (result['content'] as List).cast<ProductEntity>(),

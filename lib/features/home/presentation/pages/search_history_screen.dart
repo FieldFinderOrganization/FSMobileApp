@@ -71,6 +71,8 @@ class SearchHistoryScreen extends StatelessWidget {
           }
           final fmt = DateFormat('HH:mm dd/MM');
           return ListView.separated(
+            padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).padding.bottom),
             itemCount: state.items.length,
             separatorBuilder: (_, _) =>
                 const Divider(height: 1, color: Color(0xFFEEEEEE)),
