@@ -8,10 +8,16 @@ class AIChatRemoteDatasource {
   AIChatRemoteDatasource(this.dioClient);
 
   Future<Map<String, dynamic>> sendMessage(
-      String userInput, String sessionId) async {
+      String userInput, String sessionId,
+      {double? latitude, double? longitude}) async {
     final response = await dioClient.dio.post(
       ApiConstants.aiChat,
-      data: {'userInput': userInput, 'sessionId': sessionId},
+      data: {
+        'userInput': userInput,
+        'sessionId': sessionId,
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
+      },
     );
     if (kDebugMode) {
       debugPrint('[AIChat] sendMessage "$userInput" -> ${response.statusCode}: ${response.data}');

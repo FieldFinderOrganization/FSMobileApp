@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/location/location_helper.dart';
 import '../../data/datasources/ai_chat_remote_datasource.dart';
 import '../../data/datasources/chat_local_datasource.dart';
 import '../../data/models/chat_message_model.dart';
@@ -85,9 +86,29 @@ class ChatCubit extends Cubit<ChatState> {
     emit(ChatSessionOpen(session: updatedSession, isLoading: true));
 
     try {
+      // Attach live GPS only for pitch/location-related queries so we don't prompt for
+      // location on product chats. Non-blocking: null when permission denied/GPS off ->
+      // backend falls back to the user's saved profile coordinates.
+      double? lat;
+      double? lng;
+      final lower = text.toLowerCase();
+      final wantsLocation = lower.contains('sân') ||
+          lower.contains('gần') ||
+          lower.contains('quanh') ||
+          lower.contains('gợi ý');
+      if (wantsLocation) {
+        final pos = await LocationHelper.currentPosition();
+        if (pos != null) {
+          lat = pos.latitude;
+          lng = pos.longitude;
+        }
+      }
+
       final response = await remoteDatasource.sendMessage(
         text,
         current.session.sessionId,
+        latitude: lat,
+        longitude: lng,
       );
 
       final rawMessage = (response['message'] as String?)?.trim() ?? '';
