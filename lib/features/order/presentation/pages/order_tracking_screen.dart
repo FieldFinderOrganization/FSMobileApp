@@ -76,17 +76,16 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     )..addListener(() {
         if (_from == null || _to == null) return;
         final t = _anim.value;
-        setState(() {
-          if (_segOnRoute && _routePath != null) {
-            // Bám tuyến: trượt dọc polyline (đi theo đường cong, không cắt thẳng).
-            _curDist = _fromDist + (_toDist - _fromDist) * t;
-            _shipper = _routePath!.pointAt(_curDist);
-          } else {
-            _shipper = _lerp(_from!, _to!, t);
-          }
-          _bearing = _lerpAngle(_bearingFrom, _bearingTo, t);
-        });
-        // Camera lướt cùng marker (không hard-cut), trừ khi user tự pan.
+        // KHÔNG setState mỗi frame — sẽ rebuild cả FlutterMap (tile+polyline) 60fps → giật.
+        // Chỉ cập nhật field; marker tự vẽ lại qua AnimatedBuilder(_anim) ở build (rebuild
+        // mỗi mình marker). Camera bám theo (nhẹ, không rebuild Scaffold).
+        if (_segOnRoute && _routePath != null) {
+          _curDist = _fromDist + (_toDist - _fromDist) * t;
+          _shipper = _routePath!.pointAt(_curDist);
+        } else {
+          _shipper = _lerp(_from!, _to!, t);
+        }
+        _bearing = _lerpAngle(_bearingFrom, _bearingTo, t);
         if (_follow && _shipper != null) {
           _mapController.move(_shipper!, _mapController.camera.zoom);
         }
@@ -315,9 +314,10 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                       ),
                     ],
                   ),
-                MarkerLayer(
-                  markers: [
-                    if (dest != null)
+                // Đích: tĩnh → layer riêng, không rebuild theo animation.
+                if (dest != null)
+                  MarkerLayer(
+                    markers: [
                       Marker(
                         point: dest,
                         width: 44,
@@ -326,20 +326,32 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                         child: const Icon(Icons.home_rounded,
                             color: AppColors.primaryRed, size: 38),
                       ),
-                    if (_shipper != null)
-                      Marker(
-                        point: _shipper!,
-                        width: 44,
-                        height: 44,
-                        // Mũi tên hướng quay theo bearing (rotate side-view scooter
-                        // trông sai; đổi asset top-down rồi chỉnh _iconHeadingOffsetDeg).
-                        child: Transform.rotate(
-                          angle: (_bearing + _iconHeadingOffsetDeg) * pi / 180,
-                          child: const Icon(Icons.navigation_rounded,
-                              color: Color(0xFF1565C0), size: 40),
+                    ],
+                  ),
+                // Shipper: chỉ layer này rebuild mỗi frame (đọc field _shipper/_bearing
+                // do listener cập nhật) → mượt, không kéo theo tile/polyline.
+                AnimatedBuilder(
+                  animation: _anim,
+                  builder: (context, _) {
+                    final p = _shipper;
+                    if (p == null) return const SizedBox.shrink();
+                    return MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: p,
+                          width: 44,
+                          height: 44,
+                          // Mũi tên hướng quay theo bearing (rotate side-view scooter
+                          // trông sai; đổi asset top-down rồi chỉnh _iconHeadingOffsetDeg).
+                          child: Transform.rotate(
+                            angle: (_bearing + _iconHeadingOffsetDeg) * pi / 180,
+                            child: const Icon(Icons.navigation_rounded,
+                                color: Color(0xFF1565C0), size: 40),
+                          ),
                         ),
-                      ),
-                  ],
+                      ],
+                    );
+                  },
                 ),
               ],
             ),

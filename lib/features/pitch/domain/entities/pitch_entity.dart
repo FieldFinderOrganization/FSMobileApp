@@ -7,6 +7,8 @@ class PitchEntity {
   final String description;
   final List<String> imageUrls;
   final String address;
+  final double? latitude;
+  final double? longitude;
   final String? providerUserId;
   final String? providerName;
 
@@ -19,9 +21,14 @@ class PitchEntity {
     required this.description,
     required this.imageUrls,
     this.address = '',
+    this.latitude,
+    this.longitude,
     this.providerUserId,
     this.providerName,
   });
+
+  /// Có toạ độ để dẫn đường không.
+  bool get hasCoordinates => latitude != null && longitude != null;
 
   String get primaryImage => imageUrls.isNotEmpty ? imageUrls.first : '';
 

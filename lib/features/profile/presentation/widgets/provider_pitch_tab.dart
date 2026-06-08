@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/location/map_picker_screen.dart';
 import '../../../../features/auth/domain/entities/user_entity.dart';
 import '../../../../features/auth/domain/repositories/auth_repository.dart';
 import '../../../../features/pitch/domain/entities/pitch_entity.dart';
@@ -254,6 +255,9 @@ class _ProviderPitchTabState extends State<ProviderPitchTab> {
     List<String> existingUrls = List.from(pitch?.imageUrls ?? []);
     List<File> selectedFiles = [];
     bool isUploading = false;
+    // Toạ độ riêng của sân — chỉ chọn khi TẠO MỚI; đã có sân thì khoá.
+    double? pickedLat = pitch?.latitude;
+    double? pickedLng = pitch?.longitude;
 
     final cubit = context.read<PitchManagementCubit>();
     final authRepo = context.read<AuthRepository>();
@@ -293,6 +297,45 @@ class _ProviderPitchTabState extends State<ProviderPitchTab> {
                 ),
                 TextField(controller: descController, decoration: const InputDecoration(labelText: 'Mô tả'), maxLines: 3),
                 const SizedBox(height: 20),
+                // Vị trí sân — chốt 1 lần khi tạo, vẫn nằm trong khu vực đã chọn.
+                if (pitch == null) ...[
+                  Text('Vị trí sân', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textGrey)),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: isUploading
+                        ? null
+                        : () async {
+                            final picked = await Navigator.of(context).push<MapPickResult>(
+                              MaterialPageRoute(
+                                builder: (_) => MapPickerScreen(
+                                  initialLat: pickedLat ?? _selectedAddress?.latitude,
+                                  initialLng: pickedLng ?? _selectedAddress?.longitude,
+                                  title: 'Chọn vị trí sân',
+                                ),
+                              ),
+                            );
+                            if (picked != null) {
+                              setDialogState(() {
+                                pickedLat = picked.latLng.latitude;
+                                pickedLng = picked.latLng.longitude;
+                              });
+                            }
+                          },
+                    icon: Icon(pickedLat != null ? Icons.edit_location_alt : Icons.add_location_alt_outlined, size: 18, color: AppColors.primaryRed),
+                    label: Text(
+                      pickedLat != null
+                          ? '${pickedLat!.toStringAsFixed(5)}, ${pickedLng!.toStringAsFixed(5)}'
+                          : 'Chọn vị trí trên bản đồ',
+                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.primaryRed, fontWeight: FontWeight.w600),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: AppColors.primaryRed.withOpacity(0.4)),
+                      alignment: Alignment.centerLeft,
+                      minimumSize: const Size(double.infinity, 44),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
                 Text('Ảnh sân bãi', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textGrey)),
                 const SizedBox(height: 10),
                 SingleChildScrollView(
@@ -349,6 +392,10 @@ class _ProviderPitchTabState extends State<ProviderPitchTab> {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng nhập tên sân')));
                   return;
                 }
+                if (pitch == null && (pickedLat == null || pickedLng == null)) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn vị trí sân trên bản đồ')));
+                  return;
+                }
 
                 setDialogState(() => isUploading = true);
                 
@@ -367,6 +414,9 @@ class _ProviderPitchTabState extends State<ProviderPitchTab> {
                     'description': descController.text,
                     'environment': environment,
                     'imageUrls': finalUrls,
+                    // Toạ độ chỉ gửi khi tạo mới; update không đổi toạ độ (BE bỏ qua).
+                    if (pitch == null) 'latitude': pickedLat,
+                    if (pitch == null) 'longitude': pickedLng,
                   };
 
                   if (pitch == null) {

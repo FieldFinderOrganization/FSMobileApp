@@ -18,6 +18,7 @@ import '../../domain/entities/suggested_pitches_entity.dart';
 import '../widgets/suggested_pitch_card.dart';
 import '../../../home/presentation/widgets/shimmer_card.dart';
 import './booking_screen.dart';
+import './pitch_directions_screen.dart';
 import '../../../product/domain/repositories/product_repository.dart';
 import '../../../product/domain/entities/product_entity.dart';
 import '../../../product/presentation/widgets/product_card.dart';
@@ -521,6 +522,39 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                 ),
               ],
             ),
+
+          // Dẫn đường từ vị trí người dùng tới sân (cần sân có toạ độ).
+          if (pitch.hasCoordinates) ...[
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PitchDirectionsScreen(pitch: pitch),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.directions_rounded,
+                  size: 18, color: AppColors.primaryRed),
+              label: Text(
+                'Dẫn đường',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primaryRed,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(
+                    color: AppColors.primaryRed.withValues(alpha: 0.4)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+            ),
+          ],
 
           const SizedBox(height: 14),
 

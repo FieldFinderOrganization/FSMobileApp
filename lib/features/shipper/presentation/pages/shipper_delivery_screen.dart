@@ -35,6 +35,9 @@ class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen> {
   final MapController _mapController = MapController();
 
   LatLng? _me;
+  // Vị trí shipper cho marker — cập nhật qua notifier để CHỈ marker rebuild,
+  // không setState cả map (tile/polyline) mỗi tick → mượt, không giật.
+  final ValueNotifier<LatLng?> _meVN = ValueNotifier<LatLng?>(null);
   bool _sending = false;
   bool _finishing = false;
   String _status = 'Đang khởi động…';
@@ -106,7 +109,8 @@ class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen> {
       final pos = await loc.LocationHelper.currentPositionFull();
       if (pos == null || !mounted) return;
       final p = LatLng(pos.latitude, pos.longitude);
-      setState(() => _me = p);
+      _me = p;
+      _meVN.value = p; // chỉ marker rebuild
       _ws.sendLocation(
         orderId: widget.order.orderId.toString(),
         lat: p.latitude,
@@ -185,7 +189,8 @@ class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen> {
     final reached = _demoDist >= path.totalMeters;
     final m = reached ? path.totalMeters : _demoDist;
     final p = path.pointAt(m);
-    if (mounted) setState(() => _me = p);
+    _me = p;
+    if (mounted) _meVN.value = p; // chỉ marker rebuild
     _ws.sendLocation(
       orderId: widget.order.orderId.toString(),
       lat: p.latitude,
@@ -260,6 +265,7 @@ class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen> {
     _timer?.cancel();
     _demoTimer?.cancel();
     _ws.disconnect();
+    _meVN.dispose();
     super.dispose();
   }
 
@@ -342,9 +348,10 @@ class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen> {
                       ),
                     ],
                   ),
-                MarkerLayer(
-                  markers: [
-                    if (target != null)
+                // Đích chặng: tĩnh (đổi khi _picked qua setState) → layer riêng.
+                if (target != null)
+                  MarkerLayer(
+                    markers: [
                       Marker(
                         point: target,
                         width: 44,
@@ -360,15 +367,25 @@ class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen> {
                           size: 38,
                         ),
                       ),
-                    if (_me != null)
-                      Marker(
-                        point: _me!,
-                        width: 44,
-                        height: 44,
-                        child: const Icon(Icons.delivery_dining_rounded,
-                            color: Color(0xFF1565C0), size: 40),
-                      ),
-                  ],
+                    ],
+                  ),
+                // Shipper: chỉ layer này rebuild mỗi tick (qua _meVN), không kéo map.
+                ValueListenableBuilder<LatLng?>(
+                  valueListenable: _meVN,
+                  builder: (context, me, _) {
+                    if (me == null) return const SizedBox.shrink();
+                    return MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: me,
+                          width: 44,
+                          height: 44,
+                          child: const Icon(Icons.delivery_dining_rounded,
+                              color: Color(0xFF1565C0), size: 40),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ],
             ),

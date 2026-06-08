@@ -10,6 +10,8 @@ class PitchModel extends PitchEntity {
     required super.description,
     required super.imageUrls,
     super.address,
+    super.latitude,
+    super.longitude,
     super.providerUserId,
     super.providerName,
   });
@@ -27,6 +29,8 @@ class PitchModel extends PitchEntity {
               .toList() ??
           [],
       address: json['address'] as String? ?? '',
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
       providerUserId: json['providerUserId'] as String?,
       providerName: json['providerName'] as String?,
     );

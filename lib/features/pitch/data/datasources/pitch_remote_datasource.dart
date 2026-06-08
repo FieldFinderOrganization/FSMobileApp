@@ -44,6 +44,21 @@ class PitchRemoteDatasource {
     await _dio.delete('${ApiConstants.pitches}/$pitchId');
   }
 
+  /// Tuyến đường user→sân từ OSRM (qua BE). null nếu sân chưa có toạ độ hoặc OSRM tắt/lỗi.
+  /// Trả {geometry: polyline encoded, distanceMeters, durationSeconds}.
+  Future<Map<String, dynamic>?> fetchPitchRoute(
+    String pitchId, {
+    required double fromLat,
+    required double fromLng,
+  }) async {
+    final res = await _dio.get(
+      ApiConstants.pitchRoute(pitchId),
+      queryParameters: {'fromLat': fromLat, 'fromLng': fromLng},
+    );
+    if (res.statusCode == 204 || res.data == null) return null;
+    return res.data as Map<String, dynamic>;
+  }
+
   Future<Map<String, List<PitchModel>>> fetchSuggested(
     String pitchId, {
     double? lat,

@@ -5,7 +5,6 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../features/auth/domain/entities/user_entity.dart';
 import '../cubit/provider_cubit.dart';
 import '../../domain/entities/provider_address_entity.dart';
-import '../../../../core/location/map_picker_screen.dart';
 
 class ProviderAddressTab extends StatelessWidget {
   final UserEntity user;
@@ -19,14 +18,9 @@ class ProviderAddressTab extends StatelessWidget {
 
     if (state is! ProviderLoaded) return;
 
-    // Toạ độ đang chọn (prefill nếu sửa).
-    double? pickedLat = address?.latitude;
-    double? pickedLng = address?.longitude;
-
     showDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
           title: Text(
             address == null ? 'Thêm khu vực' : 'Sửa khu vực',
             style: GoogleFonts.inter(fontWeight: FontWeight.w700),
@@ -43,51 +37,11 @@ class ProviderAddressTab extends StatelessWidget {
                 ),
                 maxLines: 2,
               ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.map_outlined, size: 18),
-                label: Text(
-                  pickedLat != null
-                      ? 'Đã chọn vị trí trên bản đồ'
-                      : 'Chọn vị trí trên bản đồ',
-                  style: GoogleFonts.inter(fontSize: 13),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor:
-                      pickedLat != null ? Colors.green[700] : AppColors.primaryRed,
-                  minimumSize: const Size.fromHeight(44),
-                ),
-                onPressed: () async {
-                  final result = await Navigator.of(context).push<MapPickResult>(
-                    MaterialPageRoute(
-                      builder: (_) => MapPickerScreen(
-                        initialLat: pickedLat,
-                        initialLng: pickedLng,
-                        title: 'Chọn vị trí khu vực',
-                      ),
-                    ),
-                  );
-                  if (result != null) {
-                    setState(() {
-                      pickedLat = result.latLng.latitude;
-                      pickedLng = result.latLng.longitude;
-                      if (result.address != null &&
-                          controller.text.trim().isEmpty) {
-                        controller.text = result.address!;
-                      }
-                    });
-                  }
-                },
+              const SizedBox(height: 8),
+              Text(
+                'Toạ độ khu vực sẽ tự xác định từ địa chỉ. Vị trí từng sân được chọn khi thêm sân.',
+                style: GoogleFonts.inter(fontSize: 11, color: AppColors.textGrey),
               ),
-              if (pickedLat != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    '${pickedLat!.toStringAsFixed(5)}, ${pickedLng!.toStringAsFixed(5)}',
-                    style: GoogleFonts.inter(
-                        fontSize: 11, color: AppColors.textGrey),
-                  ),
-                ),
             ],
           ),
           actions: [
@@ -100,18 +54,15 @@ class ProviderAddressTab extends StatelessWidget {
               onPressed: () {
                 if (controller.text.trim().isEmpty) return;
                 if (address == null) {
+                  // Không gửi toạ độ → BE tự geocode tâm khu vực (anchor cho sân).
                   providerCubit.addAddress(
                     state.provider.providerId,
                     controller.text.trim(),
-                    latitude: pickedLat,
-                    longitude: pickedLng,
                   );
                 } else {
                   providerCubit.updateAddress(
                     address.providerAddressId,
                     controller.text.trim(),
-                    latitude: pickedLat,
-                    longitude: pickedLng,
                   );
                 }
                 Navigator.pop(dialogContext);
@@ -121,7 +72,6 @@ class ProviderAddressTab extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 

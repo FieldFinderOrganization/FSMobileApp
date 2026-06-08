@@ -26,6 +26,7 @@ class ApiConstants {
   static const String topProducts = '/products/top-selling';
   static const String suggestedProductsForPitch = '/products/suggested-for-pitch';
   static const String pitches = '/pitches';
+  static String pitchRoute(String pitchId) => '/pitches/$pitchId/route';
   static const String suggestedPitchesForProduct = '/pitches/suggested-for-product';
   static const String providers = '/providers';
   static const String providerAddresses = '/provider-addresses';
