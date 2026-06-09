@@ -88,9 +88,9 @@ class _HomeBodyState extends State<_HomeBody> {
         );
       },
       child: Scaffold(
-      backgroundColor: AppColors.surfaceWarm,
+      backgroundColor: AppColors.background,
       body: Container(
-        color: AppColors.surfaceWarm,
+        color: AppColors.background,
         child: Stack(
         children: [
           // Parallax background — only this layer rebuilds on scroll
