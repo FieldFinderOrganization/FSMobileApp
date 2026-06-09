@@ -429,6 +429,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, size: 16, color: AppColors.textGrey),
         const SizedBox(width: 8),

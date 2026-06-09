@@ -22,7 +22,7 @@ class HomeFooter extends StatelessWidget {
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.textDark,
+                    color: Colors.white,
                   ),
                 ),
                 TextSpan(
@@ -30,7 +30,7 @@ class HomeFooter extends StatelessWidget {
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.primaryRed,
+                    color: AppColors.accentGold,
                   ),
                 ),
               ],
@@ -41,11 +41,11 @@ class HomeFooter extends StatelessWidget {
             'Đặt sân · Mua đồ thể thao · Thi đấu',
             style: GoogleFonts.inter(
               fontSize: 12,
-              color: AppColors.textGrey,
+              color: Colors.white54,
             ),
           ),
           const SizedBox(height: 20),
-          const Divider(color: AppColors.hairline),
+          Divider(color: Colors.white.withValues(alpha: 0.08)),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -61,7 +61,7 @@ class HomeFooter extends StatelessWidget {
             '© 2026 FieldFinder. All rights reserved.',
             style: GoogleFonts.inter(
               fontSize: 11,
-              color: AppColors.textGrey,
+              color: Colors.white30,
             ),
           ),
         ],
@@ -85,7 +85,7 @@ class _FooterLink extends StatelessWidget {
         style: GoogleFonts.inter(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: AppColors.textDark,
+          color: Colors.white70,
         ),
       ),
     );

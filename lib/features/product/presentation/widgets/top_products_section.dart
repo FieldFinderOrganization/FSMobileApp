@@ -24,7 +24,7 @@ class TopProductsSection extends StatelessWidget {
     return FadeInSection(
       delay: const Duration(milliseconds: 200),
       child: Container(
-        color: Colors.white,
+        color: Colors.transparent,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -32,7 +32,7 @@ class TopProductsSection extends StatelessWidget {
               title: 'Bán chạy nhất',
               onSeeAll: null,
               index: '02',
-              darkMode: false,
+              darkMode: true,
             ),
             if (isLoading)
               _buildShimmer()
@@ -253,7 +253,7 @@ class _PodiumBubble extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: isCenter ? 11 : 9,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textDark,
+                    color: Colors.white,
                     height: 1.1,
                   ),
                 ),
@@ -272,8 +272,8 @@ class _PodiumBubble extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  rankColor.withValues(alpha: 0.5),
-                  rankColor.withValues(alpha: 0.1),
+                  rankColor.withValues(alpha: 0.35),
+                  AppColors.midnightDeep.withValues(alpha: 0.1),
                 ],
               ),
               borderRadius: const BorderRadius.vertical(

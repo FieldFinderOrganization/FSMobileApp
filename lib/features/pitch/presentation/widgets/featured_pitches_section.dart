@@ -82,7 +82,12 @@ class FeaturedPitchesSection extends StatelessWidget {
   }
 
   Widget _buildEmpty() {
-    return const Center(child: Text('Chưa có sân nào.'));
+    return const Center(
+      child: Text(
+        'Chưa có sân nào.',
+        style: TextStyle(color: Colors.white54),
+      ),
+    );
   }
 }
 
@@ -150,18 +155,30 @@ class _DistrictChip extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.primaryRed : const Color(0xFFF3F3F3),
+          color: isActive ? AppColors.primaryRed : AppColors.midnightSoft,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isActive ? AppColors.primaryRed : const Color(0xFFE0E0E0),
+            color: isActive
+                ? AppColors.accentGold
+                : Colors.white.withValues(alpha: 0.08),
+            width: isActive ? 1.5 : 1,
           ),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: AppColors.primaryRed.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Text(
           label,
           style: GoogleFonts.inter(
             fontSize: 12,
             fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-            color: isActive ? Colors.white : AppColors.textGrey,
+            color: isActive ? Colors.white : Colors.white60,
           ),
         ),
       ),

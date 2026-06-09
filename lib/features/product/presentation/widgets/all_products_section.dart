@@ -52,7 +52,7 @@ class AllProductsSection extends StatelessWidget {
               child: const Center(
                 child: Text(
                   'Không có sản phẩm nào.',
-                  style: TextStyle(color: AppColors.textGrey),
+                  style: TextStyle(color: Colors.white54),
                 ),
               ),
             )
@@ -155,7 +155,7 @@ class _FilterBar extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textGrey,
+                  color: Colors.white54,
                 ),
               ),
               const SizedBox(width: 8),
@@ -185,7 +185,7 @@ class _FilterBar extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textGrey,
+                  color: Colors.white54,
                 ),
               ),
               const SizedBox(width: 8),
@@ -217,7 +217,7 @@ class _FilterBar extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textGrey,
+                  color: Colors.white54,
                 ),
               ),
               const SizedBox(width: 8),
@@ -266,15 +266,19 @@ class _SortChip extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.primaryRed : const Color(0xFFF3F4F6),
+          color: isActive ? AppColors.primaryRed : AppColors.midnightSoft,
           borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isActive ? AppColors.accentGold : Colors.white.withValues(alpha: 0.05),
+            width: isActive ? 1.5 : 1,
+          ),
         ),
         child: Text(
           label,
           style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: isActive ? Colors.white : AppColors.textDark.withValues(alpha: 0.8),
+            color: isActive ? Colors.white : Colors.white60,
           ),
         ),
       ),
@@ -302,15 +306,19 @@ class _GenderChip extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.primaryRed : const Color(0xFFF3F4F6),
+          color: isActive ? AppColors.primaryRed : AppColors.midnightSoft,
           borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isActive ? AppColors.accentGold : Colors.white.withValues(alpha: 0.05),
+            width: isActive ? 1.5 : 1,
+          ),
         ),
         child: Text(
           label,
           style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: isActive ? Colors.white : AppColors.textDark.withValues(alpha: 0.8),
+            color: isActive ? Colors.white : Colors.white60,
           ),
         ),
       ),
@@ -336,15 +344,19 @@ class _BrandChip extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.primaryRed : const Color(0xFFF3F4F6),
+          color: isActive ? AppColors.primaryRed : AppColors.midnightSoft,
           borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isActive ? AppColors.accentGold : Colors.white.withValues(alpha: 0.05),
+            width: isActive ? 1.5 : 1,
+          ),
         ),
         child: Text(
           label,
           style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: isActive ? Colors.white : AppColors.textDark.withValues(alpha: 0.8),
+            color: isActive ? Colors.white : Colors.white60,
           ),
         ),
       ),
@@ -415,8 +427,12 @@ class _ParentCategoryChips extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: isActive ? AppColors.primaryRed : const Color(0xFFF3F4F6),
+                  color: isActive ? AppColors.primaryRed : AppColors.midnightSoft,
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isActive ? AppColors.accentGold : Colors.white.withValues(alpha: 0.05),
+                    width: isActive ? 1.5 : 1,
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -426,7 +442,7 @@ class _ParentCategoryChips extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: isActive ? Colors.white : AppColors.textDark.withValues(alpha: 0.8),
+                        color: isActive ? Colors.white : Colors.white60,
                       ),
                     ),
                     if (hasChildren) ...[
@@ -436,7 +452,7 @@ class _ParentCategoryChips extends StatelessWidget {
                             ? Icons.keyboard_arrow_up_rounded
                             : Icons.keyboard_arrow_down_rounded,
                         size: 14,
-                        color: isActive ? Colors.white : AppColors.textDark.withValues(alpha: 0.8),
+                        color: isActive ? Colors.white : Colors.white60,
                       ),
                     ],
                   ],
@@ -466,8 +482,12 @@ class _SubCategoryChips extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF9FAF7),
+        color: AppColors.midnightSoft.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.04),
+          width: 0.8,
+        ),
       ),
       child: Wrap(
         spacing: 8,
@@ -481,12 +501,15 @@ class _SubCategoryChips extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppColors.primaryRed.withValues(alpha: 0.08)
-                    : const Color(0xFFF3F4F6),
+                    ? AppColors.primaryRed.withValues(alpha: 0.15)
+                    : AppColors.midnightSoft,
                 borderRadius: BorderRadius.circular(8),
-                border: isSelected
-                    ? Border.all(color: AppColors.primaryRed, width: 1.5)
-                    : null,
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.accentGold
+                      : Colors.white.withValues(alpha: 0.05),
+                  width: isSelected ? 1.5 : 1,
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -497,13 +520,13 @@ class _SubCategoryChips extends StatelessWidget {
                         ? const Icon(
                             Icons.check_box_rounded,
                             size: 14,
-                            color: AppColors.primaryRed,
+                            color: AppColors.accentGold,
                             key: ValueKey('checked'),
                           )
                         : const Icon(
                             Icons.check_box_outline_blank_rounded,
                             size: 14,
-                            color: Color(0xFFBBBBBB),
+                            color: Colors.white30,
                             key: ValueKey('unchecked'),
                           ),
                   ),
@@ -516,8 +539,8 @@ class _SubCategoryChips extends StatelessWidget {
                           ? FontWeight.w600
                           : FontWeight.w400,
                       color: isSelected
-                          ? AppColors.primaryRed
-                          : AppColors.textDark,
+                          ? AppColors.accentGold
+                          : Colors.white60,
                     ),
                   ),
                 ],
@@ -591,14 +614,19 @@ class _Button extends StatelessWidget {
         decoration: BoxDecoration(
           color: isOutlined ? Colors.transparent : AppColors.primaryRed,
           borderRadius: BorderRadius.circular(30),
-          border: isOutlined ? Border.all(color: AppColors.primaryRed, width: 1.5) : null,
-          boxShadow: isOutlined ? null : [
-            BoxShadow(
-              color: AppColors.primaryRed.withValues(alpha: 0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          border: Border.all(
+            color: AppColors.accentGold,
+            width: 1.5,
+          ),
+          boxShadow: isOutlined
+              ? null
+              : [
+                  BoxShadow(
+                    color: AppColors.primaryRed.withValues(alpha: 0.35),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -606,7 +634,7 @@ class _Button extends StatelessWidget {
             Icon(
               icon,
               size: 18,
-              color: isOutlined ? AppColors.primaryRed : Colors.white,
+              color: isOutlined ? AppColors.accentGold : Colors.white,
             ),
             const SizedBox(width: 8),
             Text(
@@ -614,7 +642,7 @@ class _Button extends StatelessWidget {
               style: GoogleFonts.inter(
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
-                color: isOutlined ? AppColors.primaryRed : Colors.white,
+                color: isOutlined ? AppColors.accentGold : Colors.white,
                 letterSpacing: 0.5,
               ),
             ),
