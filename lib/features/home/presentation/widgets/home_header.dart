@@ -15,27 +15,22 @@ class HomeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final showShadow = opacity > 0.5;
-    const logoFirstColor = Colors.white;
-    const logoSecondColor = AppColors.accentGold;
-    const iconColor = Colors.white;
+    final onDark = opacity < 0.5;
+    final logoFirstColor =
+        onDark ? Colors.white : AppColors.textDark;
+    final logoSecondColor =
+        onDark ? AppColors.accentGold : AppColors.primaryRed;
+    final iconColor = onDark ? Colors.white : AppColors.textDark;
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.midnightDeep.withValues(alpha: opacity * 0.92),
-        border: showShadow
-            ? const Border(
-                bottom: BorderSide(
-                  color: Color(0x26C9A86A), // AppColors.accentGold with 15% opacity
-                  width: 0.5,
-                ),
-              )
-            : null,
+        color: Colors.white.withValues(alpha: opacity),
         boxShadow: showShadow
             ? [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 15,
-                  offset: const Offset(0, 4),
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
               ]
             : null,

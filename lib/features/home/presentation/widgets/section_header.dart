@@ -13,14 +13,13 @@ class SectionHeader extends StatelessWidget {
     required this.title,
     this.onSeeAll,
     this.index,
-    this.darkMode = true,
+    this.darkMode = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final textColor = darkMode ? Colors.white : AppColors.textDark;
-    final seeAllColor = darkMode ? AppColors.accentGold : AppColors.primaryRed;
-    final indexColor = darkMode ? AppColors.accentGold : AppColors.primaryRed;
+    final seeAllColor = darkMode ? Colors.white54 : AppColors.primaryRed;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -39,7 +38,7 @@ class SectionHeader extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: indexColor,
+                      color: AppColors.primaryRed,
                       letterSpacing: 1.5,
                     ),
                   ),

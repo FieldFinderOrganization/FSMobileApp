@@ -46,36 +46,23 @@ class QuickActionsBar extends StatelessWidget {
             height: 48,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isActive ? AppColors.primaryRed : AppColors.midnightSoft,
-              border: Border.all(
-                color: isActive
-                    ? AppColors.accentGold
-                    : AppColors.accentGold.withValues(alpha: 0.2),
-                width: isActive ? 1.5 : 1,
-              ),
-              boxShadow: isActive
-                  ? [
-                      BoxShadow(
-                        color: AppColors.primaryRed.withValues(alpha: 0.4),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : null,
+              color: isActive
+                  ? AppColors.primaryRed
+                  : AppColors.primaryRed.withValues(alpha: 0.10),
             ),
             child: Icon(
               item.icon,
               size: 22,
-              color: isActive ? Colors.white : AppColors.accentGold,
+              color: isActive ? Colors.white : AppColors.primaryRed,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 5),
           Text(
             item.label,
             style: GoogleFonts.inter(
               fontSize: 11,
               fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-              color: isActive ? AppColors.accentGold : Colors.white60,
+              color: isActive ? AppColors.primaryRed : AppColors.textGrey,
             ),
           ),
         ],

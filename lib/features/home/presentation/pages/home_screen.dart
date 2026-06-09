@@ -73,90 +73,98 @@ class _HomeBodyState extends State<_HomeBody> {
 
   @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarBrightness: Brightness.dark,
-        statusBarIconBrightness: Brightness.light,
-      ),
-      child: Scaffold(
-        backgroundColor: AppColors.midnightDeep,
-        body: Container(
-          color: AppColors.midnightDeep,
-          child: Stack(
-            children: [
-              // Parallax background — only this layer rebuilds on scroll
-              _ParallaxBackground(offsetNotifier: _parallaxOffset),
-
-              // Main content — only rebuilds on BLoC state changes
-              BlocBuilder<HomeCubit, HomeState>(
-                builder: (context, state) {
-                  return RefreshIndicator(
-                    color: const Color(0xFF7B0323),
-                    onRefresh: () => context.read<HomeCubit>().refresh(),
-                    child: CustomScrollView(
-                      controller: _scrollController,
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      slivers: [
-                        SliverToBoxAdapter(
-                          child: Container(
-                            height: MediaQuery.of(context).padding.top + 56,
-                            decoration: const BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topRight,
-                                end: Alignment.bottomLeft,
-                                colors: [
-                                  AppColors.midnightDeep,
-                                  AppColors.midnightMid,
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        SliverToBoxAdapter(child: HeroBanner(state: state)),
-                        SliverToBoxAdapter(
-                          child: PremiumSurface(
-                            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            child: QuickActionsBar(state: state),
-                          ),
-                        ),
-                        SliverToBoxAdapter(
-                          child: PremiumSurface(
-                            child: FeaturedPitchesSection(state: state),
-                          ),
-                        ),
-                        SliverToBoxAdapter(
-                          child: PremiumSurface(
-                            child: TopProductsSection(state: state),
-                          ),
-                        ),
-                        SliverToBoxAdapter(
-                          child: PremiumSurface(
-                            child: AllProductsSection(state: state),
-                          ),
-                        ),
-                        const SliverToBoxAdapter(child: HomeFooter()),
-                      ],
-                    ),
-                  );
-                },
-              ),
-
-              // Sticky header — only this layer rebuilds on opacity change
-              _StickyHeader(
-                opacityNotifier: _headerOpacity,
-                onSearchTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const SearchScreen()),
-                  );
-                },
-              ),
-            ],
+    return ValueListenableBuilder<double>(
+      valueListenable: _headerOpacity,
+      builder: (context, op, child) {
+        final dark = op > 0.5;
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarBrightness: dark ? Brightness.light : Brightness.dark,
+            statusBarIconBrightness:
+                dark ? Brightness.dark : Brightness.light,
           ),
+          child: child!,
+        );
+      },
+      child: Scaffold(
+      backgroundColor: AppColors.surfaceWarm,
+      body: Container(
+        color: AppColors.surfaceWarm,
+        child: Stack(
+        children: [
+          // Parallax background — only this layer rebuilds on scroll
+          _ParallaxBackground(offsetNotifier: _parallaxOffset),
+
+          // Main content — only rebuilds on BLoC state changes
+          BlocBuilder<HomeCubit, HomeState>(
+            builder: (context, state) {
+              return RefreshIndicator(
+                color: const Color(0xFF7B0323),
+                onRefresh: () => context.read<HomeCubit>().refresh(),
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Container(
+                        height: MediaQuery.of(context).padding.top + 56,
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topRight,
+                            end: Alignment.bottomLeft,
+                            colors: [
+                              AppColors.midnightDeep,
+                              AppColors.midnightMid,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    SliverToBoxAdapter(child: HeroBanner(state: state)),
+                    SliverToBoxAdapter(
+                      child: PremiumSurface(
+                        margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: QuickActionsBar(state: state),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: PremiumSurface(
+                        child: FeaturedPitchesSection(state: state),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: PremiumSurface(
+                        child: TopProductsSection(state: state),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: PremiumSurface(
+                        child: AllProductsSection(state: state),
+                      ),
+                    ),
+                    const SliverToBoxAdapter(child: HomeFooter()),
+                  ],
+                ),
+              );
+            },
+          ),
+
+          // Sticky header — only this layer rebuilds on opacity change
+          _StickyHeader(
+            opacityNotifier: _headerOpacity,
+            onSearchTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SearchScreen()),
+              );
+            },
+          ),
+        ],
         ),
       ),
+    ),
     );
   }
 }
@@ -179,14 +187,14 @@ class _ParallaxBackground extends StatelessWidget {
             return Stack(
               children: [
                 Positioned(
-                  top: 450 + offset * 0.12,
-                  left: -80,
-                  child: _circle(300, 0.08, AppColors.primaryRed),
+                  top: 500 + offset * 0.12,
+                  left: -60,
+                  child: _circle(220, 0.04, AppColors.primaryRed),
                 ),
                 Positioned(
-                  top: 850 + offset * 0.06,
-                  right: -80,
-                  child: _circle(350, 0.07, AppColors.accentGold),
+                  top: 900 + offset * 0.05,
+                  right: -50,
+                  child: _circle(280, 0.03, AppColors.accentGold),
                 ),
               ],
             );

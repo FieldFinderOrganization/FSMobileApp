@@ -53,15 +53,11 @@ class ProductCard extends StatelessWidget {
   Widget _buildGridCard() {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.midnightMid,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.05),
-          width: 1,
-        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
+            color: Colors.black.withValues(alpha: 0.07),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -91,7 +87,7 @@ class ProductCard extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: AppColors.textDark,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -230,15 +226,11 @@ class ProductCard extends StatelessWidget {
         return Container(
           constraints: const BoxConstraints(minHeight: 160),
           decoration: BoxDecoration(
-            color: AppColors.midnightMid,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.05),
-              width: 1,
-            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
+                color: Colors.black.withValues(alpha: 0.08),
                 blurRadius: 14,
                 offset: const Offset(0, 4),
               ),
@@ -279,19 +271,15 @@ class ProductCard extends StatelessWidget {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.primaryRed.withValues(alpha: 0.25),
+                            color: AppColors.primaryRed.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(4),
-                            border: Border.all(
-                              color: AppColors.accentGold.withValues(alpha: 0.3),
-                              width: 0.5,
-                            ),
                           ),
                           child: Text(
                             'Nổi bật',
                             style: GoogleFonts.inter(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.accentGold,
+                              color: AppColors.primaryRed,
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -302,7 +290,7 @@ class ProductCard extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: AppColors.textDark,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -317,9 +305,9 @@ class ProductCard extends StatelessWidget {
                           child: OutlinedButton(
                             onPressed: () {},
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.accentGold,
+                              foregroundColor: AppColors.primaryRed,
                               side: const BorderSide(
-                                color: AppColors.accentGold,
+                                color: AppColors.primaryRed,
                                 width: 1.5,
                               ),
                               padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -496,7 +484,7 @@ class ProductCard extends StatelessWidget {
     if (parts.isEmpty) return const SizedBox.shrink();
     return Text(
       parts.join(' · '),
-      style: GoogleFonts.inter(fontSize: 11, color: Colors.white54),
+      style: GoogleFonts.inter(fontSize: 11, color: AppColors.textGrey),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
@@ -549,7 +537,7 @@ class ProductCard extends StatelessWidget {
             '${product.price.toStringAsFixed(0)}k',
             style: GoogleFonts.inter(
               fontSize: 11,
-              color: Colors.white54,
+              color: AppColors.textGrey,
               decoration: TextDecoration.lineThrough,
             ),
             maxLines: 1,
@@ -573,7 +561,7 @@ class ProductCard extends StatelessWidget {
       style: GoogleFonts.inter(
         fontSize: 14,
         fontWeight: FontWeight.w700,
-        color: AppColors.accentGold,
+        color: AppColors.textDark,
       ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
