@@ -52,15 +52,17 @@ class ProductCubit extends Cubit<ProductState> {
     return _getCategoryIdFromName(activeName);
   }
 
-  Future<void> loadProducts({int? categoryId, String? brand, String? sort}) async {
+  /// [keepPrice] giữ nguyên priceRange + priceTouched user đã chọn (dùng khi Áp dụng
+  /// bộ lọc); mặc định false = reset price (đổi danh mục / reload là list mới).
+  Future<void> loadProducts({int? categoryId, String? brand, String? sort, bool keepPrice = false}) async {
     final session = ++_catalogLoadGeneration;
     emit(state.copyWith(
       status: LoadStatus.loading,
       currentPage: 0,
       hasMore: true,
       products: [],
-      priceRange: const RangeValues(0, 1000),
-      priceTouched: false,
+      priceRange: keepPrice ? state.priceRange : const RangeValues(0, 1000),
+      priceTouched: keepPrice ? state.priceTouched : false,
     ));
     try {
       final result = await _repository.getAllProducts(page: 0, size: 10, categoryId: categoryId, brand: brand, sort: sort);
@@ -80,7 +82,7 @@ class ProductCubit extends Cubit<ProductState> {
         products: products,
         currentPage: 0,
         hasMore: !last,
-        priceRange: RangeValues(0, maxPrice),
+        priceRange: keepPrice ? state.priceRange : RangeValues(0, maxPrice),
       ));
 
       await _loadCategories(session);
@@ -177,6 +179,8 @@ class ProductCubit extends Cubit<ProductState> {
     }
   }
 
+  // Bộ lọc trong sheet (brand/sort/price) chỉ cập nhật state — KHÔNG reload ngay.
+  // Người dùng bấm "Áp dụng" -> applyFilters() reload 1 lần với tất cả lựa chọn.
   void toggleBrand(String brand) {
     final current = Set<String>.from(state.selectedBrands);
     if (current.contains(brand)) {
@@ -185,13 +189,6 @@ class ProductCubit extends Cubit<ProductState> {
       current.add(brand);
     }
     emit(state.copyWith(selectedBrands: current));
-    final categoryId = _getCategoryIdFromName(
-      state.selectedSubCategoryNames.isNotEmpty
-          ? state.selectedSubCategoryNames.first
-          : state.selectedCategory,
-    );
-    final brandParam = current.length == 1 ? current.first : null;
-    loadProducts(categoryId: categoryId, brand: brandParam, sort: _sortParam());
   }
 
   void updatePriceRange(RangeValues values) {
@@ -200,12 +197,17 @@ class ProductCubit extends Cubit<ProductState> {
 
   void setSortOption(SortOption option) {
     emit(state.copyWith(sortOption: option));
-    final categoryId = _getCategoryIdFromName(
-      state.selectedSubCategoryNames.isNotEmpty
-          ? state.selectedSubCategoryNames.first
-          : state.selectedCategory,
+  }
+
+  /// Áp dụng toàn bộ bộ lọc đang chọn trong 1 lần load (giữ nguyên price range user chọn).
+  Future<void> applyFilters() async {
+    final categoryId = _activeCategoryIdForListing();
+    await loadProducts(
+      categoryId: categoryId,
+      brand: _brandParam,
+      sort: _sortParam(),
+      keepPrice: state.priceTouched,
     );
-    loadProducts(categoryId: categoryId, brand: _brandParam, sort: _sortParam(option));
   }
 
   void clearFilters() {

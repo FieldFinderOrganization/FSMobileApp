@@ -128,7 +128,7 @@ class HomeState {
   bool get hasMoreProducts => productsHasMore;
 
   List<DiscountEntity> get activeDiscounts =>
-      discounts.where((d) => d.isActive && d.isPromotion && d.isAllowedScope).toList();
+      discounts.where((d) => d.isUsable && d.isPromotion && d.isAllowedScope).toList();
 
   /// Sân hiện tại đã được server lọc (district, type, sort).
   List<PitchEntity> get filteredPitches => pitches;

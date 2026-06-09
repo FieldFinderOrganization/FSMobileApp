@@ -14,7 +14,13 @@ class FilterSheet extends StatelessWidget {
     return BlocBuilder<ProductCubit, ProductState>(
       builder: (context, state) {
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          // Cộng safe-area dưới để nút Áp dụng không bị thanh điều hướng che.
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 20,
+            bottom: 20 + MediaQuery.of(context).padding.bottom,
+          ),
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
@@ -214,7 +220,10 @@ class FilterSheet extends StatelessWidget {
       width: double.infinity,
       height: 56,
       child: ElevatedButton(
-        onPressed: () => Navigator.pop(context),
+        onPressed: () {
+          context.read<ProductCubit>().applyFilters();
+          Navigator.pop(context);
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.textDark,
           foregroundColor: Colors.white,

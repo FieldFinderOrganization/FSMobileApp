@@ -9,6 +9,7 @@ class DiscountEntity {
   final DateTime endDate;
   final String kind;  // PROMOTION | REFUND_CREDIT
   final String scope; // GLOBAL | CATEGORY | SPECIFIC_PRODUCT
+  final int quantity; // remaining stock; 0 = depleted
 
   const DiscountEntity({
     required this.id,
@@ -21,6 +22,7 @@ class DiscountEntity {
     required this.endDate,
     this.kind = 'PROMOTION',
     this.scope = 'GLOBAL',
+    this.quantity = 0,
   });
 
   bool get isActive => status == 'ACTIVE';
@@ -28,4 +30,16 @@ class DiscountEntity {
   bool get isPromotion => kind == 'PROMOTION';
   bool get isAllowedScope =>
       scope == 'GLOBAL' || scope == 'CATEGORY' || scope == 'SPECIFIC_PRODUCT';
+
+  /// Mã user thực sự dùng được: ACTIVE + trong khoảng ngày + còn kho.
+  /// Khớp với DiscountEligibilityUtil.isUsable phía backend.
+  bool get isUsable {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final start = DateTime(startDate.year, startDate.month, startDate.day);
+    final end = DateTime(endDate.year, endDate.month, endDate.day);
+    final started = !today.isBefore(start);
+    final notExpired = !today.isAfter(end); // end day inclusive, khớp backend
+    return isActive && started && notExpired && quantity > 0;
+  }
 }
