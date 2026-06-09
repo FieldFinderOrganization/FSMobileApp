@@ -4,7 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../cubit/my_wallet_cubit.dart';
+import '../cubit/available_vouchers_cubit.dart';
 import '../../domain/entities/user_discount_entity.dart';
+import '../../domain/repositories/discount_repository.dart';
+import 'available_vouchers_screen.dart';
 
 class MyWalletScreen extends StatefulWidget {
   final String userId;
@@ -30,6 +33,23 @@ class _MyWalletScreenState extends State<MyWalletScreen>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _openAvailableVouchers() async {
+    final saved = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BlocProvider(
+          create: (ctx) => AvailableVouchersCubit(
+              repository: ctx.read<DiscountRepository>()),
+          child: AvailableVouchersScreen(userId: widget.userId),
+        ),
+      ),
+    );
+    // Lưu mã mới -> reload ví để tab "Có thể dùng" cập nhật.
+    if (saved == true && mounted) {
+      context.read<MyWalletCubit>().loadWallet(widget.userId);
+    }
   }
 
   @override
@@ -76,7 +96,10 @@ class _MyWalletScreenState extends State<MyWalletScreen>
           return TabBarView(
             controller: _tabController,
             children: [
-              _VoucherList(vouchers: state.available),
+              _AvailableTab(
+                vouchers: state.available,
+                onSeeMore: _openAvailableVouchers,
+              ),
               _VoucherList(vouchers: state.refundCredits),
               _VoucherList(vouchers: state.usedOrExpired, dimmed: true),
             ],
@@ -114,6 +137,45 @@ class _VoucherList extends StatelessWidget {
       itemCount: vouchers.length,
       itemBuilder: (_, i) =>
           _VoucherCard(voucher: vouchers[i], dimmed: dimmed),
+    );
+  }
+}
+
+/// Tab "Có thể dùng": nút "Xem thêm mã" ở trên + danh sách mã đã lưu (hoặc empty state).
+class _AvailableTab extends StatelessWidget {
+  final List<UserDiscountEntity> vouchers;
+  final Future<void> Function() onSeeMore;
+
+  const _AvailableTab({required this.vouchers, required this.onSeeMore});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: onSeeMore,
+              icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
+              label: Text(
+                'Xem thêm mã có thể lưu',
+                style: GoogleFonts.inter(
+                    fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primaryRed,
+                side: const BorderSide(color: AppColors.primaryRed),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ),
+        Expanded(child: _VoucherList(vouchers: vouchers)),
+      ],
     );
   }
 }

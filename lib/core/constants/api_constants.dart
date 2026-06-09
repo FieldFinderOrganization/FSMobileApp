@@ -33,6 +33,7 @@ class ApiConstants {
   static const String categories = '/categories';
   static const String discounts = '/discounts';
   static String discountWallet(String userId) => '/discounts/$userId/wallet';
+  static String discountSave(String userId) => '/discounts/$userId/save';
   static String discountStatus(String id) => '/discounts/$id/status';
   static String assignDiscount(String id) => '/discounts/$id/assign';
   static const String reviews = '/reviews';

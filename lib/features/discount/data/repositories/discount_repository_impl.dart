@@ -13,6 +13,10 @@ class DiscountRepositoryImpl implements DiscountRepository {
       _dataSource.getWallet(userId);
 
   @override
+  Future<void> saveToWallet(String userId, String code) =>
+      _dataSource.saveToWallet(userId, code);
+
+  @override
   Future<List<AdminDiscountEntity>> getAllDiscounts() =>
       _dataSource.getAllDiscounts();
 

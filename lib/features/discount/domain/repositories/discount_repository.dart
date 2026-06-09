@@ -3,6 +3,7 @@ import '../entities/user_discount_entity.dart';
 
 abstract class DiscountRepository {
   Future<List<UserDiscountEntity>> getWallet(String userId);
+  Future<void> saveToWallet(String userId, String code);
   Future<List<AdminDiscountEntity>> getAllDiscounts();
   Future<AdminDiscountEntity> createDiscount(Map<String, dynamic> body);
   Future<AdminDiscountEntity> updateDiscount(String id, Map<String, dynamic> body);

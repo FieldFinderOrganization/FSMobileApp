@@ -13,6 +13,7 @@ class AdminDiscountEntity {
   final DateTime startDate;
   final DateTime endDate;
   final String status; // ACTIVE | INACTIVE | EXPIRED
+  final String kind; // PROMOTION | REFUND_CREDIT
 
   const AdminDiscountEntity({
     required this.id,
@@ -29,6 +30,7 @@ class AdminDiscountEntity {
     required this.startDate,
     required this.endDate,
     required this.status,
+    this.kind = 'PROMOTION',
   });
 
   /// Tính trạng thái thực tế: nếu đã qua endDate thì luôn là EXPIRED
@@ -39,6 +41,22 @@ class AdminDiscountEntity {
 
   bool get isActive => effectiveStatus == 'ACTIVE';
   bool get isPercentage => discountType == 'PERCENTAGE';
+  bool get isPromotion => kind == 'PROMOTION';
+
+  /// Mã public user có thể claim: promo + ACTIVE + trong hạn + còn kho.
+  bool get isClaimable {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final start = DateTime(startDate.year, startDate.month, startDate.day);
+    final end = DateTime(endDate.year, endDate.month, endDate.day);
+    final started = !today.isBefore(start);
+    final notExpired = !today.isAfter(end);
+    return isPromotion &&
+        status == 'ACTIVE' &&
+        started &&
+        notExpired &&
+        quantity > 0;
+  }
 
   String get displayValue =>
       isPercentage ? '${value.toInt()}%' : '${value.toInt()}đ';

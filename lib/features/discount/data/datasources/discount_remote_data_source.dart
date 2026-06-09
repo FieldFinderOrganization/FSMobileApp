@@ -16,6 +16,14 @@ class DiscountRemoteDataSource {
         .toList();
   }
 
+  /// Lưu mã public vào ví user. BE: POST /discounts/{userId}/save {discountCode}.
+  Future<void> saveToWallet(String userId, String code) async {
+    await _dio.post(
+      ApiConstants.discountSave(userId),
+      data: {'discountCode': code},
+    );
+  }
+
   Future<List<AdminDiscountModel>> getAllDiscounts() async {
     final response = await _dio.get(ApiConstants.discounts);
     final list = response.data as List<dynamic>;

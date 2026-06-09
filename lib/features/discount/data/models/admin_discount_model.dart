@@ -16,6 +16,7 @@ class AdminDiscountModel extends AdminDiscountEntity {
     required super.startDate,
     required super.endDate,
     required super.status,
+    super.kind,
   });
 
   factory AdminDiscountModel.fromJson(Map<String, dynamic> json) {
@@ -45,6 +46,7 @@ class AdminDiscountModel extends AdminDiscountEntity {
           ? DateTime.tryParse(json['endDate'].toString()) ?? DateTime.now()
           : DateTime.now(),
       status: json['status'] as String? ?? 'INACTIVE',
+      kind: json['kind'] as String? ?? 'PROMOTION',
     );
   }
 
