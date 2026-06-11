@@ -83,10 +83,10 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
       firstDate: DateTime(2024),
       lastDate: DateTime(2030),
       builder: (ctx, child) => Theme(
-        data: ThemeData.dark().copyWith(
-          colorScheme: const ColorScheme.dark(
+        data: ThemeData.light().copyWith(
+          colorScheme: const ColorScheme.light(
             primary: AppColors.primaryRed,
-            surface: Color(0xFF1A1A2E),
+            surface: Colors.white,
           ),
         ),
         child: child!,
@@ -200,22 +200,23 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
         '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F1E),
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A2E),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back_ios_new_rounded,
             size: 20,
-            color: Colors.white,
+            color: AppColors.textDark,
           ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           _isEdit ? 'Sửa mã khuyến mãi' : 'Tạo mã khuyến mãi',
           style: GoogleFonts.inter(
-            color: Colors.white,
+            color: AppColors.textDark,
             fontWeight: FontWeight.w600,
             fontSize: 17,
           ),
@@ -224,7 +225,13 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          // Chừa thêm inset dưới để nội dung không bị thanh điều hướng hệ thống che
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            16 + MediaQuery.of(context).padding.bottom,
+          ),
           children: [
             _Section(
               title: 'Thông tin cơ bản',
@@ -424,9 +431,16 @@ class _Section extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A2E),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2A2A4A)),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -434,9 +448,9 @@ class _Section extends StatelessWidget {
           Text(
             title,
             style: GoogleFonts.inter(
-              color: Colors.grey[400],
+              color: AppColors.primaryRed,
               fontSize: 11,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
               letterSpacing: 0.8,
             ),
           ),
@@ -472,7 +486,11 @@ class _Field extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(color: Colors.grey[400], fontSize: 12),
+          style: GoogleFonts.inter(
+            color: Colors.grey[700],
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         const SizedBox(height: 6),
         TextFormField(
@@ -480,19 +498,19 @@ class _Field extends StatelessWidget {
           maxLines: maxLines,
           keyboardType: keyboardType,
           validator: validator,
-          style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
+          style: GoogleFonts.inter(color: AppColors.textDark, fontSize: 14),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: GoogleFonts.inter(color: Colors.grey[600], fontSize: 14),
             filled: true,
-            fillColor: const Color(0xFF0F0F1E),
+            fillColor: const Color(0xFFF6F7F9),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFF2A2A4A)),
+              borderSide: const BorderSide(color: Color(0xFFE0E3E8)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFF2A2A4A)),
+              borderSide: const BorderSide(color: Color(0xFFE0E3E8)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
@@ -532,7 +550,11 @@ class _SegmentedRow extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(color: Colors.grey[400], fontSize: 12),
+          style: GoogleFonts.inter(
+            color: Colors.grey[700],
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         const SizedBox(height: 6),
         Row(
@@ -549,19 +571,19 @@ class _SegmentedRow extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppColors.primaryRed
-                        : const Color(0xFF0F0F1E),
+                        : const Color(0xFFF6F7F9),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: isSelected
                           ? AppColors.primaryRed
-                          : const Color(0xFF2A2A4A),
+                          : const Color(0xFFE0E3E8),
                     ),
                   ),
                   child: Text(
                     labels[e.key],
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
-                      color: isSelected ? Colors.white : Colors.grey[400],
+                      color: isSelected ? Colors.white : Colors.grey[700],
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -598,7 +620,11 @@ class _PickerTile extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(color: Colors.grey[400], fontSize: 12),
+          style: GoogleFonts.inter(
+            color: Colors.grey[700],
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         const SizedBox(height: 6),
         GestureDetector(
@@ -606,12 +632,12 @@ class _PickerTile extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFF0F0F1E),
+              color: const Color(0xFFF6F7F9),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: count > 0
                     ? AppColors.primaryRed
-                    : const Color(0xFF2A2A4A),
+                    : const Color(0xFFE0E3E8),
               ),
             ),
             child: Row(
@@ -628,7 +654,7 @@ class _PickerTile extends StatelessWidget {
                   child: Text(
                     count > 0 ? 'Đã chọn $count mục' : hint,
                     style: GoogleFonts.inter(
-                      color: count > 0 ? Colors.white : Colors.grey[600],
+                      color: count > 0 ? AppColors.textDark : Colors.grey[600],
                       fontSize: 14,
                     ),
                   ),
@@ -714,7 +740,7 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
       minChildSize: 0.5,
       builder: (_, scrollCtrl) => Container(
         decoration: const BoxDecoration(
-          color: Color(0xFF1A1A2E),
+          color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
@@ -725,7 +751,7 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[600],
+                color: Colors.grey[300],
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -738,7 +764,7 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                     child: Text(
                       'Chọn sản phẩm',
                       style: GoogleFonts.inter(
-                        color: Colors.white,
+                        color: AppColors.textDark,
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
                       ),
@@ -771,7 +797,7 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: TextField(
                 controller: _searchCtrl,
-                style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
+                style: GoogleFonts.inter(color: AppColors.textDark, fontSize: 14),
                 onChanged: (v) => setState(() => _search = v),
                 decoration: InputDecoration(
                   hintText: 'Tìm sản phẩm...',
@@ -798,15 +824,15 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                         )
                       : null,
                   filled: true,
-                  fillColor: const Color(0xFF0F0F1E),
+                  fillColor: const Color(0xFFF6F7F9),
                   contentPadding: const EdgeInsets.symmetric(vertical: 8),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Color(0xFF2A2A4A)),
+                    borderSide: const BorderSide(color: Color(0xFFE0E3E8)),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Color(0xFF2A2A4A)),
+                    borderSide: const BorderSide(color: Color(0xFFE0E3E8)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -815,7 +841,7 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                 ),
               ),
             ),
-            const Divider(color: Color(0xFF2A2A4A), height: 1),
+            const Divider(color: Color(0xFFE0E3E8), height: 1),
             // List
             Expanded(
               child: _loading
@@ -836,7 +862,7 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       itemCount: filtered.length,
                       separatorBuilder: (_, _) => const Divider(
-                        color: Color(0xFF2A2A4A),
+                        color: Color(0xFFE0E3E8),
                         height: 1,
                         indent: 16,
                       ),
@@ -856,7 +882,7 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                               errorBuilder: (_, _, _) => Container(
                                 width: 40,
                                 height: 40,
-                                color: const Color(0xFF0F0F1E),
+                                color: const Color(0xFFF6F7F9),
                                 child: const Icon(
                                   Icons.image_not_supported_outlined,
                                   size: 18,
@@ -868,7 +894,7 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                           title: Text(
                             p.name,
                             style: GoogleFonts.inter(
-                              color: Colors.white,
+                              color: AppColors.textDark,
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
                             ),
@@ -988,7 +1014,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
       minChildSize: 0.4,
       builder: (_, scrollCtrl) => Container(
         decoration: const BoxDecoration(
-          color: Color(0xFF1A1A2E),
+          color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
@@ -999,7 +1025,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[600],
+                color: Colors.grey[300],
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -1012,7 +1038,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                     child: Text(
                       'Chọn danh mục',
                       style: GoogleFonts.inter(
-                        color: Colors.white,
+                        color: AppColors.textDark,
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
                       ),
@@ -1040,7 +1066,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                 ],
               ),
             ),
-            const Divider(color: Color(0xFF2A2A4A), height: 1),
+            const Divider(color: Color(0xFFE0E3E8), height: 1),
             // List
             Expanded(
               child: _loading
@@ -1061,7 +1087,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       itemCount: _categories.length,
                       separatorBuilder: (_, _) => const Divider(
-                        color: Color(0xFF2A2A4A),
+                        color: Color(0xFFE0E3E8),
                         height: 1,
                         indent: 16,
                       ),
@@ -1077,7 +1103,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? AppColors.primaryRed.withOpacity(0.15)
-                                  : const Color(0xFF0F0F1E),
+                                  : const Color(0xFFF6F7F9),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
@@ -1091,7 +1117,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                           title: Text(
                             cat.name,
                             style: GoogleFonts.inter(
-                              color: Colors.white,
+                              color: AppColors.textDark,
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
                             ),
@@ -1183,16 +1209,16 @@ class _DateTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFF0F0F1E),
+          color: const Color(0xFFF6F7F9),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFF2A2A4A)),
+          border: Border.all(color: const Color(0xFFE0E3E8)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               label,
-              style: GoogleFonts.inter(color: Colors.grey[500], fontSize: 10),
+              style: GoogleFonts.inter(color: Colors.grey[600], fontSize: 10),
             ),
             const SizedBox(height: 4),
             Row(
@@ -1206,7 +1232,7 @@ class _DateTile extends StatelessWidget {
                 Text(
                   value,
                   style: GoogleFonts.inter(
-                    color: Colors.white,
+                    color: AppColors.textDark,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),

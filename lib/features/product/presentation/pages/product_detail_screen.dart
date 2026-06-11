@@ -212,8 +212,6 @@ class _ProductContent extends StatelessWidget {
                     const SizedBox(height: 20),
                     _DescriptionSection(description: product.description),
                     const SizedBox(height: 16),
-                    if (product.tags.isNotEmpty) _TagsRow(tags: product.tags),
-                    const SizedBox(height: 12),
                     _SoldCount(totalSold: product.totalSold),
                     ProductReviewsSection(productId: product.id),
                     if (state.suggestedLoading &&
@@ -876,29 +874,6 @@ class _DescriptionSectionState extends State<_DescriptionSection> {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _TagsRow extends StatelessWidget {
-  final List<String> tags;
-
-  const _TagsRow({required this.tags});
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: tags
-          .map(
-            (tag) => _Chip(
-              label: '#$tag',
-              color: Colors.grey.shade100,
-              textColor: AppColors.textGrey,
-            ),
-          )
-          .toList(),
     );
   }
 }
