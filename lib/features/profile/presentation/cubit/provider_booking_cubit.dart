@@ -78,6 +78,20 @@ class ProviderBookingCubit extends Cubit<ProviderBookingState> {
     }
   }
 
+  /// Provider hủy đơn của khách. Trả về null nếu thành công (list tự reload),
+  /// ngược lại trả về message lỗi để UI hiện SnackBar.
+  Future<String?> cancelBooking(String bookingId, String reason) async {
+    try {
+      await repository.providerCancelBooking(bookingId, reason: reason);
+      await loadBookings();
+      return null;
+    } on DioException catch (e) {
+      return e.response?.data?['message'] ?? e.message ?? 'Hủy đơn thất bại';
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
   void filterByStatus(String? status) {
     if (state is! ProviderBookingLoaded) return;
     final s = state as ProviderBookingLoaded;

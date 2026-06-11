@@ -68,6 +68,14 @@ class CancelReasonSheet extends StatefulWidget {
     CancelReasonOption('OTHER', 'Lý do khác'),
   ];
 
+  /// Lý do cho provider hủy đơn đặt sân của khách.
+  static const List<CancelReasonOption> providerBookingReasons = [
+    CancelReasonOption('PITCH_MAINTENANCE', 'Sân bảo trì / gặp sự cố'),
+    CancelReasonOption('WEATHER', 'Thời tiết xấu'),
+    CancelReasonOption('CANNOT_SERVE', 'Không thể phục vụ khung giờ này'),
+    CancelReasonOption('OTHER', 'Lý do khác'),
+  ];
+
   /// Lý do mặc định cho hủy đặt sân.
   static const List<CancelReasonOption> bookingReasons = [
     CancelReasonOption('SCHEDULE_CONFLICT', 'Bận đột xuất, không sắp xếp được'),

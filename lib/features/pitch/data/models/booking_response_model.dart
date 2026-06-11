@@ -18,6 +18,10 @@ class BookingResponseModel {
   final String? createdAt;
   final String? paidAt;
 
+  /// USER / PROVIDER / SYSTEM — null nếu đơn chưa hủy.
+  final String? cancelledBy;
+  final String? cancelReason;
+
   BookingResponseModel({
     required this.userId,
     required this.userName,
@@ -37,6 +41,8 @@ class BookingResponseModel {
     this.slotsName = const [],
     this.createdAt,
     this.paidAt,
+    this.cancelledBy,
+    this.cancelReason,
   });
 
   factory BookingResponseModel.fromJson(Map<String, dynamic> json) {
@@ -62,6 +68,8 @@ class BookingResponseModel {
           const [],
       createdAt: json['createdAt'],
       paidAt: json['paidAt'],
+      cancelledBy: json['cancelledBy'],
+      cancelReason: json['cancelReason'],
     );
   }
 
@@ -85,6 +93,8 @@ class BookingResponseModel {
       'slotsName': slotsName,
       'createdAt': createdAt,
       'paidAt': paidAt,
+      'cancelledBy': cancelledBy,
+      'cancelReason': cancelReason,
     };
   }
 }

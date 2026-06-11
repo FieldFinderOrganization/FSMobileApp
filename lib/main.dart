@@ -41,6 +41,7 @@ import 'features/discount/domain/repositories/discount_repository.dart';
 import 'features/discount/presentation/cubit/my_wallet_cubit.dart';
 import 'features/discount/presentation/cubit/admin_discount_cubit.dart';
 import 'features/discount/presentation/cubit/tier_cubit.dart';
+import 'features/discount/presentation/cubit/points_cubit.dart';
 import 'features/welcome/presentation/pages/welcome_screen.dart';
 import 'features/auth/login/presentation/bloc/auth_state.dart';
 
@@ -132,6 +133,9 @@ void main() async {
           ),
           BlocProvider<TierCubit>(
             create: (context) => TierCubit(repository: discountRepository),
+          ),
+          BlocProvider<PointsCubit>(
+            create: (context) => PointsCubit(repository: discountRepository),
           ),
         ],
         child: const MyApp(),

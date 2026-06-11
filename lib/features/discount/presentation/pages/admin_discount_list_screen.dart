@@ -774,6 +774,8 @@ class _DiscountCard extends StatelessWidget {
                   _MetaChip(
                       label:
                           'Hạng ${TierInfoEntity.labelOf(discount.minTier!)}+'),
+                if (discount.pointCost != null)
+                  _MetaChip(label: 'Đổi ${discount.pointCost} điểm'),
                 _MetaChip(
                   label: discount.isPercentage ? '% Phần trăm' : '₫ Cố định',
                 ),

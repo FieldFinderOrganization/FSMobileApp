@@ -38,6 +38,8 @@ class ApiConstants {
   static String assignDiscount(String id) => '/discounts/$id/assign';
   static String assignDiscountTier(String id) => '/discounts/$id/assign-tier';
   static String userTier(String userId) => '/users/$userId/tier';
+  static String userPoints(String userId) => '/points/$userId';
+  static String redeemPoints(String userId) => '/points/$userId/redeem';
   static const String reviews = '/reviews';
   static const String userReviews = '/reviews/user';
 

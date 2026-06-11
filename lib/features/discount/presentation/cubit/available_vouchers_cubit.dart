@@ -49,7 +49,10 @@ class AvailableVouchersCubit extends Cubit<AvailableVouchersState> {
           wallet.map((w) => w.discountCode).toSet(); // loại mã đã có trong ví
 
       final claimable = all
-          .where((d) => d.isClaimable && !ownedCodes.contains(d.code))
+          .where((d) =>
+              d.isClaimable &&
+              d.pointCost == null && // mã đổi điểm nằm ở màn Đổi quà, không lưu free
+              !ownedCodes.contains(d.code))
           .toList()
         ..sort((a, b) => a.endDate.compareTo(b.endDate)); // sắp hết hạn lên trước
 

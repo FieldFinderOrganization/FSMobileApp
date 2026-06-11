@@ -9,6 +9,7 @@ import '../../domain/entities/tier_info_entity.dart';
 import '../../domain/entities/user_discount_entity.dart';
 import '../../domain/repositories/discount_repository.dart';
 import 'available_vouchers_screen.dart';
+import 'points_screen.dart';
 
 class MyWalletScreen extends StatefulWidget {
   final String userId;
@@ -69,6 +70,25 @@ class _MyWalletScreenState extends State<MyWalletScreen>
           style: GoogleFonts.inter(
               fontWeight: FontWeight.w600, fontSize: 17, color: Colors.black87),
         ),
+        actions: [
+          // Đổi điểm lấy mã — quay lại thì reload ví (mã đổi được thêm vào ví)
+          IconButton(
+            tooltip: 'Đổi điểm lấy mã',
+            icon: const Icon(Icons.monetization_on_outlined,
+                color: Color(0xFFD97706)),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PointsScreen(userId: widget.userId),
+                ),
+              );
+              if (mounted) {
+                context.read<MyWalletCubit>().loadWallet(widget.userId);
+              }
+            },
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: AppColors.primaryRed,

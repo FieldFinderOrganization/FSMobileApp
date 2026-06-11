@@ -18,6 +18,7 @@ class AdminDiscountModel extends AdminDiscountEntity {
     required super.status,
     super.kind,
     super.minTier,
+    super.pointCost,
   });
 
   factory AdminDiscountModel.fromJson(Map<String, dynamic> json) {
@@ -49,6 +50,7 @@ class AdminDiscountModel extends AdminDiscountEntity {
       status: json['status'] as String? ?? 'INACTIVE',
       kind: json['kind'] as String? ?? 'PROMOTION',
       minTier: json['minTier'] as String?,
+      pointCost: (json['pointCost'] as num?)?.toInt(),
     );
   }
 
@@ -68,6 +70,7 @@ class AdminDiscountModel extends AdminDiscountEntity {
       'endDate': endDate.toIso8601String().substring(0, 10),
       'status': status,
       'minTier': minTier,
+      'pointCost': pointCost,
     };
   }
 }

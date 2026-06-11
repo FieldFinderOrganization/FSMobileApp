@@ -690,7 +690,7 @@ class _BookingItemCardState extends State<_BookingItemCard> {
                     ),
                   ),
                   child: Text(
-                    _translateStatus(booking.status),
+                    _translateStatus(booking.status, cancelledBy: booking.cancelledBy),
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -1045,14 +1045,14 @@ class _BookingItemCardState extends State<_BookingItemCard> {
     return timeStrings.join(', ');
   }
 
-  String _translateStatus(String status) {
+  String _translateStatus(String status, {String? cancelledBy}) {
     switch (status.toUpperCase()) {
       case 'PENDING':
         return 'Chờ xác nhận';
       case 'CONFIRMED':
         return 'Đã xác nhận';
       case 'CANCELED':
-        return 'Đã hủy';
+        return cancelledBy == 'PROVIDER' ? 'Chủ sân hủy' : 'Đã hủy';
       default:
         return status;
     }

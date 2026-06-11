@@ -17,6 +17,7 @@ import '../../../admin/presentation/cubit/admin_dashboard_cubit.dart';
 import '../../../admin/presentation/pages/admin_shell.dart';
 import '../../../discount/presentation/cubit/my_wallet_cubit.dart';
 import '../../../discount/presentation/pages/my_wallet_screen.dart';
+import '../../../discount/presentation/pages/points_screen.dart';
 import '../widgets/tier_membership_card.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -622,6 +623,18 @@ class _ProfileBody extends StatelessWidget {
                     value: context.read<MyWalletCubit>(),
                     child: MyWalletScreen(userId: user.userId),
                   ),
+                ),
+              );
+            },
+          ),
+          _ActionRow(
+            icon: Icons.monetization_on_outlined,
+            label: 'Điểm thưởng',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PointsScreen(userId: user.userId),
                 ),
               );
             },

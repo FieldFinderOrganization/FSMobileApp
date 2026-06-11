@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../models/admin_discount_model.dart';
+import '../models/point_info_model.dart';
 import '../models/tier_info_model.dart';
 import '../models/user_discount_model.dart';
 
@@ -76,5 +77,19 @@ class DiscountRemoteDataSource {
   Future<TierInfoModel> getTierInfo(String userId) async {
     final response = await _dio.get(ApiConstants.userTier(userId));
     return TierInfoModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Số dư + lịch sử điểm thưởng. BE: GET /points/{userId}.
+  Future<PointInfoModel> getPointInfo(String userId) async {
+    final response = await _dio.get(ApiConstants.userPoints(userId));
+    return PointInfoModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Đổi điểm lấy voucher. BE: POST /points/{userId}/redeem {discountId}.
+  Future<void> redeemVoucher(String userId, String discountId) async {
+    await _dio.post(
+      ApiConstants.redeemPoints(userId),
+      data: {'discountId': discountId},
+    );
   }
 }

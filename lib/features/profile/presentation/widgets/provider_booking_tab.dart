@@ -7,6 +7,7 @@ import '../../../auth/domain/entities/user_entity.dart';
 import '../../../chat/presentation/pages/user_chat_screen.dart';
 import '../../../pitch/data/models/booking_response_model.dart';
 import '../../../pitch/data/repositories/booking_repository_impl.dart';
+import '../../../../shared/widgets/cancel_reason_sheet.dart';
 import '../cubit/provider_booking_cubit.dart';
 import '../cubit/provider_cubit.dart';
 
@@ -220,7 +221,7 @@ class _BookingCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    _StatusBadge(status: booking.status),
+                    _StatusBadge(status: booking.status, cancelledBy: booking.cancelledBy),
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -233,37 +234,105 @@ class _BookingCard extends StatelessWidget {
                   bold: true,
                 ),
                 const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton.icon(
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.primaryRed,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: const BorderSide(color: AppColors.primaryRed),
-                      ),
-                    ),
-                    icon: const Icon(Icons.chat_bubble_outline, size: 16),
-                    label: Text('Chat', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600)),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => UserChatScreen(
-                            currentUserId: providerUserId,
-                            otherUserId: booking.userId,
-                            otherUserName: booking.userName,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (_canCancel) ...[
+                      TextButton.icon(
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.textGrey,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: const BorderSide(color: AppColors.textGrey),
                           ),
                         ),
-                      );
-                    },
-                  ),
+                        icon: const Icon(Icons.cancel_outlined, size: 16),
+                        label: Text('Hủy đặt',
+                            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600)),
+                        onPressed: () => _onCancelPressed(context),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    TextButton.icon(
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.primaryRed,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: const BorderSide(color: AppColors.primaryRed),
+                        ),
+                      ),
+                      icon: const Icon(Icons.chat_bubble_outline, size: 16),
+                      label: Text('Chat', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600)),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => UserChatScreen(
+                              currentUserId: providerUserId,
+                              otherUserId: booking.userId,
+                              otherUserName: booking.userName,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  bool get _canCancel {
+    final s = booking.status.toUpperCase();
+    return s == 'PENDING' || s == 'CONFIRMED';
+  }
+
+  Future<void> _onCancelPressed(BuildContext context) async {
+    final cubit = context.read<ProviderBookingCubit>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    final reason = await CancelReasonSheet.show(
+      context,
+      title: 'Lý do hủy đơn của khách',
+      options: CancelReasonSheet.providerBookingReasons,
+      confirmLabel: 'Tiếp tục',
+    );
+    if (reason == null || !context.mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xác nhận hủy đơn'),
+        content: const Text(
+          'Khách đã thanh toán sẽ được hoàn 100% qua mã hoàn tiền '
+          '(110% nếu hủy sát giờ <60 phút). Bạn có chắc chắn?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Không'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.primaryRed),
+            child: const Text('Hủy đơn'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    final error = await cubit.cancelBooking(booking.bookingId, reason.encode());
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(error ?? 'Đã hủy đơn và thông báo cho khách.'),
+        backgroundColor: error == null ? Colors.green : Colors.red,
       ),
     );
   }
@@ -279,7 +348,8 @@ class _BookingCard extends StatelessWidget {
 
 class _StatusBadge extends StatelessWidget {
   final String status;
-  const _StatusBadge({required this.status});
+  final String? cancelledBy;
+  const _StatusBadge({required this.status, this.cancelledBy});
 
   @override
   Widget build(BuildContext context) {
@@ -292,7 +362,7 @@ class _StatusBadge extends StatelessWidget {
         break;
       case 'CANCELED':
         color = Colors.red;
-        label = 'Đã hủy';
+        label = cancelledBy == 'PROVIDER' ? 'Chủ sân hủy' : 'Đã hủy';
         break;
       default:
         color = Colors.orange;

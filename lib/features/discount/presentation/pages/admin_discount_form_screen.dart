@@ -26,6 +26,7 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
   late TextEditingController _minOrderCtrl;
   late TextEditingController _maxDiscountCtrl;
   late TextEditingController _quantityCtrl;
+  late TextEditingController _pointCostCtrl;
 
   String _discountType = 'PERCENTAGE';
   String _scope = 'GLOBAL';
@@ -53,6 +54,8 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
       text: d?.maxDiscountAmount?.toStringAsFixed(0) ?? '',
     );
     _quantityCtrl = TextEditingController(text: d?.quantity.toString() ?? '1');
+    _pointCostCtrl =
+        TextEditingController(text: d?.pointCost?.toString() ?? '');
     if (d != null) {
       _discountType = d.discountType;
       _scope = d.scope;
@@ -73,6 +76,7 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
     _minOrderCtrl.dispose();
     _maxDiscountCtrl.dispose();
     _quantityCtrl.dispose();
+    _pointCostCtrl.dispose();
     super.dispose();
   }
 
@@ -152,6 +156,9 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
           : [],
       'applicableCategoryIds': _scope == 'CATEGORY' ? _selectedCategoryIds : [],
       'minTier': _minTier == 'ALL' ? null : _minTier,
+      'pointCost': _pointCostCtrl.text.trim().isEmpty
+          ? null
+          : int.tryParse(_pointCostCtrl.text.trim()),
     };
     final cubit = context.read<AdminDiscountCubit>();
     if (_isEdit) {
@@ -338,6 +345,14 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
                   labels: const ['Tất cả', 'VIP+', 'Vàng+', 'K.cương+'],
                   selected: _minTier,
                   onChanged: (v) => setState(() => _minTier = v),
+                ),
+                const SizedBox(height: 12),
+                // Có giá điểm = mã KHÔNG tự phát vào ví, user phải đổi bằng điểm thưởng
+                _Field(
+                  label: 'Giá đổi điểm (để trống = phát miễn phí)',
+                  controller: _pointCostCtrl,
+                  hint: 'VD: 200',
+                  keyboardType: TextInputType.number,
                 ),
               ],
             ),

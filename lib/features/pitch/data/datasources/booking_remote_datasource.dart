@@ -46,6 +46,19 @@ class BookingRemoteDataSource {
     }
   }
 
+  /// Provider hủy đơn trên sân của mình — BE hoàn 100% (110% nếu hủy sát giờ
+  /// <60p với đơn đặt từ trước), mã hoàn chỉ dùng cho sân của provider đó.
+  Future<void> providerCancelBooking(String bookingId, {required String reason}) async {
+    try {
+      await dioClient.dio.put(
+        '${ApiConstants.bookings}/$bookingId/provider-cancel',
+        queryParameters: {'reason': reason},
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<List<BookingResponseModel>> getBookingsByUser(String userId) async {
     try {
       final response = await dioClient.dio.get(
