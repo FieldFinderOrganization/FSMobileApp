@@ -21,6 +21,7 @@ import 'features/cart/data/repositories/cart_repository_impl.dart';
 import 'features/cart/domain/repositories/cart_repository.dart';
 import 'features/cart/presentation/cubit/cart_cubit.dart';
 import 'features/pitch/data/datasources/booking_remote_datasource.dart';
+import 'features/pitch/data/datasources/payment_remote_datasource.dart';
 import 'features/pitch/data/datasources/pitch_remote_datasource.dart';
 import 'features/pitch/data/datasources/review_remote_datasource.dart';
 import 'features/pitch/data/repositories/booking_repository_impl.dart';
@@ -39,6 +40,7 @@ import 'features/discount/data/repositories/discount_repository_impl.dart';
 import 'features/discount/domain/repositories/discount_repository.dart';
 import 'features/discount/presentation/cubit/my_wallet_cubit.dart';
 import 'features/discount/presentation/cubit/admin_discount_cubit.dart';
+import 'features/discount/presentation/cubit/tier_cubit.dart';
 import 'features/welcome/presentation/pages/welcome_screen.dart';
 import 'features/auth/login/presentation/bloc/auth_state.dart';
 
@@ -115,6 +117,8 @@ void main() async {
             create: (context) => ChatCubit(
               remoteDatasource: aiChatDatasource,
               localDatasource: ChatLocalDatasource(tokenStorage),
+              paymentDatasource: PaymentRemoteDataSource(dioClient: dioClient),
+              bookingDatasource: bookingDatasource,
             )..loadSessions(),
           ),
           BlocProvider<AdminDashboardCubit>(
@@ -125,6 +129,9 @@ void main() async {
           ),
           BlocProvider<AdminDiscountCubit>(
             create: (context) => AdminDiscountCubit(repository: discountRepository),
+          ),
+          BlocProvider<TierCubit>(
+            create: (context) => TierCubit(repository: discountRepository),
           ),
         ],
         child: const MyApp(),
@@ -159,7 +166,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         navigatorKey: _navigatorKey,
         debugShowCheckedModeBanner: false,
-        title: 'FS Mobile App',
+        title: 'SportsHub',
         themeMode: ThemeMode.light,
         theme: ThemeData(
           brightness: Brightness.light,

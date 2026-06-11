@@ -25,7 +25,7 @@ class AllProductsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader(title: 'Tất cả sản phẩm', onSeeAll: null, index: '03'),
+          const SectionHeader(title: 'Tất cả sản phẩm', onSeeAll: null),
 
           // ── Danh mục cha ────────────────────────────────────────────────
           _ParentCategoryChips(state: state),

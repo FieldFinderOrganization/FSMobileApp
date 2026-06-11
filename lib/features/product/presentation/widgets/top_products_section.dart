@@ -31,7 +31,6 @@ class TopProductsSection extends StatelessWidget {
             const SectionHeader(
               title: 'Bán chạy nhất',
               onSeeAll: null,
-              index: '02',
               darkMode: false,
             ),
             if (isLoading)

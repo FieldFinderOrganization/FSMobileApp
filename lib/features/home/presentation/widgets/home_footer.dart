@@ -18,7 +18,7 @@ class HomeFooter extends StatelessWidget {
             text: TextSpan(
               children: [
                 TextSpan(
-                  text: 'Field',
+                  text: 'Sports',
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
@@ -26,7 +26,7 @@ class HomeFooter extends StatelessWidget {
                   ),
                 ),
                 TextSpan(
-                  text: 'Finder',
+                  text: 'Hub',
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
@@ -58,7 +58,7 @@ class HomeFooter extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            '© 2026 FieldFinder. All rights reserved.',
+            '© 2026 SportsHub. All rights reserved.',
             style: GoogleFonts.inter(
               fontSize: 11,
               color: AppColors.textGrey,

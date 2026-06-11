@@ -159,9 +159,70 @@ class ReviewCard extends StatelessWidget {
                 color: AppColors.textGrey,
               ),
             ),
+            if (review.isPending || review.isRejected) ...[
+              const SizedBox(height: 10),
+              _ModerationBadge(
+                isRejected: review.isRejected,
+                reason: review.moderationReason,
+              ),
+            ],
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Nhãn trạng thái kiểm duyệt hiển thị cho chủ đánh giá (chờ duyệt / bị từ chối).
+class _ModerationBadge extends StatelessWidget {
+  final bool isRejected;
+  final String? reason;
+
+  const _ModerationBadge({required this.isRejected, this.reason});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isRejected ? const Color(0xFFEF4444) : const Color(0xFFF59E0B);
+    final label = isRejected ? 'Bị từ chối' : 'Chờ kiểm duyệt';
+    final icon = isRejected ? Icons.block_rounded : Icons.hourglass_top_rounded;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 13, color: color),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (isRejected && (reason?.trim().isNotEmpty ?? false)) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Lý do: $reason',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: const Color(0xFFEF4444),
+              height: 1.4,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

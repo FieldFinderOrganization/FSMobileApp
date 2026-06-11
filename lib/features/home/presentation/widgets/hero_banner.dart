@@ -17,22 +17,18 @@ class HeroBanner extends StatefulWidget {
   State<HeroBanner> createState() => _HeroBannerState();
 }
 
-class _HeroBannerState extends State<HeroBanner>
-    with SingleTickerProviderStateMixin {
+class _HeroBannerState extends State<HeroBanner> {
   late PageController _pageController;
-  late AnimationController _shimmerCtrl;
   int _currentPage = 0;
   Timer? _timer;
+
+  static const double _bannerHeight = 180;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
     _pageController.addListener(_onPageScroll);
-    _shimmerCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 4),
-    )..repeat();
     _startAutoPlay();
   }
 
@@ -64,33 +60,7 @@ class _HeroBannerState extends State<HeroBanner>
   void dispose() {
     _timer?.cancel();
     _pageController.dispose();
-    _shimmerCtrl.dispose();
     super.dispose();
-  }
-
-  Widget _shimmerText(Widget child) {
-    return AnimatedBuilder(
-      animation: _shimmerCtrl,
-      builder: (_, _) {
-        final t = _shimmerCtrl.value;
-        return ShaderMask(
-          blendMode: BlendMode.srcATop,
-          shaderCallback: (rect) {
-            return LinearGradient(
-              begin: Alignment(-1.5 + t * 3.0, -0.4),
-              end: Alignment(-0.5 + t * 3.0, 0.4),
-              colors: const [
-                Colors.transparent,
-                Colors.white24,
-                Colors.transparent,
-              ],
-              stops: const [0.0, 0.5, 1.0],
-            ).createShader(rect);
-          },
-          child: child,
-        );
-      },
-    );
   }
 
   @override
@@ -101,10 +71,13 @@ class _HeroBannerState extends State<HeroBanner>
     final discounts = widget.state.activeDiscounts;
 
     if (isLoading) {
-      return const ShimmerCard(
-        width: double.infinity,
-        height: 340,
-        borderRadius: BorderRadius.zero,
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: ShimmerCard(
+          width: double.infinity,
+          height: _bannerHeight,
+          borderRadius: BorderRadius.circular(16),
+        ),
       );
     }
 
@@ -112,10 +85,10 @@ class _HeroBannerState extends State<HeroBanner>
       return _buildStaticBanner(context);
     }
 
-    return Stack(
+    return Column(
       children: [
         SizedBox(
-          height: 340,
+          height: _bannerHeight,
           child: PageView.builder(
             controller: _pageController,
             itemCount: discounts.length,
@@ -128,42 +101,23 @@ class _HeroBannerState extends State<HeroBanner>
             ),
           ),
         ),
-        // Dash indicators — inside card, bottom-left
-        Positioned(
-          bottom: 20,
-          left: 24,
-          child: Row(
-            children: List.generate(discounts.length, (i) {
-              final isActive = i == _currentPage;
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 350),
-                margin: const EdgeInsets.only(right: 5),
-                width: isActive ? 28 : 8,
-                height: 2,
-                color: isActive
-                    ? AppColors.accentGold
-                    : Colors.white.withValues(alpha: 0.35),
-              );
-            }),
-          ),
-        ),
-        // Gold hairline separating hero from body
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.accentGold.withValues(alpha: 0),
-                  AppColors.accentGold.withValues(alpha: 0.6),
-                  AppColors.accentGold.withValues(alpha: 0),
-                ],
+        const SizedBox(height: 10),
+        // Dash indicators
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(discounts.length, (i) {
+            final isActive = i == _currentPage;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 350),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: isActive ? 24 : 8,
+              height: 3,
+              decoration: BoxDecoration(
+                color: isActive ? AppColors.primaryRed : AppColors.inactiveDot,
+                borderRadius: BorderRadius.circular(2),
               ),
-            ),
-          ),
+            );
+          }),
         ),
       ],
     );
@@ -294,264 +248,126 @@ class _HeroBannerState extends State<HeroBanner>
     );
   }
 
+  BoxDecoration get _cardDecoration => BoxDecoration(
+        color: const Color(0xFFFFF7F8),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.hairline, width: 1),
+      );
+
   Widget _buildBannerCard(BuildContext context, discount) {
     final valueText = discount.isPercentage
-        ? '${discount.value.toInt()}%'
-        : '${discount.value.toStringAsFixed(0)}K';
+        ? 'Giảm ${discount.value.toInt()}%'
+        : 'Giảm ${discount.value.toStringAsFixed(0)}K';
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // Fintech-grade midnight gradient
-        Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topRight,
-              end: Alignment.bottomLeft,
-              colors: [
-                AppColors.midnightDeep,
-                AppColors.midnightMid,
-                AppColors.midnightSoft,
-              ],
-              stops: [0.0, 0.5, 1.0],
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: _cardDecoration,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Eyebrow label
+          Text(
+            'SPORTSHUB — ƯU ĐÃI',
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primaryRed,
+              letterSpacing: 2,
             ),
           ),
-        ),
-
-        // Champagne radial accent — soft warmth
-        Positioned(
-          right: -120,
-          top: -60,
-          child: Container(
-            width: 300,
-            height: 300,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  AppColors.champagne.withValues(alpha: 0.18),
-                  AppColors.champagne.withValues(alpha: 0),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // Champagne vertical accent
-        Positioned(
-          left: 24,
-          top: 36,
-          bottom: 50,
-          child: Container(
-            width: 1,
-            color: AppColors.champagne.withValues(alpha: 0.55),
-          ),
-        ),
-
-        // Main content
-        Positioned(
-          left: 40,
-          right: 24,
-          top: 36,
-          bottom: 50,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Eyebrow label
-              Text(
-                'FIELDFINDER — ƯU ĐÃI',
-                style: GoogleFonts.inter(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.champagne,
-                  letterSpacing: 2.5,
-                ),
-              ),
-              const Spacer(),
-              // Discount label small
-              Text(
-                discount.isPercentage ? 'GIẢM ĐẾN' : 'TIẾT KIỆM',
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.warmIvory.withValues(alpha: 0.55),
-                  letterSpacing: 2,
-                ),
-              ),
-              const SizedBox(height: 4),
-              // Oversized value — centrepiece (auto-fit when long)
-              _shimmerText(
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    valueText,
-                    maxLines: 1,
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 72,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.warmIvory,
-                      height: 0.9,
-                      letterSpacing: -2,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Champagne rule
-              Container(
-                width: 48,
+          const Spacer(),
+          // Discount value — centrepiece (auto-fit when long)
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              valueText,
+              maxLines: 1,
+              style: GoogleFonts.inter(
+                fontSize: 32,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textDark,
                 height: 1,
+                letterSpacing: -0.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              // Code chip
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.champagne,
-                      AppColors.champagne.withValues(alpha: 0),
-                    ],
+                  color: AppColors.primaryRed.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  discount.code,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryRed,
+                    letterSpacing: 1.5,
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-              // Code
-              Text(
-                discount.code,
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.warmIvory,
-                  letterSpacing: 3,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  discount.description,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: AppColors.textGrey,
+                    height: 1.3,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                discount.description,
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  color: AppColors.warmIvory.withValues(alpha: 0.45),
-                  height: 1.4,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildStaticBanner(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    return SizedBox(
-      height: 340,
-      child: Stack(
-        fit: StackFit.expand,
+    return Container(
+      height: _bannerHeight,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: _cardDecoration,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topRight,
-                end: Alignment.bottomLeft,
-                colors: [
-                  AppColors.midnightDeep,
-                  AppColors.midnightMid,
-                  AppColors.midnightSoft,
-                ],
-                stops: [0.0, 0.5, 1.0],
-              ),
+          Text(
+            'SPORTSHUB',
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primaryRed,
+              letterSpacing: 2,
             ),
           ),
-          // Champagne radial accent
-          Positioned(
-            right: -120,
-            top: -60,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.champagne.withValues(alpha: 0.18),
-                    AppColors.champagne.withValues(alpha: 0),
-                  ],
-                ),
-              ),
+          const Spacer(),
+          Text(
+            'Đặt sân thể thao',
+            style: GoogleFonts.inter(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textDark,
+              height: 1.1,
             ),
           ),
-          // Champagne vertical accent
-          Positioned(
-            left: 24,
-            top: 36,
-            bottom: 50,
-            child: Container(
-              width: 1,
-              color: AppColors.champagne.withValues(alpha: 0.55),
-            ),
-          ),
-          Positioned(
-            left: 40,
-            right: 24,
-            top: 36,
-            bottom: 50,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'FIELDFINDER',
-                  style: GoogleFonts.inter(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.champagne,
-                    letterSpacing: 2.5,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  'ĐẶT SÂN',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 58,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.warmIvory,
-                    height: 0.95,
-                    letterSpacing: -1,
-                  ),
-                ),
-                Text(
-                  'THỂ THAO.',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 58,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.warmIvory,
-                    height: 0.95,
-                    letterSpacing: -1,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  width: 48,
-                  height: 1,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.champagne,
-                        AppColors.champagne.withValues(alpha: 0),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'MUA ĐỒ · THI ĐẤU',
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.warmIvory.withValues(alpha: 0.45),
-                    letterSpacing: 2.5,
-                  ),
-                ),
-              ],
+          const SizedBox(height: 6),
+          Text(
+            'Mua đồ · Thi đấu',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: AppColors.textGrey,
             ),
           ),
         ],

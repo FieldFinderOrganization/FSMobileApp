@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../pitch/data/datasources/booking_remote_datasource.dart';
 import '../../../pitch/data/models/booking_response_model.dart';
+import '../../../pitch/domain/entities/review_entity.dart';
 import '../../data/repositories/review_repository_impl.dart';
 import 'my_reviews_state.dart';
 
@@ -51,8 +52,9 @@ class MyReviewsCubit extends Cubit<MyReviewsState> {
     required String comment,
   }) async {
     emit(MyReviewsSubmitting());
+    ReviewEntity created;
     try {
-      await reviewRepository.addReview(
+      created = await reviewRepository.addReview(
         pitchId: pitchId,
         userId: userId,
         rating: rating,
@@ -62,8 +64,22 @@ class MyReviewsCubit extends Cubit<MyReviewsState> {
       emit(MyReviewsActionError(e.toString()));
       return;
     }
-    emit(MyReviewsActionSuccess('Đánh giá đã được gửi!'));
+    emit(MyReviewsActionSuccess(_submitMessage(created)));
     await load();
+  }
+
+  /// Thông báo theo kết quả kiểm duyệt: bị auto từ chối / đang chờ duyệt / đã duyệt.
+  String _submitMessage(ReviewEntity review) {
+    if (review.isRejected) {
+      final reason = review.moderationReason?.trim();
+      return reason != null && reason.isNotEmpty
+          ? 'Đánh giá bị từ chối: $reason'
+          : 'Đánh giá bị từ chối do vi phạm nội dung.';
+    }
+    if (review.isPending) {
+      return 'Đã gửi đánh giá, đang chờ kiểm duyệt.';
+    }
+    return 'Đánh giá đã được gửi!';
   }
 
   Future<void> deleteReview(String reviewId) async {
@@ -85,8 +101,9 @@ class MyReviewsCubit extends Cubit<MyReviewsState> {
     required String comment,
   }) async {
     emit(MyReviewsSubmitting());
+    ReviewEntity updated;
     try {
-      await reviewRepository.updateReview(
+      updated = await reviewRepository.updateReview(
         reviewId: reviewId,
         pitchId: pitchId,
         userId: userId,
@@ -97,7 +114,7 @@ class MyReviewsCubit extends Cubit<MyReviewsState> {
       emit(MyReviewsActionError(e.toString()));
       return;
     }
-    emit(MyReviewsActionSuccess('Đánh giá đã được cập nhật!'));
+    emit(MyReviewsActionSuccess(_submitMessage(updated)));
     await load();
   }
 }

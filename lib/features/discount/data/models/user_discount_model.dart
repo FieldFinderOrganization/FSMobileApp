@@ -17,6 +17,7 @@ class UserDiscountModel extends UserDiscountEntity {
     super.applicableCategoryIds = const [],
     super.kind = 'PROMOTION',
     super.remainingValue,
+    super.minTier,
   });
 
   factory UserDiscountModel.fromJson(Map<String, dynamic> json) {
@@ -47,6 +48,7 @@ class UserDiscountModel extends UserDiscountEntity {
               [],
       kind: json['kind'] as String? ?? 'PROMOTION',
       remainingValue: (json['remainingValue'] as num?)?.toDouble(),
+      minTier: json['minTier'] as String?,
     );
   }
 }

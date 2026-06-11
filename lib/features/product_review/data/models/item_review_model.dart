@@ -10,6 +10,8 @@ class ItemReviewModel extends ItemReviewEntity {
     required super.rating,
     required super.comment,
     required super.createdAt,
+    super.status,
+    super.moderationReason,
   });
 
   factory ItemReviewModel.fromJson(Map<String, dynamic> json) {
@@ -24,6 +26,8 @@ class ItemReviewModel extends ItemReviewEntity {
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
           : DateTime.now(),
+      status: json['status'] as String?,
+      moderationReason: json['moderationReason'] as String?,
     );
   }
 }

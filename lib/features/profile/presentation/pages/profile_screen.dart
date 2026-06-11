@@ -17,6 +17,7 @@ import '../../../admin/presentation/cubit/admin_dashboard_cubit.dart';
 import '../../../admin/presentation/pages/admin_shell.dart';
 import '../../../discount/presentation/cubit/my_wallet_cubit.dart';
 import '../../../discount/presentation/pages/my_wallet_screen.dart';
+import '../widgets/tier_membership_card.dart';
 
 class ProfileScreen extends StatelessWidget {
   final UserEntity user;
@@ -109,6 +110,12 @@ class _ProfileBody extends StatelessWidget {
                         // ── Role badge ───────────────────────────────────
                         _buildRoleBadge(),
                         const SizedBox(height: 28),
+                        // ── Tier membership card (chỉ user mua hàng) ──────
+                        if (user.role.toUpperCase() == 'USER' ||
+                            user.role.toUpperCase() == 'CUSTOMER') ...[
+                          TierMembershipCard(userId: user.userId),
+                          const SizedBox(height: 20),
+                        ],
                         // ── Info Card ─────────────────────────────────────
                         _buildInfoCard(),
                         const SizedBox(height: 20),

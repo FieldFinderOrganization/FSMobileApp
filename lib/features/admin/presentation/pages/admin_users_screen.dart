@@ -12,6 +12,7 @@ import 'package:printing/printing.dart';
 import '../../data/datasources/admin_statistics_datasource.dart';
 import '../../data/models/admin_user_list_model.dart';
 import '../../data/models/admin_user_stats_model.dart';
+import '../../../discount/domain/entities/tier_info_entity.dart';
 
 class AdminUsersScreen extends StatefulWidget {
   final AdminStatisticsDatasource datasource;
@@ -1168,6 +1169,11 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                         ] else if (isProvider) ...[
                           const SizedBox(width: 6),
                           _roleBadge('NCC', _kProviderColor),
+                        ] else if (user.tier != 'MEMBER') ...[
+                          // User thường: hiện hạng thành viên (VIP/Vàng/Kim cương)
+                          const SizedBox(width: 6),
+                          _roleBadge(TierInfoEntity.labelOf(user.tier),
+                              TierInfoEntity.colorOf(user.tier)),
                         ],
                       ],
                     ),

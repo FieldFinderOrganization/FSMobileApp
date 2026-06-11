@@ -8,14 +8,15 @@ import '../../../../core/constants/app_colors.dart';
 import '../cubit/chat_cubit.dart';
 import '../cubit/chat_state.dart';
 import '../widgets/ai_product_card.dart';
-import '../../../checkout/domain/entities/checkout_item_entity.dart';
-import '../../../checkout/presentation/pages/checkout_screen.dart';
 import '../../../pitch/domain/entities/pitch_entity.dart';
 import '../../../pitch/presentation/pages/pitch_detail_screen.dart';
 import '../../../pitch/presentation/pages/booking_screen.dart';
 import '../../../pitch/presentation/widgets/pitch_card.dart';
 import '../../../product/presentation/pages/product_detail_screen.dart';
+import '../widgets/chat_booking_checkout_card.dart';
 import '../widgets/chat_bubble.dart';
+import '../widgets/chat_order_checkout_card.dart';
+import '../widgets/chat_payment_qr_card.dart';
 import '../../../../shared/widgets/voice_input_button.dart';
 
 class ChatDetailScreen extends StatefulWidget {
@@ -158,12 +159,29 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                               if (!msg.isUser &&
                                   msg.aiData != null &&
                                   msg.aiData!['action'] == 'ready_to_order')
-                                _CheckoutButton(aiData: msg.aiData!),
+                                ChatOrderCheckoutCard(
+                                  messageId: msg.id,
+                                  aiData: msg.aiData!,
+                                ),
+                              if (!msg.isUser &&
+                                  msg.aiData != null &&
+                                  msg.aiData!['action'] == 'payment_qr')
+                                ChatPaymentQrCard(
+                                  messageId: msg.id,
+                                  aiData: msg.aiData!,
+                                ),
                               if (!msg.isUser &&
                                   msg.aiData != null &&
                                   msg.aiData!['showBookingButton'] == true &&
                                   msg.aiData!['suggestedPitch'] != null)
-                                _BookPitchButton(aiData: msg.aiData!),
+                                // Đủ sân + ngày + slot → card checkout inline;
+                                // thiếu thông tin → nút mở BookingScreen như cũ.
+                                ChatBookingCheckoutCard.canRender(msg.aiData!)
+                                    ? ChatBookingCheckoutCard(
+                                        messageId: msg.id,
+                                        aiData: msg.aiData!,
+                                      )
+                                    : _BookPitchButton(aiData: msg.aiData!),
                               if (!msg.isUser &&
                                   msg.aiData != null &&
                                   msg.aiData!['products'] != null)
@@ -348,69 +366,6 @@ class _TypingIndicator extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _CheckoutButton extends StatelessWidget {
-  final Map<String, dynamic> aiData;
-
-  const _CheckoutButton({required this.aiData});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 12, right: 60, top: 8, bottom: 4),
-      child: ElevatedButton.icon(
-        onPressed: () => _goToCheckout(context),
-        icon: const Icon(Icons.shopping_bag_outlined, size: 18),
-        label: Text(
-          'Thanh toán ngay',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primaryRed,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _goToCheckout(BuildContext context) {
-    final product = aiData['product'] as Map<String, dynamic>?;
-    final selectedSize = aiData['selectedSize'] as String? ?? '';
-
-    if (product == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không tìm thấy thông tin sản phẩm')),
-      );
-      return;
-    }
-
-    final quantity = (aiData['selectedQuantity'] as num?)?.toInt() ?? 1;
-
-    final item = CheckoutItemEntity(
-      productId: (product['id'] as num?)?.toInt() ?? 0,
-      productName: product['name'] as String? ?? '',
-      brand: product['brand'] as String? ?? '',
-      imageUrl: product['imageUrl'] as String? ?? '',
-      size: selectedSize,
-      unitPrice:
-          (product['salePrice'] as num?)?.toDouble() ??
-          (product['price'] as num?)?.toDouble() ??
-          0,
-      originalPrice: (product['price'] as num?)?.toDouble() ?? 0,
-      salePercent: (product['salePercent'] as num?)?.toInt(),
-      quantity: quantity,
-    );
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => CheckoutScreen(items: [item])),
     );
   }
 }

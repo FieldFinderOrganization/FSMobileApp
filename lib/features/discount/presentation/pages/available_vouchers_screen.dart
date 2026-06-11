@@ -4,7 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../domain/entities/admin_discount_entity.dart';
+import '../../domain/entities/tier_info_entity.dart';
 import '../cubit/available_vouchers_cubit.dart';
+import '../cubit/tier_cubit.dart';
 
 /// Màn hình liệt kê mã giảm giá public user có thể lưu vào ví.
 /// Trả về `true` qua Navigator.pop khi user đã lưu ít nhất 1 mã (để màn ví reload).
@@ -25,6 +27,7 @@ class _AvailableVouchersScreenState extends State<AvailableVouchersScreen> {
   void initState() {
     super.initState();
     context.read<AvailableVouchersCubit>().load(widget.userId);
+    context.read<TierCubit>().load(widget.userId); // để khóa voucher chưa đủ hạng
   }
 
   Future<void> _onSave(String code) async {
@@ -106,6 +109,7 @@ class _AvailableVouchersScreenState extends State<AvailableVouchersScreen> {
               );
             }
             final bottomInset = MediaQuery.of(context).padding.bottom;
+            final userTier = context.watch<TierCubit>().state.userTier;
             return RefreshIndicator(
               color: AppColors.primaryRed,
               onRefresh: () =>
@@ -115,11 +119,14 @@ class _AvailableVouchersScreenState extends State<AvailableVouchersScreen> {
                 itemCount: state.vouchers.length,
                 itemBuilder: (_, i) {
                   final v = state.vouchers[i];
+                  final tierLocked =
+                      !TierInfoEntity.meetsTier(userTier, v.minTier);
                   return _ClaimableCard(
                     voucher: v,
                     saving: state.savingCode == v.code,
                     disabled: state.savingCode != null &&
                         state.savingCode != v.code,
+                    tierLocked: tierLocked,
                     onSave: () => _onSave(v.code),
                   );
                 },
@@ -136,12 +143,14 @@ class _ClaimableCard extends StatelessWidget {
   final AdminDiscountEntity voucher;
   final bool saving;
   final bool disabled;
+  final bool tierLocked; // user chưa đủ hạng để lưu mã này
   final VoidCallback onSave;
 
   const _ClaimableCard({
     required this.voucher,
     required this.saving,
     required this.disabled,
+    this.tierLocked = false,
     required this.onSave,
   });
 
@@ -228,6 +237,8 @@ class _ClaimableCard extends StatelessWidget {
                       spacing: 6,
                       runSpacing: 4,
                       children: [
+                        if (voucher.minTier != null)
+                          _TierChip(minTier: voucher.minTier!),
                         if (voucher.minOrderValue != null &&
                             voucher.minOrderValue! > 0)
                           _InfoChip(
@@ -256,11 +267,12 @@ class _ClaimableCard extends StatelessWidget {
               child: SizedBox(
                 height: 34,
                 child: ElevatedButton(
-                  onPressed: (saving || disabled) ? null : onSave,
+                  onPressed: (saving || disabled || tierLocked) ? null : onSave,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryRed,
-                    disabledBackgroundColor:
-                        AppColors.primaryRed.withValues(alpha: 0.4),
+                    disabledBackgroundColor: tierLocked
+                        ? const Color(0xFFBDBDBD)
+                        : AppColors.primaryRed.withValues(alpha: 0.4),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -274,14 +286,60 @@ class _ClaimableCard extends StatelessWidget {
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white),
                         )
-                      : Text('Lưu',
-                          style: GoogleFonts.inter(
-                              fontSize: 13, fontWeight: FontWeight.w700)),
+                      : tierLocked
+                          ? Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.lock_rounded, size: 13),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Cần ${TierInfoEntity.labelOf(voucher.minTier ?? '')}',
+                                  style: GoogleFonts.inter(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w700),
+                                ),
+                              ],
+                            )
+                          : Text('Lưu',
+                              style: GoogleFonts.inter(
+                                  fontSize: 13, fontWeight: FontWeight.w700)),
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Chip hạng yêu cầu trên voucher tier-exclusive: "VIP trở lên", màu theo hạng.
+class _TierChip extends StatelessWidget {
+  final String minTier;
+
+  const _TierChip({required this.minTier});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = TierInfoEntity.colorOf(minTier);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(TierInfoEntity.iconOf(minTier), size: 11, color: color),
+          const SizedBox(width: 3),
+          Text(
+            '${TierInfoEntity.labelOf(minTier)} trở lên',
+            style: GoogleFonts.inter(
+                fontSize: 10, color: color, fontWeight: FontWeight.w700),
+          ),
+        ],
       ),
     );
   }

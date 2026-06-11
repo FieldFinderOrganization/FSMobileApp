@@ -30,6 +30,8 @@ class AdminUserItem {
   final String phone;
   final String role;
   final String status;
+  final String tier; // MEMBER | VIP | GOLD | DIAMOND
+  final double totalSpent12m;
   final String? lastLoginAt;
   final String? createdAt;
 
@@ -40,6 +42,8 @@ class AdminUserItem {
     required this.phone,
     required this.role,
     required this.status,
+    this.tier = 'MEMBER',
+    this.totalSpent12m = 0,
     this.lastLoginAt,
     this.createdAt,
   });
@@ -52,6 +56,8 @@ class AdminUserItem {
       phone: json['phone']?.toString() ?? '',
       role: json['role']?.toString() ?? '',
       status: json['status']?.toString() ?? '',
+      tier: json['tier']?.toString() ?? 'MEMBER',
+      totalSpent12m: (json['totalSpent12m'] as num?)?.toDouble() ?? 0,
       lastLoginAt: json['lastLoginAt']?.toString(),
       createdAt: json['createdAt']?.toString(),
     );

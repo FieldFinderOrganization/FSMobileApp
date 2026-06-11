@@ -12,6 +12,7 @@ import 'admin_bookings_screen.dart';
 import 'admin_dashboard_screen.dart';
 import 'admin_orders_screen.dart';
 import 'admin_pitches_screen.dart';
+import 'admin_review_moderation_screen.dart';
 import 'admin_users_screen.dart';
 import '../../../discount/presentation/cubit/admin_discount_cubit.dart';
 import '../../../discount/presentation/pages/admin_discount_list_screen.dart';
@@ -198,6 +199,14 @@ class _AdminShellState extends State<AdminShell> {
                       value: context.read<AdminDiscountCubit>(),
                       child: const AdminDiscountListScreen(),
                     ),
+                  ),
+                ),
+                _buildDrawerItem(
+                  7,
+                  'Kiểm duyệt đánh giá',
+                  Icons.reviews_outlined,
+                  onTap: () => _pushScreen(
+                    AdminReviewModerationScreen(datasource: cubit.datasource),
                   ),
                 ),
                 const Spacer(),

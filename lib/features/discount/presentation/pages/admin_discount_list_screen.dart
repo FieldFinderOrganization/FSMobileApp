@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../domain/entities/admin_discount_entity.dart';
+import '../../domain/entities/tier_info_entity.dart';
 import '../cubit/admin_discount_cubit.dart';
 import 'admin_discount_form_screen.dart';
 import 'admin_assign_discount_screen.dart';
@@ -769,6 +770,10 @@ class _DiscountCard extends StatelessWidget {
               runSpacing: 4,
               children: [
                 _MetaChip(label: _scopeLabel(discount.scope)),
+                if (discount.minTier != null)
+                  _MetaChip(
+                      label:
+                          'Hạng ${TierInfoEntity.labelOf(discount.minTier!)}+'),
                 _MetaChip(
                   label: discount.isPercentage ? '% Phần trăm' : '₫ Cố định',
                 ),

@@ -1,4 +1,5 @@
 import '../../domain/entities/admin_discount_entity.dart';
+import '../../domain/entities/tier_info_entity.dart';
 import '../../domain/entities/user_discount_entity.dart';
 import '../../domain/repositories/discount_repository.dart';
 import '../datasources/discount_remote_data_source.dart';
@@ -39,4 +40,12 @@ class DiscountRepositoryImpl implements DiscountRepository {
 
   @override
   Future<void> deleteDiscount(String id) => _dataSource.deleteDiscount(id);
+
+  @override
+  Future<void> assignToTier(String id, String tier) =>
+      _dataSource.assignToTier(id, tier);
+
+  @override
+  Future<TierInfoEntity> getTierInfo(String userId) =>
+      _dataSource.getTierInfo(userId);
 }

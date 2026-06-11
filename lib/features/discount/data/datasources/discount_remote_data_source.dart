@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../models/admin_discount_model.dart';
+import '../models/tier_info_model.dart';
 import '../models/user_discount_model.dart';
 
 class DiscountRemoteDataSource {
@@ -61,5 +62,19 @@ class DiscountRemoteDataSource {
 
   Future<void> deleteDiscount(String id) async {
     await _dio.delete('${ApiConstants.discounts}/$id');
+  }
+
+  /// Gán mã cho mọi user thuộc hạng [tier] trở lên. BE: POST /discounts/{id}/assign-tier.
+  Future<void> assignToTier(String id, String tier) async {
+    await _dio.post(
+      ApiConstants.assignDiscountTier(id),
+      data: {'tier': tier},
+    );
+  }
+
+  /// Hạng thành viên + tiến độ. BE: GET /users/{id}/tier.
+  Future<TierInfoModel> getTierInfo(String userId) async {
+    final response = await _dio.get(ApiConstants.userTier(userId));
+    return TierInfoModel.fromJson(response.data as Map<String, dynamic>);
   }
 }

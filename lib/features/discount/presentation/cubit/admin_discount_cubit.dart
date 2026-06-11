@@ -106,6 +106,20 @@ class AdminDiscountCubit extends Cubit<AdminDiscountState> {
     }
   }
 
+  /// Gán mã cho mọi user thuộc hạng [tier] trở lên (VIP/GOLD/DIAMOND/MEMBER).
+  Future<void> assignToTier(String id, String tier) async {
+    emit(state.copyWith(status: AdminDiscountStatus.loading));
+    try {
+      await _repository.assignToTier(id, tier);
+      emit(state.copyWith(
+          status: AdminDiscountStatus.actionSuccess,
+          actionMessage: 'Đã gán mã cho người dùng hạng $tier trở lên'));
+    } catch (e) {
+      emit(state.copyWith(
+          status: AdminDiscountStatus.failure, errorMessage: e.toString()));
+    }
+  }
+
   Future<void> deleteDiscount(String id) async {
     emit(state.copyWith(status: AdminDiscountStatus.loading));
     try {

@@ -8,7 +8,6 @@ import '../../../pitch/presentation/widgets/featured_pitches_section.dart';
 import '../widgets/hero_banner.dart';
 import '../widgets/home_footer.dart';
 import '../widgets/home_header.dart';
-import '../widgets/premium_surface.dart';
 import '../widgets/quick_actions_bar.dart';
 import '../../../product/presentation/widgets/top_products_section.dart';
 import 'search_screen.dart';
@@ -32,9 +31,8 @@ class _HomeBody extends StatefulWidget {
 class _HomeBodyState extends State<_HomeBody> {
   late final ScrollController _scrollController;
 
-  // ValueNotifiers so only the overlay widgets rebuild, not the main tree
+  // ValueNotifier so only the header rebuilds, not the main tree
   final ValueNotifier<double> _headerOpacity = ValueNotifier<double>(0.0);
-  final ValueNotifier<double> _parallaxOffset = ValueNotifier<double>(0.0);
 
   @override
   void initState() {
@@ -50,9 +48,6 @@ class _HomeBodyState extends State<_HomeBody> {
     if ((opacity - _headerOpacity.value).abs() > 0.01) {
       _headerOpacity.value = opacity;
     }
-    if ((offset - _parallaxOffset.value).abs() > 5.0) {
-      _parallaxOffset.value = offset;
-    }
 
     // Infinite scroll for Products
     final state = context.read<HomeCubit>().state;
@@ -67,156 +62,89 @@ class _HomeBodyState extends State<_HomeBody> {
   void dispose() {
     _scrollController.dispose();
     _headerOpacity.dispose();
-    _parallaxOffset.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<double>(
-      valueListenable: _headerOpacity,
-      builder: (context, op, child) {
-        final dark = op > 0.5;
-        return AnnotatedRegion<SystemUiOverlayStyle>(
-          value: SystemUiOverlayStyle(
-            statusBarColor: Colors.transparent,
-            statusBarBrightness: dark ? Brightness.light : Brightness.dark,
-            statusBarIconBrightness:
-                dark ? Brightness.dark : Brightness.light,
-          ),
-          child: child!,
-        );
-      },
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarBrightness: Brightness.light,
+        statusBarIconBrightness: Brightness.dark,
+      ),
       child: Scaffold(
-      backgroundColor: AppColors.background,
-      body: Container(
-        color: AppColors.background,
-        child: Stack(
-        children: [
-          // Parallax background — only this layer rebuilds on scroll
-          _ParallaxBackground(offsetNotifier: _parallaxOffset),
-
-          // Main content — only rebuilds on BLoC state changes
-          BlocBuilder<HomeCubit, HomeState>(
-            builder: (context, state) {
-              return RefreshIndicator(
-                color: const Color(0xFF7B0323),
-                onRefresh: () => context.read<HomeCubit>().refresh(),
-                child: CustomScrollView(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: Container(
-                        height: MediaQuery.of(context).padding.top + 56,
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topRight,
-                            end: Alignment.bottomLeft,
-                            colors: [
-                              AppColors.midnightDeep,
-                              AppColors.midnightMid,
-                            ],
-                          ),
+        backgroundColor: AppColors.background,
+        body: Stack(
+          children: [
+            // Main content — only rebuilds on BLoC state changes
+            BlocBuilder<HomeCubit, HomeState>(
+              builder: (context, state) {
+                return RefreshIndicator(
+                  color: AppColors.primaryRed,
+                  onRefresh: () => context.read<HomeCubit>().refresh(),
+                  child: CustomScrollView(
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: MediaQuery.of(context).padding.top + 56,
                         ),
                       ),
-                    ),
-                    SliverToBoxAdapter(child: HeroBanner(state: state)),
-                    SliverToBoxAdapter(
-                      child: PremiumSurface(
-                        margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: QuickActionsBar(state: state),
+                      SliverToBoxAdapter(child: HeroBanner(state: state)),
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: QuickActionsBar(state: state),
+                        ),
                       ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: PremiumSurface(
+                      const SliverToBoxAdapter(child: _SectionDivider()),
+                      SliverToBoxAdapter(
                         child: FeaturedPitchesSection(state: state),
                       ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: PremiumSurface(
+                      const SliverToBoxAdapter(child: _SectionDivider()),
+                      SliverToBoxAdapter(
                         child: TopProductsSection(state: state),
                       ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: PremiumSurface(
+                      const SliverToBoxAdapter(child: _SectionDivider()),
+                      SliverToBoxAdapter(
                         child: AllProductsSection(state: state),
                       ),
-                    ),
-                    const SliverToBoxAdapter(child: HomeFooter()),
-                  ],
-                ),
-              );
-            },
-          ),
+                      const SliverToBoxAdapter(child: HomeFooter()),
+                    ],
+                  ),
+                );
+              },
+            ),
 
-          // Sticky header — only this layer rebuilds on opacity change
-          _StickyHeader(
-            opacityNotifier: _headerOpacity,
-            onSearchTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SearchScreen()),
-              );
-            },
-          ),
-        ],
+            // Sticky header — only this layer rebuilds on opacity change
+            _StickyHeader(
+              opacityNotifier: _headerOpacity,
+              onSearchTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SearchScreen()),
+                );
+              },
+            ),
+          ],
         ),
       ),
-    ),
     );
   }
 }
 
-// ── Parallax background ───────────────────────────────────────────────────────
-// Isolated widget: only this rebuilds when scroll offset changes
+// ── Section divider ───────────────────────────────────────────────────────────
 
-class _ParallaxBackground extends StatelessWidget {
-  final ValueNotifier<double> offsetNotifier;
-
-  const _ParallaxBackground({required this.offsetNotifier});
+class _SectionDivider extends StatelessWidget {
+  const _SectionDivider();
 
   @override
   Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Positioned.fill(
-        child: ValueListenableBuilder<double>(
-          valueListenable: offsetNotifier,
-          builder: (_, offset, _) {
-            return Stack(
-              children: [
-                Positioned(
-                  top: 500 + offset * 0.12,
-                  left: -60,
-                  child: _circle(220, 0.04, AppColors.primaryRed),
-                ),
-                Positioned(
-                  top: 900 + offset * 0.05,
-                  right: -50,
-                  child: _circle(280, 0.03, AppColors.accentGold),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _circle(double size, double opacity, Color color) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [
-            color.withValues(alpha: opacity),
-            color.withValues(alpha: 0),
-          ],
-        ),
-      ),
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Divider(color: AppColors.hairline, height: 1, thickness: 1),
     );
   }
 }

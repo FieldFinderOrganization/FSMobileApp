@@ -14,6 +14,8 @@ import '../models/product_statistics_model.dart';
 import '../models/recent_booking_model.dart';
 import '../models/revenue_point_model.dart';
 import '../../../order/data/models/order_model.dart';
+import '../../../pitch/data/models/review_model.dart';
+import '../../../product_review/data/models/item_review_model.dart';
 
 class AdminStatisticsDatasource {
   final DioClient dioClient;
@@ -211,5 +213,62 @@ class AdminStatisticsDatasource {
     return AdminRatingStatsModel.fromJson(
       response.data as Map<String, dynamic>,
     );
+  }
+
+  // ---------------- Kiểm duyệt đánh giá (admin) ----------------
+
+  /// Đánh giá SÂN theo trạng thái (PENDING | REJECTED | APPROVED).
+  Future<List<ReviewModel>> getPitchReviewsForModeration(String status) async {
+    final response = await dioClient.dio.get(
+      ApiConstants.adminModerationPitchReviews,
+      queryParameters: {'status': status},
+    );
+    return (response.data as List<dynamic>)
+        .map((e) => ReviewModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Đánh giá SẢN PHẨM theo trạng thái.
+  Future<List<ItemReviewModel>> getProductReviewsForModeration(
+      String status) async {
+    final response = await dioClient.dio.get(
+      ApiConstants.adminModerationProductReviews,
+      queryParameters: {'status': status},
+    );
+    return (response.data as List<dynamic>)
+        .map((e) => ItemReviewModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> approvePitchReview(String reviewId) async {
+    await dioClient.dio.put(
+      '${ApiConstants.adminModerationPitchReviews}/$reviewId/approve',
+    );
+  }
+
+  Future<void> rejectPitchReview(String reviewId, {String? reason}) async {
+    await dioClient.dio.put(
+      '${ApiConstants.adminModerationPitchReviews}/$reviewId/reject',
+      data: {'reason': reason},
+    );
+  }
+
+  Future<void> approveProductReview(String reviewId) async {
+    await dioClient.dio.put(
+      '${ApiConstants.adminModerationProductReviews}/$reviewId/approve',
+    );
+  }
+
+  Future<void> rejectProductReview(String reviewId, {String? reason}) async {
+    await dioClient.dio.put(
+      '${ApiConstants.adminModerationProductReviews}/$reviewId/reject',
+      data: {'reason': reason},
+    );
+  }
+
+  /// Số lượng theo trạng thái (badge): {pitch:{pending,approved,rejected}, product:{...}, pendingTotal}.
+  Future<Map<String, dynamic>> getModerationCounts() async {
+    final response = await dioClient.dio.get(ApiConstants.adminModerationCounts);
+    return response.data as Map<String, dynamic>;
   }
 }

@@ -30,6 +30,7 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
   String _discountType = 'PERCENTAGE';
   String _scope = 'GLOBAL';
   String _status = 'ACTIVE';
+  String _minTier = 'ALL'; // ALL = mọi hạng | VIP | GOLD | DIAMOND (hạng đó trở lên)
   DateTime _startDate = DateTime.now();
   DateTime _endDate = DateTime.now().add(const Duration(days: 30));
 
@@ -56,6 +57,7 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
       _discountType = d.discountType;
       _scope = d.scope;
       _status = d.status;
+      _minTier = d.minTier ?? 'ALL';
       _startDate = d.startDate;
       _endDate = d.endDate;
       _selectedProductIds = List.from(d.applicableProductIds);
@@ -149,6 +151,7 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
           ? _selectedProductIds
           : [],
       'applicableCategoryIds': _scope == 'CATEGORY' ? _selectedCategoryIds : [],
+      'minTier': _minTier == 'ALL' ? null : _minTier,
     };
     final cubit = context.read<AdminDiscountCubit>();
     if (_isEdit) {
@@ -318,6 +321,16 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
                   hint: '100',
                   keyboardType: TextInputType.number,
                   validator: (v) => v == null || v.isEmpty ? 'Bắt buộc' : null,
+                ),
+                const SizedBox(height: 12),
+                // Hạng thành viên tối thiểu được dùng mã ("hạng đó trở lên").
+                // Tạo mã sẽ tự đẩy vào ví mọi user đủ hạng.
+                _SegmentedRow(
+                  label: 'Hạng áp dụng',
+                  options: const ['ALL', 'VIP', 'GOLD', 'DIAMOND'],
+                  labels: const ['Tất cả', 'VIP+', 'Vàng+', 'K.cương+'],
+                  selected: _minTier,
+                  onChanged: (v) => setState(() => _minTier = v),
                 ),
               ],
             ),

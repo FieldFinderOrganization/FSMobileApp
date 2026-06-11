@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../cubit/my_wallet_cubit.dart';
 import '../cubit/available_vouchers_cubit.dart';
+import '../../domain/entities/tier_info_entity.dart';
 import '../../domain/entities/user_discount_entity.dart';
 import '../../domain/repositories/discount_repository.dart';
 import 'available_vouchers_screen.dart';
@@ -295,6 +296,12 @@ class _VoucherCard extends StatelessWidget {
                                 ? const Color(0xFF15803D)
                                 : null,
                           ),
+                          if (voucher.minTier != null)
+                            _InfoChip(
+                              label:
+                                  '${TierInfoEntity.labelOf(voucher.minTier!)} trở lên',
+                              color: TierInfoEntity.colorOf(voucher.minTier!),
+                            ),
                           if (voucher.isRefundCredit &&
                               voucher.remainingValue != null &&
                               voucher.remainingValue! < voucher.value)

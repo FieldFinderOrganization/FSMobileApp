@@ -3,6 +3,7 @@ import '../../../order/data/datasources/order_remote_data_source.dart';
 import '../../../order/data/models/order_item_model.dart';
 import '../../../order/data/models/order_model.dart';
 import '../../data/repositories/item_review_repository_impl.dart';
+import '../../domain/entities/item_review_entity.dart';
 import 'my_product_reviews_state.dart';
 
 class MyProductReviewsCubit extends Cubit<MyProductReviewsState> {
@@ -71,8 +72,9 @@ class MyProductReviewsCubit extends Cubit<MyProductReviewsState> {
     required String comment,
   }) async {
     emit(MyProductReviewsSubmitting());
+    ItemReviewEntity created;
     try {
-      await reviewRepository.addReview(
+      created = await reviewRepository.addReview(
         userId: userId,
         productId: productId,
         rating: rating,
@@ -82,7 +84,7 @@ class MyProductReviewsCubit extends Cubit<MyProductReviewsState> {
       emit(MyProductReviewsActionError(e.toString()));
       return;
     }
-    emit(MyProductReviewsActionSuccess('Đánh giá đã được gửi!'));
+    emit(MyProductReviewsActionSuccess(_submitMessage(created)));
     await load();
   }
 
@@ -92,8 +94,9 @@ class MyProductReviewsCubit extends Cubit<MyProductReviewsState> {
     required String comment,
   }) async {
     emit(MyProductReviewsSubmitting());
+    ItemReviewEntity updated;
     try {
-      await reviewRepository.updateReview(
+      updated = await reviewRepository.updateReview(
         reviewId: reviewId,
         rating: rating,
         comment: comment,
@@ -102,8 +105,22 @@ class MyProductReviewsCubit extends Cubit<MyProductReviewsState> {
       emit(MyProductReviewsActionError(e.toString()));
       return;
     }
-    emit(MyProductReviewsActionSuccess('Đánh giá đã được cập nhật!'));
+    emit(MyProductReviewsActionSuccess(_submitMessage(updated)));
     await load();
+  }
+
+  /// Thông báo theo kết quả kiểm duyệt: bị auto từ chối / đang chờ duyệt / đã duyệt.
+  String _submitMessage(ItemReviewEntity review) {
+    if (review.isRejected) {
+      final reason = review.moderationReason?.trim();
+      return reason != null && reason.isNotEmpty
+          ? 'Đánh giá bị từ chối: $reason'
+          : 'Đánh giá bị từ chối do vi phạm nội dung.';
+    }
+    if (review.isPending) {
+      return 'Đã gửi đánh giá, đang chờ kiểm duyệt.';
+    }
+    return 'Đánh giá đã được gửi!';
   }
 
   Future<void> deleteReview(String reviewId) async {

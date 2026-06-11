@@ -120,6 +120,53 @@ class _AdminAssignDiscountScreenState extends State<AdminAssignDiscountScreen> {
     if (mounted) Navigator.pop(context);
   }
 
+  /// Gán hàng loạt theo hạng thành viên (hạng đó trở lên), không cần chọn tay.
+  Future<void> _assignByTier() async {
+    const tiers = [
+      ('MEMBER', 'Thành viên trở lên (tất cả)'),
+      ('VIP', 'VIP trở lên'),
+      ('GOLD', 'Vàng trở lên'),
+      ('DIAMOND', 'Kim cương'),
+    ];
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Gán mã theo hạng thành viên',
+                style: GoogleFonts.inter(
+                    fontSize: 15, fontWeight: FontWeight.w700),
+              ),
+            ),
+            ...tiers.map(
+              (t) => ListTile(
+                leading: const Icon(Icons.military_tech_rounded,
+                    color: AppColors.primaryRed),
+                title: Text(t.$2, style: GoogleFonts.inter(fontSize: 14)),
+                onTap: () => Navigator.pop(ctx, t.$1),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    await context.read<AdminDiscountCubit>().assignToTier(
+          widget.discount.id,
+          picked,
+        );
+    if (mounted) Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottomPad = MediaQuery.of(context).padding.bottom;
@@ -172,6 +219,45 @@ class _AdminAssignDiscountScreenState extends State<AdminAssignDiscountScreen> {
       ),
       body: Column(
         children: [
+          // Gán nhanh theo hạng thành viên
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: InkWell(
+              onTap: _assignByTier,
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryRed.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                      color: AppColors.primaryRed.withValues(alpha: 0.25)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.military_tech_rounded,
+                        color: AppColors.primaryRed, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Gán theo hạng thành viên',
+                        style: GoogleFonts.inter(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryRed,
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right_rounded,
+                        color: AppColors.primaryRed, size: 20),
+                  ],
+                ),
+              ),
+            ),
+          ),
           // Search bar
           Container(
             color: Colors.white,

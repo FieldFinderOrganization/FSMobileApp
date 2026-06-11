@@ -27,7 +27,6 @@ class FeaturedPitchesSection extends StatelessWidget {
         children: [
           SectionHeader(
             title: 'Sân nổi bật',
-            index: '01',
             onSeeAll: () => const SwitchTabNotification(1).dispatch(context),
           ),
           // ── Pitch list ──────────────────────────────────────────────────

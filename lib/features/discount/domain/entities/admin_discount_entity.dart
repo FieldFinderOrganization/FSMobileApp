@@ -14,6 +14,7 @@ class AdminDiscountEntity {
   final DateTime endDate;
   final String status; // ACTIVE | INACTIVE | EXPIRED
   final String kind; // PROMOTION | REFUND_CREDIT
+  final String? minTier; // null = mọi hạng | MEMBER | VIP | GOLD | DIAMOND (hạng đó trở lên)
 
   const AdminDiscountEntity({
     required this.id,
@@ -31,6 +32,7 @@ class AdminDiscountEntity {
     required this.endDate,
     required this.status,
     this.kind = 'PROMOTION',
+    this.minTier,
   });
 
   /// Tính trạng thái thực tế: nếu đã qua endDate thì luôn là EXPIRED

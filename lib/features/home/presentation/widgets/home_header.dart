@@ -15,16 +15,11 @@ class HomeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final showShadow = opacity > 0.5;
-    final onDark = opacity < 0.5;
-    final logoFirstColor =
-        onDark ? Colors.white : AppColors.textDark;
-    final logoSecondColor =
-        onDark ? AppColors.accentGold : AppColors.primaryRed;
-    final iconColor = onDark ? Colors.white : AppColors.textDark;
+    const iconColor = AppColors.textDark;
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: opacity),
+        color: Colors.white,
         boxShadow: showShadow
             ? [
                 BoxShadow(
@@ -48,20 +43,20 @@ class HomeHeader extends StatelessWidget {
                   text: TextSpan(
                     children: [
                       TextSpan(
-                        text: 'Field',
+                        text: 'Sports',
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
-                          color: logoFirstColor,
+                          color: AppColors.textDark,
                           letterSpacing: 0.5,
                         ),
                       ),
                       TextSpan(
-                        text: 'Finder',
+                        text: 'Hub',
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
-                          color: logoSecondColor,
+                          color: AppColors.primaryRed,
                           letterSpacing: 0.5,
                         ),
                       ),

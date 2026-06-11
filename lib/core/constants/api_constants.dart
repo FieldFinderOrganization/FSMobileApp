@@ -36,6 +36,8 @@ class ApiConstants {
   static String discountSave(String userId) => '/discounts/$userId/save';
   static String discountStatus(String id) => '/discounts/$id/status';
   static String assignDiscount(String id) => '/discounts/$id/assign';
+  static String assignDiscountTier(String id) => '/discounts/$id/assign-tier';
+  static String userTier(String userId) => '/users/$userId/tier';
   static const String reviews = '/reviews';
   static const String userReviews = '/reviews/user';
 
@@ -80,6 +82,13 @@ class ApiConstants {
   static const String adminOrderStats = '/admin/orders/stats';
   static const String adminPitchesList = '/admin/pitches';
   static const String adminReviewStats = '/admin/reviews/stats';
+
+  // Admin review moderation (kiểm duyệt thủ công)
+  static const String adminModerationPitchReviews =
+      '/admin/review-moderation/pitch-reviews';
+  static const String adminModerationProductReviews =
+      '/admin/review-moderation/product-reviews';
+  static const String adminModerationCounts = '/admin/review-moderation/counts';
 
   // Admin Statistics endpoints
   static const String adminStatisticsOverview = '/admin/statistics/overview';

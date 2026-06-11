@@ -14,6 +14,7 @@ class UserDiscountEntity {
   final List<int> applicableCategoryIds;
   final String kind; // PROMOTION | REFUND_CREDIT
   final double? remainingValue; // null = mã promo cũ; số = số dư mã hoàn tiền
+  final String? minTier; // null = mọi hạng | VIP/GOLD/DIAMOND = hạng đó trở lên
 
   const UserDiscountEntity({
     required this.userDiscountId,
@@ -31,6 +32,7 @@ class UserDiscountEntity {
     this.applicableCategoryIds = const [],
     this.kind = 'PROMOTION',
     this.remainingValue,
+    this.minTier,
   });
 
   bool get isAvailable => walletStatus == 'AVAILABLE';
