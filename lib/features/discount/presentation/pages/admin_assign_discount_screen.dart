@@ -124,7 +124,7 @@ class _AdminAssignDiscountScreenState extends State<AdminAssignDiscountScreen> {
   Future<void> _assignByTier() async {
     const tiers = [
       ('MEMBER', 'Thành viên trở lên (tất cả)'),
-      ('VIP', 'VIP trở lên'),
+      ('SILVER', 'Bạc trở lên'),
       ('GOLD', 'Vàng trở lên'),
       ('DIAMOND', 'Kim cương'),
     ];

@@ -42,6 +42,9 @@ import 'features/discount/presentation/cubit/my_wallet_cubit.dart';
 import 'features/discount/presentation/cubit/admin_discount_cubit.dart';
 import 'features/discount/presentation/cubit/tier_cubit.dart';
 import 'features/discount/presentation/cubit/points_cubit.dart';
+import 'features/notification/data/datasources/notification_remote_data_source.dart';
+import 'features/notification/data/datasources/notification_websocket_service.dart';
+import 'features/notification/presentation/cubit/notification_cubit.dart';
 import 'features/welcome/presentation/pages/welcome_screen.dart';
 import 'features/auth/login/presentation/bloc/auth_state.dart';
 
@@ -137,6 +140,14 @@ void main() async {
           BlocProvider<PointsCubit>(
             create: (context) => PointsCubit(repository: discountRepository),
           ),
+          BlocProvider<NotificationCubit>(
+            create: (context) => NotificationCubit(
+              remoteDataSource:
+                  NotificationRemoteDataSource(dioClient: dioClient),
+              webSocketService:
+                  NotificationWebSocketService(tokenStorage: tokenStorage),
+            ),
+          ),
         ],
         child: const MyApp(),
       ),
@@ -160,6 +171,7 @@ class MyApp extends StatelessWidget {
         ctx.read<HomeCubit>().reset();
         ctx.read<CartCubit>().reset();
         ctx.read<ProductCubit>().reset();
+        ctx.read<NotificationCubit>().stop();
 
         // Dùng navigatorKey — hoạt động dù đang ở màn hình nào
         _navigatorKey.currentState?.pushAndRemoveUntil(

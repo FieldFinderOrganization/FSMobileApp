@@ -31,7 +31,7 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
   String _discountType = 'PERCENTAGE';
   String _scope = 'GLOBAL';
   String _status = 'ACTIVE';
-  String _minTier = 'ALL'; // ALL = mọi hạng | VIP | GOLD | DIAMOND (hạng đó trở lên)
+  String _minTier = 'ALL'; // ALL = mọi hạng | SILVER | GOLD | DIAMOND (hạng đó trở lên)
   DateTime _startDate = DateTime.now();
   DateTime _endDate = DateTime.now().add(const Duration(days: 30));
 
@@ -341,8 +341,8 @@ class _AdminDiscountFormScreenState extends State<AdminDiscountFormScreen> {
                 // Tạo mã sẽ tự đẩy vào ví mọi user đủ hạng.
                 _SegmentedRow(
                   label: 'Hạng áp dụng',
-                  options: const ['ALL', 'VIP', 'GOLD', 'DIAMOND'],
-                  labels: const ['Tất cả', 'VIP+', 'Vàng+', 'K.cương+'],
+                  options: const ['ALL', 'SILVER', 'GOLD', 'DIAMOND'],
+                  labels: const ['Tất cả', 'Bạc+', 'Vàng+', 'K.cương+'],
                   selected: _minTier,
                   onChanged: (v) => setState(() => _minTier = v),
                 ),

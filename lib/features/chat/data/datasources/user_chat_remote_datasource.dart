@@ -98,6 +98,43 @@ class UserChatRemoteDatasource {
     }
   }
 
+  Future<String> uploadChatVideo({
+    required File file,
+    required String senderId,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(file.path),
+        'senderId': senderId,
+      });
+      final response = await dioClient.dio.post(
+        ApiConstants.chatUploadVideo,
+        data: formData,
+      );
+      return response.data['videoUrl'] as String;
+    } on DioException {
+      rethrow;
+    }
+  }
+
+  Future<void> reactToMessage({
+    required String messageId,
+    required String reactorId,
+    String? emoji,
+  }) async {
+    try {
+      await dioClient.dio.post(
+        ApiConstants.chatReaction(messageId),
+        queryParameters: {
+          'reactorId': reactorId,
+          if (emoji != null && emoji.isNotEmpty) 'emoji': emoji,
+        },
+      );
+    } on DioException {
+      rethrow;
+    }
+  }
+
   Future<List<ConversationModel>> getConversations(String userId) async {
     try {
       final response = await dioClient.dio.get(

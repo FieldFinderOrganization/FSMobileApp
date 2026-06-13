@@ -1170,7 +1170,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                           const SizedBox(width: 6),
                           _roleBadge('NCC', _kProviderColor),
                         ] else if (user.tier != 'MEMBER') ...[
-                          // User thường: hiện hạng thành viên (VIP/Vàng/Kim cương)
+                          // User thường: hiện hạng thành viên (Bạc/Vàng/Kim cương)
                           const SizedBox(width: 6),
                           _roleBadge(TierInfoEntity.labelOf(user.tier),
                               TierInfoEntity.colorOf(user.tier)),

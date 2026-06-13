@@ -14,7 +14,7 @@ class UserDiscountEntity {
   final List<int> applicableCategoryIds;
   final String kind; // PROMOTION | REFUND_CREDIT
   final double? remainingValue; // null = mã promo cũ; số = số dư mã hoàn tiền
-  final String? minTier; // null = mọi hạng | VIP/GOLD/DIAMOND = hạng đó trở lên
+  final String? minTier; // null = mọi hạng | SILVER/GOLD/DIAMOND = hạng đó trở lên
 
   const UserDiscountEntity({
     required this.userDiscountId,

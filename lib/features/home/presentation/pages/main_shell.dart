@@ -10,6 +10,10 @@ import '../../../auth/login/presentation/bloc/auth_state.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
 import '../../../chat/presentation/pages/chat_screen.dart';
+import '../../../chat/presentation/pages/user_chat_screen.dart';
+import '../../../notification/presentation/cubit/notification_cubit.dart';
+import '../../../notification/presentation/cubit/notification_state.dart';
+import '../../../notification/presentation/pages/notification_screen.dart';
 import '../../../home/presentation/cubit/home_cubit.dart';
 import '../../../home/presentation/pages/home_screen.dart';
 import '../../../pitch/presentation/pages/pitch_tab_screen.dart';
@@ -64,6 +68,8 @@ class _MainShellState extends State<MainShell>
       if (productCubit.state.status == LoadStatus.initial) {
         productCubit.loadProducts();
       }
+      // Badge chuông + socket thông báo toàn cục (sống suốt phiên đăng nhập)
+      context.read<NotificationCubit>().start(widget.user.userId);
     });
   }
 
@@ -103,7 +109,20 @@ class _MainShellState extends State<MainShell>
           builder: (context, state) {
             final currentUser = state.currentUser ?? widget.user;
 
-            return Scaffold(
+            return BlocListener<NotificationCubit, NotificationState>(
+              listenWhen: (prev, curr) =>
+                  curr.lastRealtimeEvent != null &&
+                  prev.lastRealtimeEvent != curr.lastRealtimeEvent,
+              listener: (context, notifState) {
+                final event = notifState.lastRealtimeEvent!;
+                context.read<NotificationCubit>().consumeRealtimeEvent();
+                // Đang ở tab Chat thì không banner tin nhắn (màn chat tự hiện)
+                if (event.type == 'CHAT_MESSAGE' && _currentIndex == 3) {
+                  return;
+                }
+                _showNotificationBanner(context, event, currentUser);
+              },
+              child: Scaffold(
               backgroundColor: Colors.white,
               // IndexedStack giữ state từng tab — không rebuild khi chuyển tab
               body: IndexedStack(
@@ -128,9 +147,77 @@ class _MainShellState extends State<MainShell>
                 bottomPadding: bottomPadding,
                 onTap: _onTabTapped,
               ),
+              ),
             );
           },
         ),
+      ),
+    );
+  }
+
+  void _showNotificationBanner(
+    BuildContext context,
+    RealtimeNotificationEvent event,
+    UserEntity currentUser,
+  ) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF2D2D2D),
+        duration: const Duration(seconds: 4),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              event.title,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            if (event.body.isNotEmpty)
+              Text(
+                event.body,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(fontSize: 13, color: Colors.white70),
+              ),
+          ],
+        ),
+        action: SnackBarAction(
+          label: 'Xem',
+          textColor: AppColors.primaryRed,
+          onPressed: () => _openNotificationTarget(event, currentUser),
+        ),
+      ),
+    );
+  }
+
+  void _openNotificationTarget(
+    RealtimeNotificationEvent event,
+    UserEntity currentUser,
+  ) {
+    if (!mounted) return;
+    if (event.type == 'CHAT_MESSAGE' && event.refId != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => UserChatScreen(
+            currentUserId: currentUser.userId,
+            otherUserId: event.refId!,
+            otherUserName: event.title,
+          ),
+        ),
+      );
+      return;
+    }
+    // ORDER / BOOKING → mở màn thông báo, từ đó điều hướng tiếp
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => NotificationScreen(currentUserId: currentUser.userId),
       ),
     );
   }

@@ -30,7 +30,7 @@ class AdminUserItem {
   final String phone;
   final String role;
   final String status;
-  final String tier; // MEMBER | VIP | GOLD | DIAMOND
+  final String tier; // MEMBER | SILVER | GOLD | DIAMOND
   final double totalSpent12m;
   final String? lastLoginAt;
   final String? createdAt;

@@ -313,7 +313,7 @@ class _ClaimableCard extends StatelessWidget {
   }
 }
 
-/// Chip hạng yêu cầu trên voucher tier-exclusive: "VIP trở lên", màu theo hạng.
+/// Chip hạng yêu cầu trên voucher tier-exclusive: "Bạc trở lên", màu theo hạng.
 class _TierChip extends StatelessWidget {
   final String minTier;
 

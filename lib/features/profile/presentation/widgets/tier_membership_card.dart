@@ -159,16 +159,16 @@ class _TierBenefitsSheet extends StatelessWidget {
       ['Lưu và dùng mọi voucher công khai', 'Tích lũy chi tiêu để thăng hạng'],
     ),
     (
-      'VIP',
-      'VIP',
+      'SILVER',
+      'Bạc',
       'Chi tiêu từ 2.000.000₫ / 12 tháng',
-      ['Toàn bộ ưu đãi hạng Thành viên', 'Voucher riêng cho hạng VIP', 'Tự động nhận voucher VIP khi lên hạng'],
+      ['Toàn bộ ưu đãi hạng Thành viên', 'Voucher riêng cho hạng Bạc', 'Tự động nhận voucher Bạc khi lên hạng'],
     ),
     (
       'GOLD',
       'Vàng',
       'Chi tiêu từ 5.000.000₫ / 12 tháng',
-      ['Toàn bộ ưu đãi hạng VIP', 'Voucher riêng cho hạng Vàng', 'Ưu đãi giá trị cao hơn'],
+      ['Toàn bộ ưu đãi hạng Bạc', 'Voucher riêng cho hạng Vàng', 'Ưu đãi giá trị cao hơn'],
     ),
     (
       'DIAMOND',

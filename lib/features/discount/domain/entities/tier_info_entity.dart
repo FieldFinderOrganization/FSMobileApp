@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Thông tin hạng thành viên + tiến độ lên hạng kế (BE: GET /users/{id}/tier).
 class TierInfoEntity {
-  final String tier; // MEMBER | VIP | GOLD | DIAMOND
+  final String tier; // MEMBER | SILVER | GOLD | DIAMOND
   final double totalSpent12m;
   final String? nextTier; // null nếu đã DIAMOND
   final double? nextTierThreshold;
@@ -22,8 +22,8 @@ class TierInfoEntity {
 
   static String labelOf(String tier) {
     switch (tier) {
-      case 'VIP':
-        return 'VIP';
+      case 'SILVER':
+        return 'Bạc';
       case 'GOLD':
         return 'Vàng';
       case 'DIAMOND':
@@ -35,8 +35,8 @@ class TierInfoEntity {
 
   static Color colorOf(String tier) {
     switch (tier) {
-      case 'VIP':
-        return const Color(0xFF7C3AED); // tím
+      case 'SILVER':
+        return const Color(0xFF94A3B8); // bạc
       case 'GOLD':
         return const Color(0xFFD4A017); // vàng
       case 'DIAMOND':
@@ -48,8 +48,8 @@ class TierInfoEntity {
 
   static IconData iconOf(String tier) {
     switch (tier) {
-      case 'VIP':
-        return Icons.star_rounded;
+      case 'SILVER':
+        return Icons.military_tech_rounded;
       case 'GOLD':
         return Icons.workspace_premium_rounded;
       case 'DIAMOND':
@@ -62,7 +62,7 @@ class TierInfoEntity {
   /// So sánh "hạng đó trở lên": user [tier] có dùng được voucher yêu cầu [minTier]?
   static bool meetsTier(String userTier, String? minTier) {
     if (minTier == null || minTier.isEmpty) return true;
-    const order = ['MEMBER', 'VIP', 'GOLD', 'DIAMOND'];
+    const order = ['MEMBER', 'SILVER', 'GOLD', 'DIAMOND'];
     final u = order.indexOf(userTier);
     final m = order.indexOf(minTier);
     if (m < 0) return true;

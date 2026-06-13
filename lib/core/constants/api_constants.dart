@@ -109,6 +109,8 @@ class ApiConstants {
   static const String chatUnreadCount = '/chat/unread-count';
   static const String chatConversations = '/chat/conversations';
   static const String chatUploadImage = '/chat/upload-image';
+  static const String chatUploadVideo = '/chat/upload-video';
+  static String chatReaction(String messageId) => '/chat/$messageId/reaction';
   static String userById(String userId) => '/users/$userId';
 
   // SockJS requires HTTP URL (not ws://), the library handles the upgrade internally

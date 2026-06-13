@@ -106,7 +106,7 @@ class AdminDiscountCubit extends Cubit<AdminDiscountState> {
     }
   }
 
-  /// Gán mã cho mọi user thuộc hạng [tier] trở lên (VIP/GOLD/DIAMOND/MEMBER).
+  /// Gán mã cho mọi user thuộc hạng [tier] trở lên (SILVER/GOLD/DIAMOND/MEMBER).
   Future<void> assignToTier(String id, String tier) async {
     emit(state.copyWith(status: AdminDiscountStatus.loading));
     try {

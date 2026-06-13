@@ -14,6 +14,7 @@ class UserChatWebSocketService {
   static const int _maxRetries = 3;
 
   void Function(UserChatMessageModel)? _onMessage;
+  void Function(String messageId, String? reaction)? _onReaction;
   void Function()? _onConnected;
   void Function(String)? _onError;
   String? _subscribedReceiverId;
@@ -25,10 +26,12 @@ class UserChatWebSocketService {
   Future<void> connect({
     required String receiverId,
     required void Function(UserChatMessageModel msg) onMessage,
+    void Function(String messageId, String? reaction)? onReaction,
     void Function()? onConnected,
     void Function(String error)? onError,
   }) async {
     _onMessage = onMessage;
+    _onReaction = onReaction;
     _onConnected = onConnected;
     _onError = onError;
     _subscribedReceiverId = receiverId;
@@ -61,7 +64,14 @@ class UserChatWebSocketService {
           if (frame.body != null) {
             try {
               final json = jsonDecode(frame.body!) as Map<String, dynamic>;
-              _onMessage?.call(UserChatMessageModel.fromJson(json));
+              if (json['type'] == 'REACTION') {
+                _onReaction?.call(
+                  json['messageId']?.toString() ?? '',
+                  json['reaction']?.toString(),
+                );
+              } else {
+                _onMessage?.call(UserChatMessageModel.fromJson(json));
+              }
             } catch (_) {}
           }
         },

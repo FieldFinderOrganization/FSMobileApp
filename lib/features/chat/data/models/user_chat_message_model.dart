@@ -3,10 +3,11 @@ class UserChatMessageModel {
   final String senderId;
   final String receiverId;
   final String content;
-  final String? imageUrl;
-  final String type; // 'TEXT' | 'IMAGE'
+  final String? imageUrl; // media URL chung: ảnh hoặc video tùy type
+  final String type; // 'TEXT' | 'IMAGE' | 'VIDEO'
   final DateTime sentAt;
   final bool isRead;
+  final String? reaction; // emoji người nhận thả vào tin nhắn này
 
   const UserChatMessageModel({
     required this.id,
@@ -17,9 +18,40 @@ class UserChatMessageModel {
     this.type = 'TEXT',
     required this.sentAt,
     required this.isRead,
+    this.reaction,
   });
 
-  bool get isImage => type == 'IMAGE' || imageUrl != null && imageUrl!.isNotEmpty;
+  bool get isImage =>
+      type == 'IMAGE' ||
+      (type != 'VIDEO' && imageUrl != null && imageUrl!.isNotEmpty);
+
+  bool get isVideo => type == 'VIDEO';
+
+  /// Optimistic message dùng millisecondsSinceEpoch làm id; id từ server là UUID.
+  bool get hasServerId => id.contains('-');
+
+  UserChatMessageModel copyWith({
+    String? id,
+    String? content,
+    String? imageUrl,
+    String? type,
+    DateTime? sentAt,
+    bool? isRead,
+    String? reaction,
+    bool clearReaction = false,
+  }) {
+    return UserChatMessageModel(
+      id: id ?? this.id,
+      senderId: senderId,
+      receiverId: receiverId,
+      content: content ?? this.content,
+      imageUrl: imageUrl ?? this.imageUrl,
+      type: type ?? this.type,
+      sentAt: sentAt ?? this.sentAt,
+      isRead: isRead ?? this.isRead,
+      reaction: clearReaction ? null : (reaction ?? this.reaction),
+    );
+  }
 
   factory UserChatMessageModel.fromJson(Map<String, dynamic> json) {
     final rawTime = json['timestamp'] ?? json['sentAt'];
@@ -45,6 +77,7 @@ class UserChatMessageModel {
       type: json['type']?.toString() ?? 'TEXT',
       sentAt: sentAt,
       isRead: json['isRead'] == true || json['read'] == true,
+      reaction: json['reaction']?.toString(),
     );
   }
 

@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../auth/login/presentation/bloc/auth_cubit.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
 import '../../../cart/presentation/cubit/cart_state.dart';
 import '../../../cart/presentation/pages/cart_screen.dart';
+import '../../../notification/presentation/cubit/notification_cubit.dart';
+import '../../../notification/presentation/cubit/notification_state.dart';
+import '../../../notification/presentation/pages/notification_screen.dart';
 
 class HomeHeader extends StatelessWidget {
   final double opacity;
@@ -79,10 +83,20 @@ class HomeHeader extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 4),
-                _HeaderIcon(
-                  icon: Icons.notifications_outlined,
+                _BellIconWithBadge(
                   color: iconColor,
-                  onTap: () {},
+                  onTap: () {
+                    final userId =
+                        context.read<AuthCubit>().state.currentUser?.userId;
+                    if (userId == null) return;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            NotificationScreen(currentUserId: userId),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -112,6 +126,63 @@ class _CartIconWithBadge extends StatelessWidget {
               onPressed: onTap,
               icon: Icon(
                 Icons.shopping_cart_outlined,
+                color: color,
+                size: 24,
+              ),
+              padding: const EdgeInsets.all(8),
+              constraints: const BoxConstraints(),
+            ),
+            if (count > 0)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: IgnorePointer(
+                  child: Container(
+                    width: 17,
+                    height: 17,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primaryRed,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      count > 99 ? '99+' : '$count',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        height: 1,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _BellIconWithBadge extends StatelessWidget {
+  final VoidCallback onTap;
+  final Color color;
+
+  const _BellIconWithBadge({required this.onTap, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<NotificationCubit, NotificationState>(
+      builder: (context, state) {
+        final count = state.unreadCount;
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            IconButton(
+              onPressed: onTap,
+              icon: Icon(
+                Icons.notifications_outlined,
                 color: color,
                 size: 24,
               ),

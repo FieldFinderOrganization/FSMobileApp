@@ -62,6 +62,9 @@ dependencies:
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
   speech_to_text: ^7.0.0
+  emoji_picker_flutter: ^4.3.0
+  video_player: ^2.9.2
+  chewie: ^1.8.5
 
 dev_dependencies:
   flutter_test:

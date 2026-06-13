@@ -85,6 +85,7 @@ class UserChatCubit extends Cubit<UserChatState> {
       await wsService.connect(
         receiverId: currentUserId,
         onMessage: _onIncomingMessage,
+        onReaction: applyReaction,
         onConnected: () {
           if (state is UserChatLoaded) {
             emit((state as UserChatLoaded).copyWith(isConnected: true));
@@ -115,20 +116,62 @@ class UserChatCubit extends Cubit<UserChatState> {
     if (msg.senderId != otherUserId && msg.senderId != currentUserId) return;
     final s = state as UserChatLoaded;
 
-    // Bỏ qua nếu ảnh này đã được hiển thị qua optimistic update
-    if (msg.isImage && msg.imageUrl != null && msg.senderId == currentUserId) {
-      final alreadyShown = s.messages.any(
-        (m) => m.isImage && m.imageUrl == msg.imageUrl && !m.imageUrl!.startsWith(RegExp(r'/|[A-Z]:\\')),
-      );
-      if (alreadyShown) return;
+    if (msg.senderId == currentUserId) {
+      // Echo từ server cho tin của chính mình: thay optimistic message
+      // (id giả) bằng bản có UUID thật để reaction match được theo id.
+      final idx = s.messages.indexWhere((m) =>
+          !m.hasServerId &&
+          m.senderId == currentUserId &&
+          m.type == msg.type &&
+          (msg.isImage || msg.isVideo
+              ? m.imageUrl == msg.imageUrl
+              : m.content == msg.content));
+      if (idx >= 0) {
+        final updated = [...s.messages];
+        updated[idx] = msg;
+        emit(s.copyWith(messages: updated));
+      }
+      // Không tìm thấy optimistic → đã được replace trước đó, bỏ qua tránh duplicate
+      return;
     }
 
     emit(s.copyWith(messages: [...s.messages, msg]));
-    if (msg.senderId == otherUserId) {
-      remoteDatasource.markRead(
-        senderId: otherUserId,
-        receiverId: currentUserId,
-      ).catchError((_) {});
+    remoteDatasource.markRead(
+      senderId: otherUserId,
+      receiverId: currentUserId,
+    ).catchError((_) {});
+  }
+
+  /// Reaction realtime từ người kia (qua WS) — cập nhật message tương ứng.
+  void applyReaction(String messageId, String? reaction) {
+    if (state is! UserChatLoaded) return;
+    final s = state as UserChatLoaded;
+    final idx = s.messages.indexWhere((m) => m.id == messageId);
+    if (idx < 0) return;
+    final updated = [...s.messages];
+    updated[idx] = updated[idx].copyWith(
+      reaction: reaction,
+      clearReaction: reaction == null,
+    );
+    emit(s.copyWith(messages: updated));
+  }
+
+  /// Thả/gỡ reaction vào tin nhắn của người kia. Tap lại emoji đang chọn = gỡ.
+  Future<void> reactToMessage(UserChatMessageModel msg, String emoji) async {
+    if (state is! UserChatLoaded) return;
+    if (msg.senderId != otherUserId || !msg.hasServerId) return;
+    final previous = msg.reaction;
+    final next = previous == emoji ? null : emoji;
+
+    applyReaction(msg.id, next); // optimistic
+    try {
+      await remoteDatasource.reactToMessage(
+        messageId: msg.id,
+        reactorId: currentUserId,
+        emoji: next,
+      );
+    } catch (_) {
+      applyReaction(msg.id, previous); // revert
     }
   }
 
@@ -222,6 +265,67 @@ class UserChatCubit extends Cubit<UserChatState> {
           isSending: false,
         ));
       }
+    }
+  }
+
+  /// Trả về false nếu video vượt giới hạn dung lượng (không gửi).
+  Future<bool> sendVideo(File videoFile) async {
+    if (state is! UserChatLoaded) return true;
+
+    // Khớp giới hạn multipart 50MB của backend
+    const maxBytes = 50 * 1024 * 1024;
+    if (await videoFile.length() > maxBytes) return false;
+
+    final s = state as UserChatLoaded;
+    final optimisticId = DateTime.now().millisecondsSinceEpoch.toString();
+    final optimistic = UserChatMessageModel(
+      id: optimisticId,
+      senderId: currentUserId,
+      receiverId: otherUserId,
+      content: '',
+      imageUrl: videoFile.path,
+      type: 'VIDEO',
+      sentAt: DateTime.now(),
+      isRead: false,
+    );
+    emit(s.copyWith(messages: [...s.messages, optimistic], isSending: true));
+
+    try {
+      final videoUrl = await remoteDatasource.uploadChatVideo(
+        file: videoFile,
+        senderId: currentUserId,
+      );
+
+      if (state is UserChatLoaded) {
+        final current = state as UserChatLoaded;
+        emit(current.copyWith(
+          messages: current.messages
+              .map((m) =>
+                  m.id == optimisticId ? m.copyWith(imageUrl: videoUrl) : m)
+              .toList(),
+          isSending: false,
+        ));
+      }
+
+      if (wsService.isConnected) {
+        wsService.sendMessage(
+          senderId: currentUserId,
+          receiverId: otherUserId,
+          content: '',
+          type: 'VIDEO',
+          imageUrl: videoUrl,
+        );
+      }
+      return true;
+    } catch (_) {
+      if (state is UserChatLoaded) {
+        final current = state as UserChatLoaded;
+        emit(current.copyWith(
+          messages: current.messages.where((m) => m.id != optimisticId).toList(),
+          isSending: false,
+        ));
+      }
+      return false;
     }
   }
 

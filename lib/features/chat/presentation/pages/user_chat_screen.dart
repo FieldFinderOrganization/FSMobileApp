@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart' as emoji;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -12,6 +13,10 @@ import '../../data/datasources/user_chat_remote_datasource.dart';
 import '../../data/datasources/user_chat_websocket_service.dart';
 import '../../data/models/user_chat_message_model.dart';
 import '../cubit/user_chat_cubit.dart';
+import 'chat_video_player_page.dart';
+
+/// Bộ emoji cố định cho reaction (kiểu Messenger)
+const _reactionEmojis = ['❤️', '😆', '😮', '😢', '👍', '😡'];
 
 String _formatLastLogin(DateTime? time) {
   if (time == null) return '';
@@ -46,6 +51,8 @@ class _UserChatScreenState extends State<UserChatScreen> {
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
   final _imagePicker = ImagePicker();
+  final _inputFocus = FocusNode();
+  bool _showEmojiPanel = false;
   DateTime? _otherUserLastLogin;
   Timer? _labelTimer;
 
@@ -80,6 +87,7 @@ class _UserChatScreenState extends State<UserChatScreen> {
     _cubit.close();
     _textController.dispose();
     _scrollController.dispose();
+    _inputFocus.dispose();
     super.dispose();
   }
 
@@ -115,6 +123,25 @@ class _UserChatScreenState extends State<UserChatScreen> {
     }
   }
 
+  Future<void> _pickVideo(ImageSource source) async {
+    final picked = await _imagePicker.pickVideo(
+      source: source,
+      maxDuration: const Duration(seconds: 60),
+    );
+    if (picked == null) return;
+    final ok = await _cubit.sendVideo(File(picked.path));
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Không gửi được video (tối đa 50MB)',
+            style: GoogleFonts.inter(),
+          ),
+        ),
+      );
+    }
+  }
+
   void _showImageSourceSheet() {
     showModalBottomSheet(
       context: context,
@@ -139,6 +166,22 @@ class _UserChatScreenState extends State<UserChatScreen> {
               onTap: () {
                 Navigator.pop(context);
                 _pickImageFromCamera();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.video_library_outlined),
+              title: Text('Video từ thư viện', style: GoogleFonts.inter()),
+              onTap: () {
+                Navigator.pop(context);
+                _pickVideo(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.videocam_outlined),
+              title: Text('Quay video', style: GoogleFonts.inter()),
+              onTap: () {
+                Navigator.pop(context);
+                _pickVideo(ImageSource.camera);
               },
             ),
           ],
@@ -196,6 +239,20 @@ class _UserChatScreenState extends State<UserChatScreen> {
             const Divider(height: 1, color: Color(0xFFEEEEEE)),
             Expanded(child: _buildMessageList()),
             _buildInputBar(),
+            Offstage(
+              offstage: !_showEmojiPanel,
+              child: SizedBox(
+                height: 280,
+                child: emoji.EmojiPicker(
+                  textEditingController: _textController,
+                  config: const emoji.Config(
+                    height: 280,
+                    checkPlatformCompatibility: true,
+                    emojiViewConfig: emoji.EmojiViewConfig(emojiSizeMax: 28),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -203,9 +260,91 @@ class _UserChatScreenState extends State<UserChatScreen> {
   }
 
   Widget _buildMessageBubble(UserChatMessageModel msg, bool isMe) {
-    if (msg.isImage) {
-      return _buildImageBubble(msg, isMe);
+    final Widget bubble;
+    if (msg.isVideo) {
+      bubble = _buildVideoBubble(msg, isMe);
+    } else if (msg.isImage) {
+      bubble = _buildImageBubble(msg, isMe);
+    } else {
+      bubble = _buildTextBubble(msg, isMe);
     }
+
+    // Long-press tin của người kia → thanh reaction; chip emoji đè góc bubble
+    final canReact = !isMe && msg.hasServerId;
+    final interactive = canReact
+        ? GestureDetector(
+            onLongPress: () => _showReactionBar(msg),
+            child: bubble,
+          )
+        : bubble;
+
+    if (msg.reaction == null) return interactive;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: interactive,
+        ),
+        Positioned(
+          bottom: 0,
+          right: isMe ? null : 8,
+          left: isMe ? 8 : null,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFEEEEEE)),
+              boxShadow: const [
+                BoxShadow(color: Colors.black12, blurRadius: 4),
+              ],
+            ),
+            child: Text(msg.reaction!, style: const TextStyle(fontSize: 13)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showReactionBar(UserChatMessageModel msg) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black26,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: _reactionEmojis.map((emoji) {
+              final selected = msg.reaction == emoji;
+              return InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () {
+                  Navigator.pop(dialogContext);
+                  _cubit.reactToMessage(msg, emoji);
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: selected
+                      ? BoxDecoration(
+                          color: const Color(0xFFF0F0F0),
+                          borderRadius: BorderRadius.circular(20),
+                        )
+                      : null,
+                  child: Text(emoji, style: const TextStyle(fontSize: 28)),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextBubble(UserChatMessageModel msg, bool isMe) {
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -282,6 +421,82 @@ class _UserChatScreenState extends State<UserChatScreen> {
                   );
                 },
                 errorBuilder: (_, _, _) => _brokenImagePlaceholder(),
+              ),
+      ),
+    );
+  }
+
+  /// Cloudinary trả thumbnail khi đổi đuôi video thành .jpg trên URL /video/upload/
+  String _videoThumbUrl(String videoUrl) =>
+      videoUrl.replaceAll(RegExp(r'\.\w+$'), '.jpg');
+
+  Widget _buildVideoBubble(UserChatMessageModel msg, bool isMe) {
+    final isLocalFile = msg.imageUrl != null && !msg.imageUrl!.startsWith('http');
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width * 0.65,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(16),
+          topRight: const Radius.circular(16),
+          bottomLeft: Radius.circular(isMe ? 16 : 4),
+          bottomRight: Radius.circular(isMe ? 4 : 16),
+        ),
+        child: isLocalFile
+            // Đang upload: placeholder + spinner (URL local chưa phát được)
+            ? Container(
+                width: 220,
+                height: 150,
+                color: Colors.black87,
+                child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                ),
+              )
+            : GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ChatVideoPlayerPage(videoUrl: msg.imageUrl!),
+                    ),
+                  );
+                },
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Image.network(
+                      _videoThumbUrl(msg.imageUrl!),
+                      width: 220,
+                      height: 150,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (_, child, progress) {
+                        if (progress == null) return child;
+                        return Container(
+                          width: 220,
+                          height: 150,
+                          color: const Color(0xFFF0F0F0),
+                        );
+                      },
+                      errorBuilder: (_, _, _) => Container(
+                        width: 220,
+                        height: 150,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: const BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.play_arrow_rounded,
+                          color: Colors.white, size: 32),
+                    ),
+                  ],
+                ),
               ),
       ),
     );
@@ -394,9 +609,35 @@ class _UserChatScreenState extends State<UserChatScreen> {
                 );
               },
             ),
+            GestureDetector(
+              onTap: () {
+                setState(() => _showEmojiPanel = !_showEmojiPanel);
+                if (_showEmojiPanel) {
+                  _inputFocus.unfocus();
+                } else {
+                  _inputFocus.requestFocus();
+                }
+              },
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Icon(
+                  _showEmojiPanel
+                      ? Icons.keyboard_alt_outlined
+                      : Icons.emoji_emotions_outlined,
+                  color: AppColors.primaryRed,
+                  size: 26,
+                ),
+              ),
+            ),
             Expanded(
               child: TextField(
                 controller: _textController,
+                focusNode: _inputFocus,
+                onTap: () {
+                  if (_showEmojiPanel) {
+                    setState(() => _showEmojiPanel = false);
+                  }
+                },
                 minLines: 1,
                 maxLines: 4,
                 textCapitalization: TextCapitalization.sentences,

@@ -14,7 +14,7 @@ class AdminDiscountEntity {
   final DateTime endDate;
   final String status; // ACTIVE | INACTIVE | EXPIRED
   final String kind; // PROMOTION | REFUND_CREDIT
-  final String? minTier; // null = mọi hạng | MEMBER | VIP | GOLD | DIAMOND (hạng đó trở lên)
+  final String? minTier; // null = mọi hạng | MEMBER | SILVER | GOLD | DIAMOND (hạng đó trở lên)
   final int? pointCost; // null = không đổi bằng điểm; có giá = chỉ đổi qua điểm thưởng
 
   const AdminDiscountEntity({
