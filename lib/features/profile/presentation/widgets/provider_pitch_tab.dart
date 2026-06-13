@@ -70,14 +70,6 @@ class _ProviderPitchTabState extends State<ProviderPitchTab> {
                             'Danh sách sân',
                             style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textDark),
                           ),
-                          if (widget.user.role != 'ADMIN')
-                            Padding(
-                              padding: const EdgeInsets.only(top: 2),
-                              child: Text(
-                                '* Liên hệ Admin để xóa sân bãi.',
-                                style: GoogleFonts.inter(fontSize: 11, color: AppColors.primaryRed.withValues(alpha: 0.8), fontStyle: FontStyle.italic),
-                              ),
-                            ),
                         ],
                       ),
                       IconButton(
@@ -94,6 +86,8 @@ class _ProviderPitchTabState extends State<ProviderPitchTab> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text(state.message), backgroundColor: Colors.redAccent),
                           );
+                        } else if (state is PitchDeactivateBlocked) {
+                          _showBlockedDialog(context, state.confirmedCount, state.earliestDeactivationDate);
                         } else if (state is PitchManagementLoaded && state.message != null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text(state.message!), backgroundColor: Colors.green),
@@ -198,7 +192,23 @@ class _ProviderPitchTabState extends State<ProviderPitchTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(pitch.name, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(pitch.name, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                    ),
+                    if (!pitch.isActive)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: Colors.orange.withOpacity(0.5)),
+                        ),
+                        child: Text('NGƪNH', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.orange[800])),
+                      ),
+                  ],
+                ),
                 const SizedBox(height: 4),
                 Text('${pitch.displayType} • ${pitch.price.toStringAsFixed(0)}đ', style: GoogleFonts.inter(fontSize: 13, color: AppColors.textGrey)),
                 const SizedBox(height: 4),
@@ -225,11 +235,24 @@ class _ProviderPitchTabState extends State<ProviderPitchTab> {
                 icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.textGrey),
                 onPressed: () => _showPitchDialog(context, _selectedAddress!.providerAddressId, pitch: pitch),
               ),
-              if (widget.user.role == 'ADMIN')
-                IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, size: 20, color: Colors.redAccent),
-                  onPressed: () => _showDeletePitchDialog(context, pitch, _selectedAddress!.providerAddressId),
+              // Nút Ngưng / Kích hoạt — cả Admin và Provider
+              IconButton(
+                tooltip: pitch.isActive ? 'Ngưng hoạt động' : 'Kích hoạt lại',
+                icon: Icon(
+                  pitch.isActive
+                      ? Icons.pause_circle_outline_rounded
+                      : Icons.play_circle_outline_rounded,
+                  size: 20,
+                  color: pitch.isActive ? Colors.orange : Colors.green,
                 ),
+                onPressed: () {
+                  if (pitch.isActive) {
+                    _showDeactivatePitchDialog(context, pitch, _selectedAddress!.providerAddressId);
+                  } else {
+                    cubit.reactivatePitch(pitch.pitchId, _selectedAddress!.providerAddressId);
+                  }
+                },
+              ),
             ],
           ),
         ],
@@ -442,23 +465,95 @@ class _ProviderPitchTabState extends State<ProviderPitchTab> {
     );
   }
 
-  void _showDeletePitchDialog(BuildContext context, PitchEntity pitch, String addressId) {
+  void _showDeactivatePitchDialog(BuildContext context, PitchEntity pitch, String addressId) {
+    DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
+    final cubit = context.read<PitchManagementCubit>();
+
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('Xác nhận xóa', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
-        content: Text('Bạn có chắc chắn muốn xóa sân bãi "${pitch.name}"? Hành động này không thể hoàn tác.', style: GoogleFonts.inter()),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          title: Text('Ngưng hoạt động sân', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Sân "${pitch.name}" sẽ ngưng từ ngày được chọn.\n'
+                'Các đơn PENDING từ ngày đó sẽ được hủy tự động và gửi thông báo cho khách.',
+                style: GoogleFonts.inter(fontSize: 13, color: AppColors.textGrey),
+              ),
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: ctx,
+                    initialDate: selectedDate,
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                    helpText: 'Chọn ngày bắt đầu ngưng',
+                  );
+                  if (picked != null) setS(() => selectedDate = picked);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.primaryRed.withOpacity(0.4)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.primaryRed),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Ngưng từ: ${selectedDate.day.toString().padLeft(2, '0')}/${selectedDate.month.toString().padLeft(2, '0')}/${selectedDate.year}',
+                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primaryRed),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Hủy', style: TextStyle(color: AppColors.textGrey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                cubit.deactivatePitch(pitch.pitchId, addressId, selectedDate);
+              },
+              child: const Text('Xác nhận ngưng', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showBlockedDialog(BuildContext context, int confirmedCount, String earliestDate) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            const SizedBox(width: 8),
+            Text('Không thể ngưng sân', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+          ],
+        ),
+        content: Text(
+          'Sân đang có $confirmedCount lịch đặt CONFIRMED chưa thực hiện.\n\n'
+          'Có thể ngưng sân sớm nhất từ ngày: $earliestDate',
+          style: GoogleFonts.inter(fontSize: 13),
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Hủy', style: TextStyle(color: AppColors.textGrey)),
-          ),
-          TextButton(
-            onPressed: () {
-              context.read<PitchManagementCubit>().deletePitch(pitch.pitchId, addressId);
-              Navigator.pop(dialogContext);
-            },
-            child: const Text('Xác nhận xóa', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600)),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Đã hiểu'),
           ),
         ],
       ),

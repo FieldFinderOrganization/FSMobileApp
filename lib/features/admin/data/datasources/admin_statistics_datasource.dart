@@ -271,4 +271,22 @@ class AdminStatisticsDatasource {
     final response = await dioClient.dio.get(ApiConstants.adminModerationCounts);
     return response.data as Map<String, dynamic>;
   }
+
+  /// Ngưng sân từ targetDate (Admin — áp dụng cho mọi sân).
+  Future<void> deactivatePitch(String pitchId, DateTime targetDate) async {
+    final dateStr =
+        '${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}';
+    await dioClient.dio.patch(
+      '${ApiConstants.pitches}/$pitchId/status',
+      data: {'targetDate': dateStr},
+    );
+  }
+
+  /// Kích hoạt lại sân INACTIVE (Admin).
+  Future<void> reactivatePitch(String pitchId) async {
+    await dioClient.dio.patch(
+      '${ApiConstants.pitches}/$pitchId/status',
+      data: {'status': 'ACTIVE'},
+    );
+  }
 }

@@ -11,6 +11,7 @@ class PitchEntity {
   final double? longitude;
   final String? providerUserId;
   final String? providerName;
+  final String? status; // 'ACTIVE' | 'INACTIVE'
 
   const PitchEntity({
     required this.pitchId,
@@ -25,10 +26,14 @@ class PitchEntity {
     this.longitude,
     this.providerUserId,
     this.providerName,
+    this.status,
   });
 
   /// Có toạ độ để dẫn đường không.
   bool get hasCoordinates => latitude != null && longitude != null;
+
+  /// Sân đang hoạt động.
+  bool get isActive => status == null || status == 'ACTIVE';
 
   String get primaryImage => imageUrls.isNotEmpty ? imageUrls.first : '';
 

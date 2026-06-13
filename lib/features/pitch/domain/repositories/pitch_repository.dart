@@ -9,6 +9,8 @@ abstract class PitchRepository {
   Future<PitchEntity> createPitch(Map<String, dynamic> data);
   Future<PitchEntity> updatePitch(String pitchId, Map<String, dynamic> data);
   Future<void> deletePitch(String pitchId);
+  Future<void> deactivatePitch(String pitchId, DateTime targetDate);
+  Future<void> reactivatePitch(String pitchId);
   Future<SuggestedPitchesEntity> getSuggested(String pitchId, {double? lat, double? lng, int limit = 10});
   Future<SuggestedPitchesEntity> getSuggestedForProduct({double? lat, double? lng, int limit = 10});
 }

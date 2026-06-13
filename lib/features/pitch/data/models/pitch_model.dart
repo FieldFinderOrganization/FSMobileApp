@@ -14,6 +14,7 @@ class PitchModel extends PitchEntity {
     super.longitude,
     super.providerUserId,
     super.providerName,
+    super.status,
   });
 
   factory PitchModel.fromJson(Map<String, dynamic> json) {
@@ -33,6 +34,7 @@ class PitchModel extends PitchEntity {
       longitude: (json['longitude'] as num?)?.toDouble(),
       providerUserId: json['providerUserId'] as String?,
       providerName: json['providerName'] as String?,
+      status: json['status'] as String?,
     );
   }
 }

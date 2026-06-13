@@ -1079,16 +1079,61 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  _pill(pitch.type, typeColor),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (!pitch.isActive)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: Colors.orange.withOpacity(0.4)),
+                            ),
+                            child: Text('NGƪNH',
+                                style: GoogleFonts.inter(
+                                    fontSize: 9, fontWeight: FontWeight.w700, color: Colors.orange[800])),
+                          ),
+                        ),
+                      _pill(pitch.type, typeColor),
+                    ],
+                  ),
                   const SizedBox(height: 6),
-                  Text(
-                    _fmtPrice(pitch.price),
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: _kTextMain,
-                      letterSpacing: -0.5,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _fmtPrice(pitch.price),
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: _kTextMain,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () {
+                          if (pitch.isActive) {
+                            _showAdminDeactivateDialog(pitch);
+                          } else {
+                            _adminToggleStatus(pitch, activate: true);
+                          }
+                        },
+                        child: Tooltip(
+                          message: pitch.isActive ? 'Ngưng hoạt động' : 'Kích hoạt lại',
+                          child: Icon(
+                            pitch.isActive
+                                ? Icons.pause_circle_outline_rounded
+                                : Icons.play_circle_outline_rounded,
+                            size: 20,
+                            color: pitch.isActive ? Colors.orange : Colors.green,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1120,6 +1165,133 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
           fontWeight: FontWeight.w700,
           color: color,
         ),
+      ),
+    );
+  }
+
+  void _showAdminDeactivateDialog(AdminPitchItem pitch) {
+    DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          title: Text('Ngưng hoạt động sân', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Sân "${pitch.name}" sẽ ngưng từ ngày được chọn.\n'
+                'Các đơn PENDING từ ngày đó sẽ bị hủy tự động và gửi thông báo cho khách.',
+                style: GoogleFonts.inter(fontSize: 13, color: _kTextMuted),
+              ),
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: ctx,
+                    initialDate: selectedDate,
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                    helpText: 'Chọn ngày bắt đầu ngưng',
+                  );
+                  if (picked != null) setS(() => selectedDate = picked);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: _kPrimary.withOpacity(0.4)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.calendar_today_outlined, size: 16, color: _kPrimary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Ngưng từ: ${selectedDate.day.toString().padLeft(2, '0')}/${selectedDate.month.toString().padLeft(2, '0')}/${selectedDate.year}',
+                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: _kPrimary),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              onPressed: () {
+                Navigator.pop(ctx);
+                _adminToggleStatus(pitch, activate: false, targetDate: selectedDate);
+              },
+              child: const Text('Xác nhẫn ngưng', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _adminToggleStatus(AdminPitchItem pitch,
+      {required bool activate, DateTime? targetDate}) async {
+    try {
+      if (activate) {
+        await widget.datasource.reactivatePitch(pitch.pitchId);
+      } else {
+        await widget.datasource.deactivatePitch(pitch.pitchId, targetDate!);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(activate ? 'Sân đã được kích hoạt lại.' : 'Sân đã được ngưng hoạt động.'),
+          backgroundColor: activate ? Colors.green : Colors.orange,
+        ));
+        _load(page: _currentPage);
+      }
+    } on dynamic catch (e) {
+      // Kiểm tra 409 Blocked
+      try {
+        final data = (e as dynamic).response?.data as Map?;
+        if (data != null && data.containsKey('confirmedBookingCount')) {
+          final count = data['confirmedBookingCount'] as int? ?? 0;
+          final earliest = data['earliestDeactivationDate']?.toString() ?? '';
+          if (mounted) _showAdminBlockedDialog(count, earliest);
+          return;
+        }
+      } catch (_) {}
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red));
+      }
+    }
+  }
+
+  void _showAdminBlockedDialog(int confirmedCount, String earliestDate) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            const SizedBox(width: 8),
+            Text('Không thể ngưng sân', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+          ],
+        ),
+        content: Text(
+          'Sân đang có $confirmedCount lịch đặt CONFIRMED chưa thực hiện.\n\n'
+          'Có thể ngưng sân sớm nhất từ ngày: $earliestDate',
+          style: GoogleFonts.inter(fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Đã hiểu'),
+          ),
+        ],
       ),
     );
   }

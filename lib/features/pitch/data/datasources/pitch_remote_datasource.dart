@@ -44,6 +44,22 @@ class PitchRemoteDatasource {
     await _dio.delete('${ApiConstants.pitches}/$pitchId');
   }
 
+  Future<void> deactivatePitch(String pitchId, DateTime targetDate) async {
+    final dateStr =
+        '${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}';
+    await _dio.patch(
+      '${ApiConstants.pitches}/$pitchId/status',
+      data: {'targetDate': dateStr},
+    );
+  }
+
+  Future<void> reactivatePitch(String pitchId) async {
+    await _dio.patch(
+      '${ApiConstants.pitches}/$pitchId/status',
+      data: {'status': 'ACTIVE'},
+    );
+  }
+
   /// Tuyến đường user→sân từ OSRM (qua BE). null nếu sân chưa có toạ độ hoặc OSRM tắt/lỗi.
   /// Trả {geometry: polyline encoded, distanceMeters, durationSeconds}.
   Future<Map<String, dynamic>?> fetchPitchRoute(

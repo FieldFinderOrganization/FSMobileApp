@@ -45,6 +45,16 @@ class PitchRepositoryImpl implements PitchRepository {
   }
 
   @override
+  Future<void> deactivatePitch(String pitchId, DateTime targetDate) async {
+    await pitchRemoteDatasource.deactivatePitch(pitchId, targetDate);
+  }
+
+  @override
+  Future<void> reactivatePitch(String pitchId) async {
+    await pitchRemoteDatasource.reactivatePitch(pitchId);
+  }
+
+  @override
   Future<SuggestedPitchesEntity> getSuggested(
     String pitchId, {
     double? lat,

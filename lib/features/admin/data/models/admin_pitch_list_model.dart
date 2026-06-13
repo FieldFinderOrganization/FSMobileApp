@@ -34,6 +34,7 @@ class AdminPitchItem {
   final String? address;
   final double? latitude;
   final double? longitude;
+  final String? status; // 'ACTIVE' | 'INACTIVE'
 
   const AdminPitchItem({
     required this.pitchId,
@@ -46,7 +47,10 @@ class AdminPitchItem {
     this.address,
     this.latitude,
     this.longitude,
+    this.status,
   });
+
+  bool get isActive => status == null || status == 'ACTIVE';
 
   factory AdminPitchItem.fromJson(Map<String, dynamic> json) {
     return AdminPitchItem(
@@ -60,6 +64,7 @@ class AdminPitchItem {
       address: json['address']?.toString(),
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
+      status: json['status'] as String?,
     );
   }
 }

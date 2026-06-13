@@ -31,6 +31,16 @@ class PitchManagementError extends PitchManagementState {
   List<Object?> get props => [message];
 }
 
+/// Trạng thái đặc biệt: không thể ngưng sân vì bị CONFIRMED block.
+class PitchDeactivateBlocked extends PitchManagementState {
+  final int confirmedCount;
+  final String earliestDeactivationDate;
+  const PitchDeactivateBlocked(this.confirmedCount, this.earliestDeactivationDate);
+
+  @override
+  List<Object?> get props => [confirmedCount, earliestDeactivationDate];
+}
+
 class PitchManagementCubit extends Cubit<PitchManagementState> {
   final PitchRepository repository;
 
@@ -78,6 +88,43 @@ class PitchManagementCubit extends Cubit<PitchManagementState> {
       await repository.deletePitch(pitchId);
       final pitches = await repository.getPitchesByProviderAddressId(addressId);
       emit(PitchManagementLoaded(pitches, message: 'Xóa sân bãi thành công!'));
+    } catch (e) {
+      emit(PitchManagementError(e.toString()));
+    }
+  }
+
+  Future<void> deactivatePitch(
+      String pitchId, String addressId, DateTime targetDate) async {
+    try {
+      await repository.deactivatePitch(pitchId, targetDate);
+      final pitches = await repository.getPitchesByProviderAddressId(addressId);
+      emit(PitchManagementLoaded(pitches, message: 'Sân đã được ngưng hoạt động.'));
+    } catch (e) {
+      final errStr = e.toString();
+      // Parse lỗi 409 từ DioException (BE trả về JSON có confirmedBookingCount + earliestDeactivationDate)
+      if (errStr.contains('confirmedBookingCount') || errStr.contains('409')) {
+        // Extract từ DioException.response.data
+        try {
+          final dio = e as dynamic;
+          final data = dio.response?.data as Map?;
+          if (data != null) {
+            emit(PitchDeactivateBlocked(
+              (data['confirmedBookingCount'] as num?)?.toInt() ?? 0,
+              data['earliestDeactivationDate']?.toString() ?? '',
+            ));
+            return;
+          }
+        } catch (_) {}
+      }
+      emit(PitchManagementError(errStr));
+    }
+  }
+
+  Future<void> reactivatePitch(String pitchId, String addressId) async {
+    try {
+      await repository.reactivatePitch(pitchId);
+      final pitches = await repository.getPitchesByProviderAddressId(addressId);
+      emit(PitchManagementLoaded(pitches, message: 'Sân đã được kích hoạt lại.'));
     } catch (e) {
       emit(PitchManagementError(e.toString()));
     }
