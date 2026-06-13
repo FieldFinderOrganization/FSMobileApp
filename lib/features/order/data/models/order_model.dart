@@ -4,6 +4,7 @@ class OrderModel {
   final int orderId;
   final String userName;
   final double totalAmount;
+  final double shippingFee;
   final String status;
   final String paymentMethod;
   final DateTime createdAt;
@@ -18,6 +19,7 @@ class OrderModel {
     required this.orderId,
     required this.userName,
     required this.totalAmount,
+    this.shippingFee = 0.0,
     required this.status,
     required this.paymentMethod,
     required this.createdAt,
@@ -34,6 +36,7 @@ class OrderModel {
       orderId: (json['orderId'] as num?)?.toInt() ?? 0,
       userName: json['userName'] as String? ?? 'Khách hàng',
       totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0.0,
+      shippingFee: (json['shippingFee'] as num?)?.toDouble() ?? 0.0,
       status: json['status'] as String? ?? 'UNKNOWN',
       paymentMethod: json['paymentMethod'] as String? ?? 'CASH',
       createdAt: json['createdAt'] != null

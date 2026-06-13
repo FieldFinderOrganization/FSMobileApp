@@ -4,10 +4,12 @@ class UserChatMessageModel {
   final String receiverId;
   final String content;
   final String? imageUrl; // media URL chung: ảnh hoặc video tùy type
-  final String type; // 'TEXT' | 'IMAGE' | 'VIDEO'
+  final String type; // 'TEXT' | 'IMAGE' | 'VIDEO' | 'CALL'
   final DateTime sentAt;
   final bool isRead;
   final String? reaction; // emoji người nhận thả vào tin nhắn này
+  final String? callStatus; // ANSWERED | MISSED | REJECTED | CANCELED (khi type=CALL)
+  final int? callDurationSec;
 
   const UserChatMessageModel({
     required this.id,
@@ -19,11 +21,15 @@ class UserChatMessageModel {
     required this.sentAt,
     required this.isRead,
     this.reaction,
+    this.callStatus,
+    this.callDurationSec,
   });
+
+  bool get isCall => type == 'CALL';
 
   bool get isImage =>
       type == 'IMAGE' ||
-      (type != 'VIDEO' && imageUrl != null && imageUrl!.isNotEmpty);
+      (type != 'VIDEO' && type != 'CALL' && imageUrl != null && imageUrl!.isNotEmpty);
 
   bool get isVideo => type == 'VIDEO';
 
@@ -39,6 +45,8 @@ class UserChatMessageModel {
     bool? isRead,
     String? reaction,
     bool clearReaction = false,
+    String? callStatus,
+    int? callDurationSec,
   }) {
     return UserChatMessageModel(
       id: id ?? this.id,
@@ -50,6 +58,8 @@ class UserChatMessageModel {
       sentAt: sentAt ?? this.sentAt,
       isRead: isRead ?? this.isRead,
       reaction: clearReaction ? null : (reaction ?? this.reaction),
+      callStatus: callStatus ?? this.callStatus,
+      callDurationSec: callDurationSec ?? this.callDurationSec,
     );
   }
 
@@ -78,6 +88,8 @@ class UserChatMessageModel {
       sentAt: sentAt,
       isRead: json['isRead'] == true || json['read'] == true,
       reaction: json['reaction']?.toString(),
+      callStatus: json['callStatus']?.toString(),
+      callDurationSec: (json['callDurationSec'] as num?)?.toInt(),
     );
   }
 

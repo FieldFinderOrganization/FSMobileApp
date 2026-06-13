@@ -238,11 +238,11 @@ class _BottomBar extends StatelessWidget {
                       style: GoogleFonts.inter(
                           fontSize: 13, color: AppColors.textGrey)),
                   Text(
-                    'Miễn phí',
+                    'Tính khi thanh toán',
                     style: GoogleFonts.inter(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFF2E7D32)),
+                        color: AppColors.textGrey),
                   ),
                 ],
               ),

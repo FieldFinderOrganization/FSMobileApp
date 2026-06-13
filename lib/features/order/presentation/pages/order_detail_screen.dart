@@ -517,8 +517,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       ),
       child: Column(
         children: [
-          _billingRow('Tạm tính', currencyFmt.format(_order.totalAmount)),
-          _billingRow('Phí vận chuyển', '0đ'),
+          _billingRow('Tạm tính',
+              currencyFmt.format(_order.totalAmount - _order.shippingFee)),
+          _billingRow(
+            'Phí vận chuyển',
+            _order.shippingFee > 0
+                ? currencyFmt.format(_order.shippingFee)
+                : 'Miễn phí',
+          ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
             child: Divider(height: 1),

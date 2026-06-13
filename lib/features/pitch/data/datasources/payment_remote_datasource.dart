@@ -55,6 +55,27 @@ class PaymentRemoteDataSource {
     }
   }
 
+  /// Báo giá phí ship (preview ở checkout). [subtotal] = giá trị đơn sau giảm giá.
+  Future<Map<String, dynamic>> getShippingQuote({
+    required double destLat,
+    required double destLng,
+    required double subtotal,
+  }) async {
+    try {
+      final response = await dioClient.dio.get(
+        ApiConstants.shippingQuote,
+        queryParameters: {
+          'destLat': destLat,
+          'destLng': destLng,
+          'subtotal': subtotal,
+        },
+      );
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<PaymentResponseModel> getShopPaymentStatus(String orderId) async {
     try {
       final response = await dioClient.dio.get(

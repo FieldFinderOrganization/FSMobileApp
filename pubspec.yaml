@@ -65,6 +65,8 @@ dependencies:
   emoji_picker_flutter: ^4.3.0
   video_player: ^2.9.2
   chewie: ^1.8.5
+  flutter_webrtc: ^0.14.1
+  permission_handler: ^11.4.0
 
 dev_dependencies:
   flutter_test:

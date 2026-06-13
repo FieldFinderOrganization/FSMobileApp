@@ -29,7 +29,7 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Ứng dụng cần vị trí của bạn để gợi ý các sân bóng gần nhất.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Ứng dụng cần micro để bạn tìm kiếm bằng giọng nói.</string>
+	<string>Ứng dụng cần micro để bạn tìm kiếm bằng giọng nói và gọi thoại.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Ứng dụng dùng nhận dạng giọng nói để chuyển lời nói thành văn bản tìm kiếm.</string>
 
@@ -96,6 +96,11 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Giữ cuộc gọi thoại WebRTC chạy khi app tạm xuống nền -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

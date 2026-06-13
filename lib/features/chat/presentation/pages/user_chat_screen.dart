@@ -12,6 +12,7 @@ import '../../../../core/storage/token_storage.dart';
 import '../../data/datasources/user_chat_remote_datasource.dart';
 import '../../data/datasources/user_chat_websocket_service.dart';
 import '../../data/models/user_chat_message_model.dart';
+import '../../../call/presentation/cubit/call_cubit.dart';
 import '../cubit/user_chat_cubit.dart';
 import 'chat_video_player_page.dart';
 
@@ -233,6 +234,16 @@ class _UserChatScreenState extends State<UserChatScreen> {
               ),
             ],
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.call_rounded,
+                  color: AppColors.primaryRed, size: 24),
+              tooltip: 'Gọi thoại',
+              onPressed: () => context
+                  .read<CallCubit>()
+                  .startCall(widget.otherUserId, widget.otherUserName),
+            ),
+          ],
         ),
         body: Column(
           children: [
@@ -261,7 +272,9 @@ class _UserChatScreenState extends State<UserChatScreen> {
 
   Widget _buildMessageBubble(UserChatMessageModel msg, bool isMe) {
     final Widget bubble;
-    if (msg.isVideo) {
+    if (msg.isCall) {
+      bubble = _buildCallBubble(msg, isMe);
+    } else if (msg.isVideo) {
       bubble = _buildVideoBubble(msg, isMe);
     } else if (msg.isImage) {
       bubble = _buildImageBubble(msg, isMe);
@@ -270,7 +283,8 @@ class _UserChatScreenState extends State<UserChatScreen> {
     }
 
     // Long-press tin của người kia → thanh reaction; chip emoji đè góc bubble
-    final canReact = !isMe && msg.hasServerId;
+    // (không áp dụng cho tin cuộc gọi)
+    final canReact = !isMe && msg.hasServerId && !msg.isCall;
     final interactive = canReact
         ? GestureDetector(
             onLongPress: () => _showReactionBar(msg),
@@ -339,6 +353,68 @@ class _UserChatScreenState extends State<UserChatScreen> {
               );
             }).toList(),
           ),
+        ),
+      ),
+    );
+  }
+
+  /// Bong bóng cuộc gọi (kiểu Messenger) — tap để gọi lại.
+  Widget _buildCallBubble(UserChatMessageModel msg, bool isMe) {
+    final missed = msg.callStatus == 'MISSED';
+    final rejected = msg.callStatus == 'REJECTED';
+    final canceled = msg.callStatus == 'CANCELED';
+    final dur = msg.callDurationSec ?? 0;
+
+    String label;
+    if (missed) {
+      label = isMe ? 'Cuộc gọi không trả lời' : 'Cuộc gọi nhỡ';
+    } else if (rejected) {
+      label = 'Cuộc gọi bị từ chối';
+    } else if (canceled) {
+      label = 'Cuộc gọi đã hủy';
+    } else {
+      final m = (dur ~/ 60).toString().padLeft(2, '0');
+      final s = (dur % 60).toString().padLeft(2, '0');
+      label = dur > 0 ? 'Cuộc gọi thoại · $m:$s' : 'Cuộc gọi thoại';
+    }
+
+    final accent = missed ? AppColors.primaryRed : (isMe ? Colors.white : AppColors.textDark);
+
+    return GestureDetector(
+      onTap: () => context
+          .read<CallCubit>()
+          .startCall(widget.otherUserId, widget.otherUserName),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.72,
+        ),
+        decoration: BoxDecoration(
+          color: isMe ? AppColors.primaryRed : const Color(0xFFF0F0F0),
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(isMe ? 16 : 4),
+            bottomRight: Radius.circular(isMe ? 4 : 16),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(missed ? Icons.phone_missed_rounded : Icons.phone_rounded,
+                size: 18, color: accent),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: isMe ? Colors.white : AppColors.textDark,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

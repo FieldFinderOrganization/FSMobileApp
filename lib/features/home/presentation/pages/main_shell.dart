@@ -13,6 +13,7 @@ import '../../../chat/presentation/pages/chat_screen.dart';
 import '../../../chat/presentation/pages/user_chat_screen.dart';
 import '../../../notification/presentation/cubit/notification_cubit.dart';
 import '../../../notification/presentation/cubit/notification_state.dart';
+import '../../../call/presentation/cubit/call_cubit.dart';
 import '../../../notification/presentation/pages/notification_screen.dart';
 import '../../../home/presentation/cubit/home_cubit.dart';
 import '../../../home/presentation/pages/home_screen.dart';
@@ -70,6 +71,8 @@ class _MainShellState extends State<MainShell>
       }
       // Badge chuông + socket thông báo toàn cục (sống suốt phiên đăng nhập)
       context.read<NotificationCubit>().start(widget.user.userId);
+      // Socket signaling cuộc gọi — đổ chuông ở mọi màn suốt phiên đăng nhập
+      context.read<CallCubit>().start(widget.user.userId, widget.user.name);
     });
   }
 

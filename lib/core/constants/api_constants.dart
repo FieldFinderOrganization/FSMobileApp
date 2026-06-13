@@ -58,6 +58,9 @@ class ApiConstants {
   // Order endpoints
   static const String orders = '/orders';
 
+  // Shipping endpoints
+  static const String shippingQuote = '/shipping/quote';
+
   // AI Chat endpoints
   static const String aiChat = '/ai/chat';
   static const String aiImage = '/ai/image';
@@ -112,6 +115,10 @@ class ApiConstants {
   static const String chatUploadVideo = '/chat/upload-video';
   static String chatReaction(String messageId) => '/chat/$messageId/reaction';
   static String userById(String userId) => '/users/$userId';
+
+  // Voice call (WebRTC) endpoints
+  static String callIceConfig(String userId) => '/call/ice-config?userId=$userId';
+  static const String callLog = '/call/log';
 
   // SockJS requires HTTP URL (not ws://), the library handles the upgrade internally
   static String get wsBaseUrl {

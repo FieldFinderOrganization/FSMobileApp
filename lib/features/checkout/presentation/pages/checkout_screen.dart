@@ -41,6 +41,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   bool _walletLoading = false;
   bool _autoApplied = false;
 
+  // Phí ship (preview từ BE). null = chưa có điểm giao / chưa quote xong.
+  double? _shippingFee;
+  double? _distanceKm;
+  bool _freeship = false;
+  bool _feeLoading = false;
+  double _amountToFreeship = 0;
+  double _freeshipMaxKm = 0;
+  double _freeshipThreshold = 0;
+
   final _currencyFormat = NumberFormat('#,###', 'vi_VN');
 
   @override
@@ -88,6 +97,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   double get _total => _pricing.total;
 
+  /// Tổng phải trả = tiền hàng sau giảm + phí ship (server tính lại khi tạo đơn).
+  double get _grandTotal => _total + (_shippingFee ?? 0);
+
   List<String> get _discountCodes =>
       _selectedVouchers.map((v) => v.discountCode).toList();
 
@@ -112,6 +124,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         _selectedVouchers.add(v);
       }
     });
+    // Đổi voucher → _total đổi → ngưỡng/nudge freeship đổi → quote lại.
+    if (_destLat != null) _fetchShippingQuote();
   }
 
   void _autoApplyPreCodes() {
@@ -210,6 +224,36 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         _addressController.text = result.address!;
       }
     });
+    _fetchShippingQuote();
+  }
+
+  /// Lấy báo giá phí ship từ BE (preview). Lỗi không chặn checkout —
+  /// BE vẫn tính lại phí authoritative khi tạo đơn.
+  Future<void> _fetchShippingQuote() async {
+    if (_destLat == null || _destLng == null) return;
+    setState(() => _feeLoading = true);
+    try {
+      final dataSource =
+          PaymentRemoteDataSource(dioClient: context.read<DioClient>());
+      final q = await dataSource.getShippingQuote(
+        destLat: _destLat!,
+        destLng: _destLng!,
+        subtotal: _total, // giá trị đơn sau giảm giá → xét ngưỡng freeship
+      );
+      if (!mounted) return;
+      setState(() {
+        _shippingFee = (q['fee'] as num?)?.toDouble() ?? 0;
+        _distanceKm = (q['distanceKm'] as num?)?.toDouble();
+        _freeship = q['freeshipApplied'] as bool? ?? false;
+        _amountToFreeship = (q['amountToFreeship'] as num?)?.toDouble() ?? 0;
+        _freeshipMaxKm = (q['freeshipMaxKm'] as num?)?.toDouble() ?? 0;
+        _freeshipThreshold = (q['freeshipThreshold'] as num?)?.toDouble() ?? 0;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _shippingFee = null);
+    } finally {
+      if (mounted) setState(() => _feeLoading = false);
+    }
   }
 
   Future<void> _placeOrder() async {
@@ -283,11 +327,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         });
 
         final orderId = orderData['orderId'] as int;
+        // Dùng tổng tiền server trả về (đã gồm phí ship tính authoritative),
+        // tránh QR lệch nếu phí preview khác phí thực.
+        final serverTotal =
+            (orderData['totalAmount'] as num?)?.toDouble() ?? _grandTotal;
 
         // 2. Create shop payment (get QR code)
         final paymentResp = await dataSource.createShopPayment({
           'userId': user.userId,
-          'amount': _total,
+          'amount': serverTotal,
           'paymentMethod': 'BANK',
           'orderCode': orderId,
         });
@@ -1228,6 +1276,34 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   // ── Tóm tắt giá ─────────────────────────────────────────────────────────
 
   Widget _buildPriceSummary() {
+    // Hiển thị phí ship theo trạng thái quote.
+    final String shipText;
+    Color? shipColor;
+    if (_destLat == null) {
+      shipText = 'Chọn điểm giao';
+      shipColor = AppColors.textGrey;
+    } else if (_feeLoading) {
+      shipText = 'Đang tính...';
+      shipColor = AppColors.textGrey;
+    } else if (_shippingFee == null) {
+      shipText = 'Tính khi đặt';
+      shipColor = AppColors.textGrey;
+    } else if (_freeship || _shippingFee == 0) {
+      shipText = 'Miễn phí';
+      shipColor = Colors.green.shade700;
+    } else {
+      shipText = '${_currencyFormat.format(_shippingFee)}đ';
+      shipColor = null;
+    }
+
+    final showNudge = _amountToFreeship > 0;
+    final showRadiusNote = !_freeship &&
+        _distanceKm != null &&
+        _freeshipMaxKm > 0 &&
+        _distanceKm! > _freeshipMaxKm &&
+        _freeshipThreshold > 0 &&
+        _total >= _freeshipThreshold;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -1249,9 +1325,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           const SizedBox(height: 10),
           _buildSummaryRow(
             'Phí vận chuyển',
-            'Miễn phí',
-            valueColor: Colors.green.shade700,
+            shipText,
+            valueColor: shipColor,
           ),
+          if (showNudge) ...[
+            const SizedBox(height: 8),
+            _buildFreeshipNudge(),
+          ],
+          if (showRadiusNote) ...[
+            const SizedBox(height: 8),
+            _buildRadiusNote(),
+          ],
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
             child: Divider(height: 1),
@@ -1268,7 +1352,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
               ),
               Text(
-                '${_currencyFormat.format(_total)}đ',
+                '${_currencyFormat.format(_grandTotal)}đ',
                 style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
@@ -1296,6 +1380,57 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: valueColor ?? AppColors.textDark,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Gợi ý "mua thêm Yđ để được miễn phí ship" (đẩy AOV kiểu Shopee).
+  Widget _buildFreeshipNudge() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F5E9),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.local_shipping_outlined,
+              size: 16, color: Colors.green.shade700),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Mua thêm ${_currencyFormat.format(_amountToFreeship)}đ để được miễn phí vận chuyển',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.green.shade800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Note giải thích đơn đủ ngưỡng nhưng giao ngoài bán kính freeship.
+  Widget _buildRadiusNote() {
+    final km = _distanceKm?.toStringAsFixed(1) ?? '';
+    final maxKm = _freeshipMaxKm.toStringAsFixed(0);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.info_outline, size: 14, color: AppColors.textGrey),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            'Miễn phí ship trong $maxKm km — điểm giao cách ~$km km nên vẫn tính phí.',
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              color: AppColors.textGrey,
+            ),
           ),
         ),
       ],
@@ -1341,7 +1476,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                   )
                 : Text(
-                    'Đặt hàng · ${_currencyFormat.format(_total)}đ',
+                    'Đặt hàng · ${_currencyFormat.format(_grandTotal)}đ',
                     style: GoogleFonts.inter(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,

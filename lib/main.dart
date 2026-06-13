@@ -45,6 +45,11 @@ import 'features/discount/presentation/cubit/points_cubit.dart';
 import 'features/notification/data/datasources/notification_remote_data_source.dart';
 import 'features/notification/data/datasources/notification_websocket_service.dart';
 import 'features/notification/presentation/cubit/notification_cubit.dart';
+import 'features/call/data/datasources/call_remote_datasource.dart';
+import 'features/call/data/datasources/call_signaling_service.dart';
+import 'features/call/presentation/cubit/call_cubit.dart';
+import 'features/call/presentation/cubit/call_state.dart';
+import 'features/call/presentation/pages/call_screen.dart';
 import 'features/welcome/presentation/pages/welcome_screen.dart';
 import 'features/auth/login/presentation/bloc/auth_state.dart';
 
@@ -148,6 +153,12 @@ void main() async {
                   NotificationWebSocketService(tokenStorage: tokenStorage),
             ),
           ),
+          BlocProvider<CallCubit>(
+            create: (context) => CallCubit(
+              signaling: CallSignalingService(tokenStorage: tokenStorage),
+              remote: CallRemoteDatasource(dioClient: dioClient),
+            ),
+          ),
         ],
         child: const MyApp(),
       ),
@@ -158,27 +169,57 @@ void main() async {
 /// Key toàn cục để navigate từ bất kỳ đâu, không phụ thuộc BuildContext
 final _navigatorKey = GlobalKey<NavigatorState>();
 
+/// Màn cuộc gọi đang hiển thị hay chưa — tránh push/pop trùng.
+bool _callScreenOpen = false;
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthCubit, AuthState>(
-      listenWhen: (previous, current) =>
-          previous is! AuthInitial && current is AuthInitial,
-      listener: (ctx, state) {
-        // Reset state khi logout
-        ctx.read<HomeCubit>().reset();
-        ctx.read<CartCubit>().reset();
-        ctx.read<ProductCubit>().reset();
-        ctx.read<NotificationCubit>().stop();
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<AuthCubit, AuthState>(
+          listenWhen: (previous, current) =>
+              previous is! AuthInitial && current is AuthInitial,
+          listener: (ctx, state) {
+            // Reset state khi logout
+            ctx.read<HomeCubit>().reset();
+            ctx.read<CartCubit>().reset();
+            ctx.read<ProductCubit>().reset();
+            ctx.read<NotificationCubit>().stop();
+            ctx.read<CallCubit>().stop();
 
-        // Dùng navigatorKey — hoạt động dù đang ở màn hình nào
-        _navigatorKey.currentState?.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-          (route) => false,
-        );
-      },
+            // Dùng navigatorKey — hoạt động dù đang ở màn hình nào
+            _navigatorKey.currentState?.pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+              (route) => false,
+            );
+          },
+        ),
+        // Đổ chuông / mở màn cuộc gọi ở bất kỳ đâu trong app.
+        BlocListener<CallCubit, CallState>(
+          listenWhen: (prev, curr) =>
+              prev.isActive != curr.isActive || prev.phase != curr.phase,
+          listener: (ctx, state) {
+            final nav = _navigatorKey.currentState;
+            if (nav == null) return;
+            if (state.isActive && !_callScreenOpen) {
+              _callScreenOpen = true;
+              nav.push(MaterialPageRoute(
+                builder: (_) => BlocProvider.value(
+                  value: ctx.read<CallCubit>(),
+                  child: const CallScreen(),
+                ),
+                fullscreenDialog: true,
+              ));
+            } else if (state.phase == CallPhase.idle && _callScreenOpen) {
+              _callScreenOpen = false;
+              nav.pop();
+            }
+          },
+        ),
+      ],
       child: MaterialApp(
         navigatorKey: _navigatorKey,
         debugShowCheckedModeBanner: false,

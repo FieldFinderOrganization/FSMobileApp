@@ -337,7 +337,8 @@ class ChatCubit extends Cubit<ChatState> {
         try {
           paymentResp = await paymentDatasource.createShopPayment({
             'userId': userId,
-            'amount': total,
+            // Tổng server (đã gồm phí ship) — tránh QR thiếu phí vận chuyển.
+            'amount': (orderData['totalAmount'] as num?)?.toDouble() ?? total,
             'paymentMethod': 'BANK',
             'orderCode': orderId,
           });
