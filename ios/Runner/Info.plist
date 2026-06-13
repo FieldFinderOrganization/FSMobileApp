@@ -30,6 +30,8 @@
 	<string>Ứng dụng cần vị trí của bạn để gợi ý các sân bóng gần nhất.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Ứng dụng cần micro để bạn tìm kiếm bằng giọng nói và gọi thoại.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Ứng dụng cần camera để bạn gọi video.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Ứng dụng dùng nhận dạng giọng nói để chuyển lời nói thành văn bản tìm kiếm.</string>
 

@@ -243,6 +243,14 @@ class _UserChatScreenState extends State<UserChatScreen> {
                   .read<CallCubit>()
                   .startCall(widget.otherUserId, widget.otherUserName),
             ),
+            IconButton(
+              icon: const Icon(Icons.videocam_rounded,
+                  color: AppColors.primaryRed, size: 26),
+              tooltip: 'Gọi video',
+              onPressed: () => context.read<CallCubit>().startCall(
+                  widget.otherUserId, widget.otherUserName,
+                  video: true),
+            ),
           ],
         ),
         body: Column(
@@ -358,32 +366,37 @@ class _UserChatScreenState extends State<UserChatScreen> {
     );
   }
 
-  /// Bong bóng cuộc gọi (kiểu Messenger) — tap để gọi lại.
+  /// Bong bóng cuộc gọi (kiểu Messenger) — tap để gọi lại (đúng loại thoại/video).
   Widget _buildCallBubble(UserChatMessageModel msg, bool isMe) {
     final missed = msg.callStatus == 'MISSED';
     final rejected = msg.callStatus == 'REJECTED';
     final canceled = msg.callStatus == 'CANCELED';
+    final video = msg.isVideoCall;
+    final kind = video ? 'video' : 'thoại';
     final dur = msg.callDurationSec ?? 0;
 
     String label;
     if (missed) {
-      label = isMe ? 'Cuộc gọi không trả lời' : 'Cuộc gọi nhỡ';
+      label = isMe ? 'Cuộc gọi $kind không trả lời' : 'Cuộc gọi $kind nhỡ';
     } else if (rejected) {
-      label = 'Cuộc gọi bị từ chối';
+      label = 'Cuộc gọi $kind bị từ chối';
     } else if (canceled) {
-      label = 'Cuộc gọi đã hủy';
+      label = 'Cuộc gọi $kind đã hủy';
     } else {
       final m = (dur ~/ 60).toString().padLeft(2, '0');
       final s = (dur % 60).toString().padLeft(2, '0');
-      label = dur > 0 ? 'Cuộc gọi thoại · $m:$s' : 'Cuộc gọi thoại';
+      label = dur > 0 ? 'Cuộc gọi $kind · $m:$s' : 'Cuộc gọi $kind';
     }
 
     final accent = missed ? AppColors.primaryRed : (isMe ? Colors.white : AppColors.textDark);
+    final IconData icon = missed
+        ? (video ? Icons.videocam_off_rounded : Icons.phone_missed_rounded)
+        : (video ? Icons.videocam_rounded : Icons.phone_rounded);
 
     return GestureDetector(
-      onTap: () => context
-          .read<CallCubit>()
-          .startCall(widget.otherUserId, widget.otherUserName),
+      onTap: () => context.read<CallCubit>().startCall(
+          widget.otherUserId, widget.otherUserName,
+          video: video),
       child: Container(
         margin: const EdgeInsets.only(bottom: 4),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -402,8 +415,7 @@ class _UserChatScreenState extends State<UserChatScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(missed ? Icons.phone_missed_rounded : Icons.phone_rounded,
-                size: 18, color: accent),
+            Icon(icon, size: 18, color: accent),
             const SizedBox(width: 8),
             Flexible(
               child: Text(

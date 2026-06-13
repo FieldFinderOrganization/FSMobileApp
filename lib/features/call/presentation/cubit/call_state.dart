@@ -8,8 +8,11 @@ class CallState extends Equatable {
   final String? peerId; // userId đầu bên kia
   final String? peerName;
   final bool isCaller;
+  final bool isVideo; // cuộc gọi video (true) hay thoại (false)
   final bool micMuted;
+  final bool cameraOff; // camera của mình đang tắt
   final bool speakerOn;
+  final bool remoteVideoReady; // đã nhận stream remote → hiển thị video remote
   final int durationSec; // chỉ tăng khi đã connected
   final String? endReason; // hangup | rejected | busy | canceled | missed | failed
 
@@ -19,8 +22,11 @@ class CallState extends Equatable {
     this.peerId,
     this.peerName,
     this.isCaller = false,
+    this.isVideo = false,
     this.micMuted = false,
+    this.cameraOff = false,
     this.speakerOn = false,
+    this.remoteVideoReady = false,
     this.durationSec = 0,
     this.endReason,
   });
@@ -33,8 +39,11 @@ class CallState extends Equatable {
     String? peerId,
     String? peerName,
     bool? isCaller,
+    bool? isVideo,
     bool? micMuted,
+    bool? cameraOff,
     bool? speakerOn,
+    bool? remoteVideoReady,
     int? durationSec,
     String? endReason,
   }) {
@@ -44,8 +53,11 @@ class CallState extends Equatable {
       peerId: peerId ?? this.peerId,
       peerName: peerName ?? this.peerName,
       isCaller: isCaller ?? this.isCaller,
+      isVideo: isVideo ?? this.isVideo,
       micMuted: micMuted ?? this.micMuted,
+      cameraOff: cameraOff ?? this.cameraOff,
       speakerOn: speakerOn ?? this.speakerOn,
+      remoteVideoReady: remoteVideoReady ?? this.remoteVideoReady,
       durationSec: durationSec ?? this.durationSec,
       endReason: endReason ?? this.endReason,
     );
@@ -58,8 +70,11 @@ class CallState extends Equatable {
         peerId,
         peerName,
         isCaller,
+        isVideo,
         micMuted,
+        cameraOff,
         speakerOn,
+        remoteVideoReady,
         durationSec,
         endReason,
       ];

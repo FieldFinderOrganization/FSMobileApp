@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../cubit/call_cubit.dart';
 import '../cubit/call_state.dart';
 
-/// Màn cuộc gọi thoại — 1 màn cho mọi pha (gọi đi / gọi đến / đang gọi).
+/// Màn cuộc gọi — 1 màn cho mọi pha (gọi đi / gọi đến / đang gọi), audio & video.
 /// Được push/pop tự động bởi BlocListener toàn cục trong MyApp.
 class CallScreen extends StatelessWidget {
   const CallScreen({super.key});
@@ -16,7 +17,7 @@ class CallScreen extends StatelessWidget {
       case CallPhase.outgoing:
         return 'Đang gọi…';
       case CallPhase.incoming:
-        return 'Cuộc gọi thoại đến';
+        return s.isVideo ? 'Cuộc gọi video đến' : 'Cuộc gọi thoại đến';
       case CallPhase.connecting:
         return 'Đang kết nối…';
       case CallPhase.connected:
@@ -56,9 +57,11 @@ class CallScreen extends StatelessWidget {
     final cubit = context.read<CallCubit>();
     return BlocBuilder<CallCubit, CallState>(
       builder: (context, state) {
-        final name = state.peerName ?? 'Người dùng';
-        final initial =
-            name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : '?';
+        final showVideo = state.isVideo &&
+            state.remoteVideoReady &&
+            cubit.remoteRenderer != null &&
+            (state.phase == CallPhase.connected ||
+                state.phase == CallPhase.connecting);
         return PopScope(
           canPop: false,
           onPopInvokedWithResult: (didPop, _) {
@@ -66,57 +69,158 @@ class CallScreen extends StatelessWidget {
           },
           child: Scaffold(
             backgroundColor: AppColors.midnightDeep,
-            body: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [AppColors.midnightMid, AppColors.midnightDeep],
-                ),
-              ),
-              child: SafeArea(
-                child: Column(
-                  children: [
-                    const SizedBox(height: 48),
-                    CircleAvatar(
-                      radius: 56,
-                      backgroundColor: AppColors.champagne.withValues(alpha: 0.2),
-                      child: Text(
-                        initial,
-                        style: GoogleFonts.inter(
-                          fontSize: 48,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.champagne,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      name,
-                      style: GoogleFonts.inter(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.warmIvory,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      _statusText(state),
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        color: AppColors.warmIvory.withValues(alpha: 0.7),
-                      ),
-                    ),
-                    const Spacer(),
-                    _buildControls(context, cubit, state),
-                    const SizedBox(height: 48),
-                  ],
-                ),
-              ),
-            ),
+            body: showVideo
+                ? _videoLayout(context, cubit, state)
+                : _avatarLayout(context, cubit, state),
           ),
         );
       },
+    );
+  }
+
+  // ---------------------- Layout video (remote full + local PiP) ----------------------
+
+  Widget _videoLayout(BuildContext context, CallCubit cubit, CallState state) {
+    final name = state.peerName ?? 'Người dùng';
+    return Stack(
+      children: [
+        // Remote full màn
+        Positioned.fill(
+          child: RTCVideoView(
+            cubit.remoteRenderer!,
+            objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+          ),
+        ),
+        // Scrim trên/dưới cho dễ đọc
+        const Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.black45, Colors.transparent, Colors.black54],
+                stops: [0.0, 0.4, 1.0],
+              ),
+            ),
+          ),
+        ),
+        // Local PiP
+        Positioned(
+          top: MediaQuery.of(context).padding.top + 12,
+          right: 12,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: SizedBox(
+              width: 110,
+              height: 160,
+              child: (!state.cameraOff && cubit.localRenderer != null)
+                  ? RTCVideoView(
+                      cubit.localRenderer!,
+                      mirror: true,
+                      objectFit:
+                          RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                    )
+                  : Container(
+                      color: AppColors.midnightMid,
+                      child: const Icon(Icons.videocam_off_rounded,
+                          color: Colors.white54, size: 32),
+                    ),
+            ),
+          ),
+        ),
+        // Tên + thời lượng (trên)
+        Positioned(
+          top: MediaQuery.of(context).padding.top + 16,
+          left: 20,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(name,
+                  style: GoogleFonts.inter(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white)),
+              const SizedBox(height: 4),
+              Text(_statusText(state),
+                  style: GoogleFonts.inter(
+                      fontSize: 14, color: Colors.white.withValues(alpha: 0.85))),
+            ],
+          ),
+        ),
+        // Controls dưới
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 40),
+            child: _buildControls(context, cubit, state),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ---------------------- Layout avatar (audio, hoặc video chưa kết nối) ----------------------
+
+  Widget _avatarLayout(BuildContext context, CallCubit cubit, CallState state) {
+    final name = state.peerName ?? 'Người dùng';
+    final initial = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : '?';
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [AppColors.midnightMid, AppColors.midnightDeep],
+        ),
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 48),
+            CircleAvatar(
+              radius: 56,
+              backgroundColor: AppColors.champagne.withValues(alpha: 0.2),
+              child: Text(
+                initial,
+                style: GoogleFonts.inter(
+                  fontSize: 48,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.champagne,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              name,
+              style: GoogleFonts.inter(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: AppColors.warmIvory,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (state.isVideo) ...[
+                  const Icon(Icons.videocam_rounded,
+                      size: 16, color: AppColors.champagne),
+                  const SizedBox(width: 6),
+                ],
+                Text(
+                  _statusText(state),
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    color: AppColors.warmIvory.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            _buildControls(context, cubit, state),
+            const SizedBox(height: 48),
+          ],
+        ),
+      ),
     );
   }
 
@@ -133,7 +237,7 @@ class CallScreen extends StatelessWidget {
             onTap: cubit.reject,
           ),
           _circleButton(
-            icon: Icons.call_rounded,
+            icon: state.isVideo ? Icons.videocam_rounded : Icons.call_rounded,
             color: const Color(0xFF2E7D32),
             label: 'Trả lời',
             onTap: cubit.accept,
@@ -160,20 +264,39 @@ class CallScreen extends StatelessWidget {
               label: state.micMuted ? 'Đã tắt mic' : 'Mic',
               onTap: cubit.toggleMute,
             ),
-            const SizedBox(width: 28),
-            _circleButton(
-              icon: state.speakerOn
-                  ? Icons.volume_up_rounded
-                  : Icons.volume_down_rounded,
-              color: state.speakerOn
-                  ? AppColors.champagne.withValues(alpha: 0.3)
-                  : AppColors.midnightMid,
-              label: 'Loa ngoài',
-              onTap: cubit.toggleSpeaker,
-            ),
+            const SizedBox(width: 22),
+            if (state.isVideo) ...[
+              _circleButton(
+                icon: state.cameraOff
+                    ? Icons.videocam_off_rounded
+                    : Icons.videocam_rounded,
+                color: state.cameraOff
+                    ? AppColors.warmIvory.withValues(alpha: 0.3)
+                    : AppColors.midnightMid,
+                label: state.cameraOff ? 'Đã tắt' : 'Camera',
+                onTap: cubit.toggleCamera,
+              ),
+              const SizedBox(width: 22),
+              _circleButton(
+                icon: Icons.cameraswitch_rounded,
+                color: AppColors.midnightMid,
+                label: 'Đổi cam',
+                onTap: cubit.switchCamera,
+              ),
+            ] else
+              _circleButton(
+                icon: state.speakerOn
+                    ? Icons.volume_up_rounded
+                    : Icons.volume_down_rounded,
+                color: state.speakerOn
+                    ? AppColors.champagne.withValues(alpha: 0.3)
+                    : AppColors.midnightMid,
+                label: 'Loa ngoài',
+                onTap: cubit.toggleSpeaker,
+              ),
           ],
         ),
-        const SizedBox(height: 36),
+        const SizedBox(height: 32),
         _circleButton(
           icon: Icons.call_end_rounded,
           color: AppColors.primaryRed,
@@ -200,8 +323,8 @@ class CallScreen extends StatelessWidget {
             customBorder: const CircleBorder(),
             onTap: onTap,
             child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Icon(icon, color: AppColors.warmIvory, size: 30),
+              padding: const EdgeInsets.all(16),
+              child: Icon(icon, color: AppColors.warmIvory, size: 28),
             ),
           ),
         ),

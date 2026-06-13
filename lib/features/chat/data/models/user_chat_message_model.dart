@@ -10,6 +10,7 @@ class UserChatMessageModel {
   final String? reaction; // emoji người nhận thả vào tin nhắn này
   final String? callStatus; // ANSWERED | MISSED | REJECTED | CANCELED (khi type=CALL)
   final int? callDurationSec;
+  final String? callMedia; // AUDIO | VIDEO (khi type=CALL)
 
   const UserChatMessageModel({
     required this.id,
@@ -23,9 +24,11 @@ class UserChatMessageModel {
     this.reaction,
     this.callStatus,
     this.callDurationSec,
+    this.callMedia,
   });
 
   bool get isCall => type == 'CALL';
+  bool get isVideoCall => callMedia == 'VIDEO';
 
   bool get isImage =>
       type == 'IMAGE' ||
@@ -47,6 +50,7 @@ class UserChatMessageModel {
     bool clearReaction = false,
     String? callStatus,
     int? callDurationSec,
+    String? callMedia,
   }) {
     return UserChatMessageModel(
       id: id ?? this.id,
@@ -60,6 +64,7 @@ class UserChatMessageModel {
       reaction: clearReaction ? null : (reaction ?? this.reaction),
       callStatus: callStatus ?? this.callStatus,
       callDurationSec: callDurationSec ?? this.callDurationSec,
+      callMedia: callMedia ?? this.callMedia,
     );
   }
 
@@ -90,6 +95,7 @@ class UserChatMessageModel {
       reaction: json['reaction']?.toString(),
       callStatus: json['callStatus']?.toString(),
       callDurationSec: (json['callDurationSec'] as num?)?.toInt(),
+      callMedia: json['callMedia']?.toString(),
     );
   }
 

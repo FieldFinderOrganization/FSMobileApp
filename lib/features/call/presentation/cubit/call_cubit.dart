@@ -34,6 +34,11 @@ class CallCubit extends Cubit<CallState> {
   Timer? _durationTimer;
   bool _connectedOnce = false;
 
+  // Renderers cho video — giữ ngoài state (không Equatable). UI đọc qua getter,
+  // state.remoteVideoReady trigger rebuild khi stream remote về.
+  RTCVideoRenderer? localRenderer;
+  RTCVideoRenderer? remoteRenderer;
+
   static const _ringTimeoutSec = 45;
 
   CallCubit({required this.signaling, required this.remote})
@@ -48,9 +53,10 @@ class CallCubit extends Cubit<CallState> {
 
   // ---------------------- Bắt đầu / nhận cuộc gọi ----------------------
 
-  Future<void> startCall(String peerId, String peerName) async {
+  Future<void> startCall(String peerId, String peerName,
+      {bool video = false}) async {
     if (state.isActive) return;
-    if (!await _ensureMicPermission()) return;
+    if (!await _ensurePermissions(video)) return;
 
     final callId = '${_currentUserId}_${DateTime.now().millisecondsSinceEpoch}';
     _connectedOnce = false;
@@ -60,11 +66,15 @@ class CallCubit extends Cubit<CallState> {
       peerId: peerId,
       peerName: peerName,
       isCaller: true,
+      isVideo: video,
+      speakerOn: video, // video mặc định bật loa ngoài
     ));
 
     final ice = await remote.fetchIceServers(_currentUserId);
     _rtc = _buildRtc(peerId, callId);
-    await _rtc!.init(ice);
+    await _rtc!.init(ice, video: video);
+    await _setupRenderers(video);
+    if (video) await _rtc!.setSpeakerphone(true);
     final offer = await _rtc!.createOffer();
 
     signaling.send({
@@ -73,7 +83,7 @@ class CallCubit extends Cubit<CallState> {
       'fromId': _currentUserId,
       'fromName': _currentUserName,
       'toId': peerId,
-      'media': 'AUDIO',
+      'media': video ? 'VIDEO' : 'AUDIO',
       'sdp': offer.toMap(),
     });
 
@@ -92,18 +102,21 @@ class CallCubit extends Cubit<CallState> {
 
   Future<void> accept() async {
     if (state.phase != CallPhase.incoming || _pendingOffer == null) return;
-    if (!await _ensureMicPermission()) {
+    final video = state.isVideo;
+    if (!await _ensurePermissions(video)) {
       reject();
       return;
     }
     _ringTimeout?.cancel();
     final peerId = state.peerId!;
     final callId = state.callId!;
-    emit(state.copyWith(phase: CallPhase.connecting));
+    emit(state.copyWith(phase: CallPhase.connecting, speakerOn: video));
 
     final ice = await remote.fetchIceServers(_currentUserId);
     _rtc = _buildRtc(peerId, callId);
-    await _rtc!.init(ice);
+    await _rtc!.init(ice, video: video);
+    await _setupRenderers(video);
+    if (video) await _rtc!.setSpeakerphone(true);
     await _rtc!.setRemoteDescription(_pendingOffer!);
     final answer = await _rtc!.createAnswer();
     _pendingOffer = null;
@@ -194,12 +207,14 @@ class CallCubit extends Cubit<CallState> {
     _pendingOffer = RTCSessionDescription(
         sdp['sdp'] as String?, sdp['type'] as String?);
     _connectedOnce = false;
+    final isVideo = (s['media'] as String?) == 'VIDEO';
     emit(CallState(
       phase: CallPhase.incoming,
       callId: s['callId'] as String?,
       peerId: fromId,
       peerName: (s['fromName'] as String?) ?? 'Người dùng',
       isCaller: false,
+      isVideo: isVideo,
     ));
     _ringTimeout = Timer(const Duration(seconds: _ringTimeoutSec + 5), () {
       if (state.phase == CallPhase.incoming) _endLocal('missed');
@@ -242,6 +257,18 @@ class CallCubit extends Cubit<CallState> {
     emit(state.copyWith(speakerOn: next));
   }
 
+  void toggleCamera() {
+    if (!state.isVideo) return;
+    final off = !state.cameraOff;
+    _rtc?.setCameraEnabled(!off);
+    emit(state.copyWith(cameraOff: off));
+  }
+
+  void switchCamera() {
+    if (!state.isVideo) return;
+    _rtc?.switchCamera();
+  }
+
   // ---------------------- Nội bộ ----------------------
 
   WebRtcService _buildRtc(String peerId, String callId) {
@@ -253,6 +280,12 @@ class CallCubit extends Cubit<CallState> {
         'toId': peerId,
         'candidate': cand.toMap(),
       });
+    };
+    rtc.onRemoteStream = (stream) {
+      remoteRenderer?.srcObject = stream;
+      if (!state.remoteVideoReady) {
+        emit(state.copyWith(remoteVideoReady: true));
+      }
     };
     rtc.onConnected = () {
       _connectedOnce = true;
@@ -279,9 +312,35 @@ class CallCubit extends Cubit<CallState> {
     });
   }
 
-  Future<bool> _ensureMicPermission() async {
-    final status = await Permission.microphone.request();
-    return status.isGranted;
+  /// Khởi tạo renderer cho video call + gắn local stream. Audio call bỏ qua.
+  Future<void> _setupRenderers(bool video) async {
+    if (!video) return;
+    localRenderer = RTCVideoRenderer();
+    remoteRenderer = RTCVideoRenderer();
+    await localRenderer!.initialize();
+    await remoteRenderer!.initialize();
+    localRenderer!.srcObject = _rtc!.localStream;
+  }
+
+  Future<void> _disposeRenderers() async {
+    try {
+      localRenderer?.srcObject = null;
+      remoteRenderer?.srcObject = null;
+      await localRenderer?.dispose();
+      await remoteRenderer?.dispose();
+    } catch (_) {}
+    localRenderer = null;
+    remoteRenderer = null;
+  }
+
+  Future<bool> _ensurePermissions(bool video) async {
+    final mic = await Permission.microphone.request();
+    if (!mic.isGranted) return false;
+    if (video) {
+      final cam = await Permission.camera.request();
+      if (!cam.isGranted) return false;
+    }
+    return true;
   }
 
   void _logResult(String status) {
@@ -294,6 +353,7 @@ class CallCubit extends Cubit<CallState> {
           receiverId: peerId,
           status: status,
           durationSec: status == 'ANSWERED' ? state.durationSec : 0,
+          media: state.isVideo ? 'VIDEO' : 'AUDIO',
         )
         .catchError((_) {});
   }
@@ -305,6 +365,7 @@ class CallCubit extends Cubit<CallState> {
     _rtc = null;
     _pendingOffer = null;
     rtc?.dispose();
+    _disposeRenderers();
     emit(state.copyWith(phase: CallPhase.ended, endReason: reason));
     // Reset về idle để global listener pop màn hình và sẵn sàng cuộc mới.
     Future.delayed(const Duration(milliseconds: 1500), () {
@@ -318,6 +379,7 @@ class CallCubit extends Cubit<CallState> {
     _durationTimer?.cancel();
     _rtc?.dispose();
     _rtc = null;
+    _disposeRenderers();
     emit(const CallState());
   }
 
@@ -327,6 +389,7 @@ class CallCubit extends Cubit<CallState> {
     _ringTimeout?.cancel();
     _durationTimer?.cancel();
     _rtc?.dispose();
+    _disposeRenderers();
     return super.close();
   }
 }
