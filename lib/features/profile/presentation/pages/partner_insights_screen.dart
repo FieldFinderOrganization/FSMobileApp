@@ -4,8 +4,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../pitch/data/models/booking_response_model.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../widgets/ranked_progress_bar.dart';
 
 enum InsightsTab { revenue, bookings, pitches, customers }
+
+/// Gom dữ liệu theo kỳ cho biểu đồ xu hướng (ngày/tuần/tháng).
+enum BookingPeriod { day, week, month }
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const _kCardRadius = 20.0;
@@ -72,12 +76,14 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen>
   List<int> _slotUsage = List.filled(24, 0);
   Map<String, Map<String, dynamic>> _customerMetrics = {};
 
+  // Kỳ gom cho tab Doanh thu & Đặt sân (mặc định: ngày).
+  BookingPeriod _period = BookingPeriod.day;
+
   final _currFmt = NumberFormat.currency(
     locale: 'vi_VN',
     symbol: '₫',
     decimalDigits: 0,
   );
-  final _compactFmt = NumberFormat.compact(locale: 'vi_VN');
 
   @override
   void initState() {
@@ -140,6 +146,109 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen>
       }
       _customerMetrics[userId] = current;
     }
+  }
+
+  // ─── Gom theo kỳ (ngày/tuần/tháng) ─────────────────────────────────────────
+  /// Khoá kỳ chuẩn hoá về dạng yyyy-MM-dd (parse được) để sắp xếp & vẽ chart:
+  /// ngày → chính ngày đó; tuần → thứ Hai đầu tuần; tháng → ngày 01 của tháng.
+  String _bucketKey(DateTime d) {
+    switch (_period) {
+      case BookingPeriod.day:
+        return DateFormat('yyyy-MM-dd').format(d);
+      case BookingPeriod.week:
+        final monday = d.subtract(Duration(days: d.weekday - 1));
+        return DateFormat('yyyy-MM-dd')
+            .format(DateTime(monday.year, monday.month, monday.day));
+      case BookingPeriod.month:
+        return DateFormat('yyyy-MM-01').format(d);
+    }
+  }
+
+  /// Nhãn hiển thị cho 1 kỳ trong danh sách.
+  String _bucketLabel(String key) {
+    final d = DateTime.tryParse(key);
+    if (d == null) return key;
+    switch (_period) {
+      case BookingPeriod.day:
+        return DateFormat('dd/MM/yyyy').format(d);
+      case BookingPeriod.week:
+        final end = d.add(const Duration(days: 6));
+        return '${DateFormat('dd/MM').format(d)} – ${DateFormat('dd/MM').format(end)}';
+      case BookingPeriod.month:
+        return DateFormat('MM/yyyy').format(d);
+    }
+  }
+
+  /// Gom lại map theo-ngày (key yyyy-MM-dd) sang map theo kỳ đang chọn.
+  Map<String, double> _rebucket(Map<String, double> daily) {
+    if (_period == BookingPeriod.day) return daily;
+    final out = <String, double>{};
+    daily.forEach((k, v) {
+      final d = DateTime.tryParse(k);
+      if (d == null) return;
+      final key = _bucketKey(d);
+      out[key] = (out[key] ?? 0) + v;
+    });
+    return out;
+  }
+
+  /// Tập sân khác nhau được đặt trong mỗi kỳ (để hiện "n sân").
+  Map<String, Set<String>> _bucketPitchSets() {
+    final out = <String, Set<String>>{};
+    for (final b in widget.bookings) {
+      final d = DateTime.tryParse(b.bookingDate);
+      if (d == null) continue;
+      (out[_bucketKey(d)] ??= <String>{}).add(b.pitchName);
+    }
+    return out;
+  }
+
+  String get _periodSubtitle {
+    switch (_period) {
+      case BookingPeriod.day:
+        return 'Theo ngày';
+      case BookingPeriod.week:
+        return 'Theo tuần';
+      case BookingPeriod.month:
+        return 'Theo tháng';
+    }
+  }
+
+  String get _periodNoun {
+    switch (_period) {
+      case BookingPeriod.day:
+        return 'ngày';
+      case BookingPeriod.week:
+        return 'tuần';
+      case BookingPeriod.month:
+        return 'tháng';
+    }
+  }
+
+  /// Danh sách số lượt đặt + số sân theo từng kỳ (mới nhất trước).
+  Widget _buildPeriodBreakdownCard() {
+    final counts =
+        _rebucket(_dailyBookings.map((k, v) => MapEntry(k, v.toDouble())));
+    final pitchSets = _bucketPitchSets();
+    final keys = counts.keys.toList()..sort((a, b) => b.compareTo(a));
+
+    return _ChartCard(
+      title: 'Chi tiết theo $_periodNoun',
+      subtitle: '${keys.length} $_periodNoun có lượt đặt',
+      child: keys.isEmpty
+          ? _emptyState()
+          : Column(
+              children: List.generate(keys.length, (i) {
+                final k = keys[i];
+                return _PeriodBreakdownRow(
+                  label: _bucketLabel(k),
+                  bookingCount: counts[k]?.toInt() ?? 0,
+                  pitchCount: pitchSets[k]?.length ?? 0,
+                  isLast: i == keys.length - 1,
+                );
+              }),
+            ),
+    );
   }
 
   @override
@@ -243,12 +352,17 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen>
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+          _PeriodSelector(
+            period: _period,
+            onChanged: (p) => setState(() => _period = p),
+          ),
+          const SizedBox(height: 16),
           _ChartCard(
             title: 'Xu hướng doanh thu',
-            subtitle: 'Theo ngày',
+            subtitle: _periodSubtitle,
             child: _AreaLineChart(
-              data: _dailyRevenue,
+              data: _rebucket(_dailyRevenue),
               color: const Color(0xFF10B981),
               isCurrency: true,
             ),
@@ -295,15 +409,24 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen>
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+          _PeriodSelector(
+            period: _period,
+            onChanged: (p) => setState(() => _period = p),
+          ),
+          const SizedBox(height: 16),
           _ChartCard(
             title: 'Xu hướng đặt sân',
-            subtitle: 'Số đơn theo ngày',
+            subtitle: _periodSubtitle,
             child: _AreaLineChart(
-              data: _dailyBookings.map((k, v) => MapEntry(k, v.toDouble())),
+              data: _rebucket(
+                _dailyBookings.map((k, v) => MapEntry(k, v.toDouble())),
+              ),
               color: const Color(0xFF0EA5E9),
             ),
           ),
+          const SizedBox(height: 16),
+          _buildPeriodBreakdownCard(),
           const SizedBox(height: 16),
           _ChartCard(
             title: 'Trạng thái đơn',
@@ -353,11 +476,10 @@ class _PartnerInsightsScreenState extends State<PartnerInsightsScreen>
                     ? 0.0
                     : entry.value / totalBookings;
                 final color = _kPalette[i % _kPalette.length];
-                return _RankedProgressBar(
+                return RankedProgressBar(
                   rank: i + 1,
                   label: entry.key,
-                  count: entry.value,
-                  unit: 'lượt',
+                  count: '${entry.value} lượt',
                   ratio: ratio,
                   color: color,
                   isLast: i == sortedByBookings.length - 1,
@@ -1236,110 +1358,121 @@ class _PeakHourChartState extends State<_PeakHourChart> {
   }
 }
 
-// ─── Ranked progress bar ──────────────────────────────────────────────────────
-class _RankedProgressBar extends StatelessWidget {
-  final int rank;
+// ─── Period selector (Ngày / Tuần / Tháng) ────────────────────────────────────
+class _PeriodSelector extends StatelessWidget {
+  final BookingPeriod period;
+  final ValueChanged<BookingPeriod> onChanged;
+  const _PeriodSelector({required this.period, required this.onChanged});
+
+  static const _items = [
+    (BookingPeriod.day, 'Ngày'),
+    (BookingPeriod.week, 'Tuần'),
+    (BookingPeriod.month, 'Tháng'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: _items.map((e) {
+          final selected = e.$1 == period;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onChanged(e.$1),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: selected ? AppColors.primaryRed : Colors.transparent,
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  e.$2,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: selected ? Colors.white : AppColors.textGrey,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+// ─── Period breakdown row ──────────────────────────────────────────────────────
+class _PeriodBreakdownRow extends StatelessWidget {
   final String label;
-  final int count;
-  final String unit;
-  final double ratio;
-  final Color color;
+  final int bookingCount;
+  final int pitchCount;
   final bool isLast;
 
-  const _RankedProgressBar({
-    required this.rank,
+  const _PeriodBreakdownRow({
     required this.label,
-    required this.count,
-    required this.unit,
-    required this.ratio,
-    required this.color,
+    required this.bookingCount,
+    required this.pitchCount,
     required this.isLast,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
-      child: Column(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+      child: Row(
         children: [
-          Row(
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: const Color(0xFF0EA5E9).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.event_note_rounded,
+                color: Color(0xFF0EA5E9), size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textDark,
+              ),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Center(
-                  child: Text(
-                    '$rank',
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      color: color,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  label,
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textDark,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
               Text(
-                '$count $unit',
+                '$bookingCount lượt',
                 style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
                   color: AppColors.textDark,
                 ),
               ),
-              const SizedBox(width: 8),
               Text(
-                '${(ratio * 100).toStringAsFixed(1)}%',
+                '$pitchCount sân',
                 style: GoogleFonts.inter(
                   fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Stack(
-            children: [
-              Container(
-                height: 8,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              FractionallySizedBox(
-                widthFactor: ratio.clamp(0.0, 1.0),
-                child: Container(
-                  height: 8,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [color.withValues(alpha: 0.7), color],
-                    ),
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.3),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
+                  color: AppColors.textGrey,
                 ),
               ),
             ],

@@ -8,6 +8,7 @@ import '../../../pitch/data/repositories/booking_repository_impl.dart';
 import '../cubit/provider_cubit.dart';
 import '../cubit/provider_revenue_cubit.dart';
 import '../pages/partner_insights_screen.dart';
+import '../pages/provider_ranking_screen.dart';
 
 class ProviderRevenueTab extends StatelessWidget {
   final UserEntity user;
@@ -98,7 +99,7 @@ class _ProviderRevenueBody extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                             builder: (_) => PartnerInsightsScreen(
-                              bookings: state.allBookings,
+                              bookings: state.filteredBookings,
                               initialTab: InsightsTab.revenue,
                             ),
                           ),
@@ -121,7 +122,7 @@ class _ProviderRevenueBody extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                             builder: (_) => PartnerInsightsScreen(
-                              bookings: state.allBookings,
+                              bookings: state.filteredBookings,
                               initialTab: InsightsTab.bookings,
                             ),
                           ),
@@ -139,9 +140,10 @@ class _ProviderRevenueBody extends StatelessWidget {
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => PartnerInsightsScreen(
-                              bookings: state.allBookings,
-                              initialTab: InsightsTab.pitches,
+                            builder: (_) => ProviderRankingScreen(
+                              providerId:
+                                  context.read<ProviderRevenueCubit>().providerId,
+                              initialTab: RankingTab.mostBooked,
                             ),
                           ),
                         ),
@@ -151,7 +153,27 @@ class _ProviderRevenueBody extends StatelessWidget {
                           label: 'Sân được đặt nhiều nhất',
                           value: state.stats.mostBookedPitch,
                           subtitle:
-                              '${state.stats.mostBookedPitchCount} lần đặt. Bấm để xem chi tiết',
+                              '${state.stats.mostBookedPitchCount} lần đặt. Bấm để xem xếp hạng',
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProviderRankingScreen(
+                              providerId:
+                                  context.read<ProviderRevenueCubit>().providerId,
+                              initialTab: RankingTab.topRated,
+                            ),
+                          ),
+                        ),
+                        child: _StatCard(
+                          icon: Icons.star_rounded,
+                          iconColor: const Color(0xFFFFC107),
+                          label: 'Sân đánh giá cao nhất',
+                          value: 'Xem bảng xếp hạng',
+                          subtitle: 'Xếp theo điểm đánh giá trung bình',
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -160,7 +182,7 @@ class _ProviderRevenueBody extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                             builder: (_) => PartnerInsightsScreen(
-                              bookings: state.allBookings,
+                              bookings: state.filteredBookings,
                               initialTab: InsightsTab.customers,
                             ),
                           ),
@@ -180,7 +202,7 @@ class _ProviderRevenueBody extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                             builder: (_) => PartnerInsightsScreen(
-                              bookings: state.allBookings,
+                              bookings: state.filteredBookings,
                               initialTab: InsightsTab.revenue,
                             ),
                           ),

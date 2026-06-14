@@ -29,6 +29,165 @@ class _AdminRatingScreenState extends State<AdminRatingScreen> {
   String? _error;
   DateTime _lastUpdated = DateTime.now();
 
+  // Tìm kiếm + lọc (cục bộ trên danh sách đánh giá gần đây)
+  bool _showSearch = false;
+  String _searchQuery = '';
+  final _searchCtrl = TextEditingController();
+  int? _starFilter; // null = tất cả, 1..5
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  /// Lọc danh sách đánh giá gần đây theo từ khoá + số sao.
+  List<RecentReview> _filteredReviews() {
+    final all = _data?.recentReviews ?? const <RecentReview>[];
+    final q = _searchQuery.trim().toLowerCase();
+    return all.where((r) {
+      if (_starFilter != null && r.rating != _starFilter) return false;
+      if (q.isEmpty) return true;
+      return r.userName.toLowerCase().contains(q) ||
+          r.pitchName.toLowerCase().contains(q) ||
+          r.comment.toLowerCase().contains(q);
+    }).toList();
+  }
+
+  void _onSearch(String q) => setState(() => _searchQuery = q);
+
+  Future<void> _showFilterSheet() async {
+    int? temp = _starFilter;
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) {
+          final items = <Map<String, dynamic>>[
+            {'label': 'Tất cả', 'value': null},
+            for (int s = 5; s >= 1; s--) {'label': '$s sao', 'value': s},
+          ];
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: EdgeInsets.fromLTRB(
+              24,
+              20,
+              24,
+              MediaQuery.of(ctx).padding.bottom + 24,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Lọc theo số sao',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF1A1D2E),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: items.map((item) {
+                    final val = item['value'] as int?;
+                    final isSelected = temp == val;
+                    return ChoiceChip(
+                      label: Text(
+                        item['label'] as String,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color:
+                              isSelected ? Colors.white : const Color(0xFF1A1D2E),
+                        ),
+                      ),
+                      selected: isSelected,
+                      selectedColor: _accent,
+                      checkmarkColor: Colors.white,
+                      backgroundColor: Colors.grey.shade100,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      side: BorderSide.none,
+                      onSelected: (_) => setLocal(() => temp = val),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => setLocal(() => temp = null),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.grey.shade300),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: Text(
+                          'Đặt lại',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setState(() => _starFilter = temp);
+                          Navigator.pop(ctx);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _accent,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          'Áp dụng',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   String _getTimeAgo() {
     final diff = DateTime.now().difference(_lastUpdated);
     if (diff.inSeconds < 60) return 'Cập nhật ${diff.inSeconds} giây trước';
@@ -192,6 +351,7 @@ class _AdminRatingScreenState extends State<AdminRatingScreen> {
             SliverFillRemaining(child: Center(child: Text(_error!)))
           else ...[
             SliverToBoxAdapter(child: _buildRatingChart()),
+            if (_showSearch) SliverToBoxAdapter(child: _buildSearchBar()),
             SliverToBoxAdapter(child: _buildRecentReviews()),
           ],
         ],
@@ -226,13 +386,43 @@ class _AdminRatingScreenState extends State<AdminRatingScreen> {
       actions: [
         IconButton(
           tooltip: 'Tìm kiếm',
-          icon: const Icon(Icons.search_rounded, color: Colors.white, size: 22),
-          onPressed: () {},
+          icon: Icon(
+            _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+            color: Colors.white,
+            size: 22,
+          ),
+          onPressed: _data == null
+              ? null
+              : () => setState(() {
+                  _showSearch = !_showSearch;
+                  if (!_showSearch) {
+                    _searchCtrl.clear();
+                    _searchQuery = '';
+                  }
+                }),
         ),
         IconButton(
           tooltip: 'Lọc',
-          icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 22),
-          onPressed: () {},
+          icon: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              const Icon(Icons.tune_rounded, color: Colors.white, size: 22),
+              if (_starFilter != null)
+                Positioned(
+                  top: -2,
+                  right: -2,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFEF4444),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          onPressed: _data == null ? null : _showFilterSheet,
         ),
         IconButton(
           tooltip: 'Xuất PDF',
@@ -424,20 +614,92 @@ class _AdminRatingScreenState extends State<AdminRatingScreen> {
     );
   }
 
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: TextField(
+          controller: _searchCtrl,
+          autofocus: true,
+          onChanged: _onSearch,
+          style: GoogleFonts.inter(fontSize: 14),
+          decoration: InputDecoration(
+            hintText: 'Tìm theo người, sân hoặc nội dung…',
+            hintStyle: GoogleFonts.inter(
+              fontSize: 13,
+              color: Colors.grey.shade400,
+            ),
+            prefixIcon: const Icon(Icons.search, size: 20, color: _accent),
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear, size: 18),
+                    onPressed: () {
+                      _searchCtrl.clear();
+                      _onSearch('');
+                    },
+                  )
+                : null,
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildRecentReviews() {
-    final reviews = _data!.recentReviews;
+    final reviews = _filteredReviews();
+    final isFiltering = _searchQuery.trim().isNotEmpty || _starFilter != null;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Đánh giá gần đây',
-            style: GoogleFonts.inter(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: Colors.black87,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Đánh giá gần đây',
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
+                ),
+              ),
+              if (isFiltering)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _accent.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${reviews.length} kết quả',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: _accent,
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 12),
           Container(
@@ -461,7 +723,7 @@ class _AdminRatingScreenState extends State<AdminRatingScreen> {
                   Padding(
                     padding: const EdgeInsets.all(24),
                     child: Text(
-                      'Chưa có đánh giá',
+                      isFiltering ? 'Không tìm thấy đánh giá' : 'Chưa có đánh giá',
                       style: GoogleFonts.inter(color: Colors.grey.shade400),
                     ),
                   ),

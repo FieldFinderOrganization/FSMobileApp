@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../domain/entities/pitch_entity.dart';
+import '../../../favorite/presentation/widgets/favorite_heart_button.dart';
 import '../pages/pitch_detail_screen.dart';
 
 class PitchCard extends StatefulWidget {
@@ -194,6 +195,12 @@ class _PitchCardState extends State<PitchCard>
                   ),
                 ],
               ),
+            ),
+            // Nút tim yêu thích — góc trên phải.
+            Positioned(
+              top: 10,
+              right: 10,
+              child: FavoriteHeartButton(pitchId: widget.pitch.pitchId),
             ),
           ],
         ),

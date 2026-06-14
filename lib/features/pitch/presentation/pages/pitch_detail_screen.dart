@@ -16,6 +16,7 @@ import '../../domain/entities/pitch_entity.dart';
 import '../../domain/entities/review_entity.dart';
 import '../../domain/entities/suggested_pitches_entity.dart';
 import '../widgets/suggested_pitch_card.dart';
+import '../../../favorite/presentation/cubit/favorite_cubit.dart';
 import '../../../home/presentation/widgets/shimmer_card.dart';
 import './booking_screen.dart';
 import './pitch_directions_screen.dart';
@@ -190,6 +191,13 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                     icon: Icons.share_outlined,
                     onTap: () {},
                   ),
+                ),
+
+                // ── Favorite (heart) button ──────────────────────────────────────
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 8,
+                  right: 64,
+                  child: _FavoriteCircleButton(pitchId: pitch.pitchId),
                 ),
 
                 // ── Booking FAB ──────────────────────────────────────────────────
@@ -1444,6 +1452,45 @@ class _CircleButton extends StatelessWidget {
           ],
         ),
         child: Icon(icon, color: Colors.white, size: 18),
+      ),
+    );
+  }
+}
+
+/// Nút tim trên ảnh chi tiết — cùng kiểu _CircleButton, đọc FavoriteCubit global.
+class _FavoriteCircleButton extends StatelessWidget {
+  final String pitchId;
+  const _FavoriteCircleButton({required this.pitchId});
+
+  @override
+  Widget build(BuildContext context) {
+    final isFav = context.select<FavoriteCubit, bool>(
+      (c) => c.state.isFavorite(pitchId),
+    );
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        context.read<FavoriteCubit>().toggle(pitchId);
+      },
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.45),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(
+          isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+          color: isFav ? AppColors.primaryRed : Colors.white,
+          size: 18,
+        ),
       ),
     );
   }

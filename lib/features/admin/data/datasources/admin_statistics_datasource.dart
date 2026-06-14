@@ -143,6 +143,29 @@ class AdminStatisticsDatasource {
     return AdminUserStatsModel.fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// Admin tạo người dùng mới. Tái dùng POST /users/register
+  /// (tạo cả tài khoản Firebase + bản ghi DB, gửi mail xác minh).
+  Future<void> createUser({
+    required String name,
+    required String email,
+    required String phone,
+    required String password,
+    required String role, // ADMIN | PROVIDER | USER
+    required String status, // ACTIVE | BLOCKED
+  }) async {
+    await dioClient.dio.post(
+      '${ApiConstants.users}/register',
+      data: {
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'password': password,
+        'role': role,
+        'status': status,
+      },
+    );
+  }
+
   Future<BookingStatsModel> getBookingStats() async {
     final response = await dioClient.dio.get(ApiConstants.adminBookingStats);
     return BookingStatsModel.fromJson(response.data as Map<String, dynamic>);

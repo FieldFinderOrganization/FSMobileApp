@@ -2,6 +2,7 @@ import '../../domain/repositories/provider_repository.dart';
 import '../../domain/entities/provider_entity.dart';
 import '../../domain/entities/provider_address_entity.dart';
 import '../datasources/provider_remote_datasource.dart';
+import '../models/pitch_ranking_model.dart';
 
 class ProviderRepositoryImpl implements ProviderRepository {
   final ProviderRemoteDatasource remoteDatasource;
@@ -11,6 +12,11 @@ class ProviderRepositoryImpl implements ProviderRepository {
   @override
   Future<ProviderEntity> getProviderByUserId(String userId) async {
     return await remoteDatasource.fetchProviderByUserId(userId);
+  }
+
+  @override
+  Future<List<PitchRankingModel>> getPitchRankings(String providerId) async {
+    return await remoteDatasource.fetchPitchRankings(providerId);
   }
 
   @override

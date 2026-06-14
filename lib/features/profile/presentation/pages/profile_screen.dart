@@ -18,6 +18,9 @@ import '../../../admin/presentation/pages/admin_shell.dart';
 import '../../../discount/presentation/cubit/my_wallet_cubit.dart';
 import '../../../discount/presentation/pages/my_wallet_screen.dart';
 import '../../../discount/presentation/pages/points_screen.dart';
+import '../../../favorite/presentation/pages/favorite_pitches_screen.dart';
+import '../../../support/presentation/pages/support_screen.dart';
+import '../../../support/presentation/pages/contact_screen.dart';
 import '../widgets/tier_membership_card.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -667,12 +670,34 @@ class _ProfileBody extends StatelessWidget {
           _ActionRow(
             icon: Icons.favorite_border_rounded,
             label: 'Sân yêu thích',
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const FavoritePitchesScreen(),
+                ),
+              );
+            },
           ),
           _ActionRow(
             icon: Icons.help_outline_rounded,
             label: 'Trợ giúp & Hỗ trợ',
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SupportScreen()),
+              );
+            },
+          ),
+          _ActionRow(
+            icon: Icons.headset_mic_outlined,
+            label: 'Liên hệ',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ContactScreen()),
+              );
+            },
           ),
           _ActionRow(
             icon: Icons.fingerprint_rounded,

@@ -27,9 +27,15 @@ class ApiConstants {
   static const String suggestedProductsForPitch = '/products/suggested-for-pitch';
   static const String pitches = '/pitches';
   static String pitchRoute(String pitchId) => '/pitches/$pitchId/route';
+  // Favorite pitches (sân yêu thích)
+  static const String favoritePitches = '/favorites/pitches';
+  static const String favoritePitchIds = '/favorites/pitches/ids';
+  static String favoritePitch(String pitchId) => '/favorites/pitches/$pitchId';
   static const String suggestedPitchesForProduct = '/pitches/suggested-for-product';
   static const String providers = '/providers';
   static const String providerAddresses = '/provider-addresses';
+  static String providerPitchRankings(String providerId) =>
+      '/providers/$providerId/statistics/pitch-rankings';
   static const String categories = '/categories';
   static const String discounts = '/discounts';
   static String discountWallet(String userId) => '/discounts/$userId/wallet';

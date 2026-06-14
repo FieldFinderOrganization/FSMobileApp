@@ -42,6 +42,10 @@ import 'features/discount/presentation/cubit/my_wallet_cubit.dart';
 import 'features/discount/presentation/cubit/admin_discount_cubit.dart';
 import 'features/discount/presentation/cubit/tier_cubit.dart';
 import 'features/discount/presentation/cubit/points_cubit.dart';
+import 'features/favorite/data/datasources/favorite_remote_datasource.dart';
+import 'features/favorite/data/repositories/favorite_repository_impl.dart';
+import 'features/favorite/domain/repositories/favorite_repository.dart';
+import 'features/favorite/presentation/cubit/favorite_cubit.dart';
 import 'features/notification/data/datasources/notification_remote_data_source.dart';
 import 'features/notification/data/datasources/notification_websocket_service.dart';
 import 'features/notification/presentation/cubit/notification_cubit.dart';
@@ -92,6 +96,10 @@ void main() async {
   final discountDatasource = DiscountRemoteDataSource(dioClient.dio);
   final discountRepository = DiscountRepositoryImpl(discountDatasource);
 
+  final favoriteDatasource = FavoriteRemoteDataSource(dioClient: dioClient);
+  final favoriteRepository =
+      FavoriteRepositoryImpl(remoteDataSource: favoriteDatasource);
+
   runApp(
     MultiRepositoryProvider(
       providers: [
@@ -104,6 +112,7 @@ void main() async {
         RepositoryProvider<PitchRepository>.value(value: pitchRepository),
         RepositoryProvider<BookingRepository>.value(value: bookingRepository),
         RepositoryProvider<DiscountRepository>.value(value: discountRepository),
+        RepositoryProvider<FavoriteRepository>.value(value: favoriteRepository),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -144,6 +153,10 @@ void main() async {
           ),
           BlocProvider<PointsCubit>(
             create: (context) => PointsCubit(repository: discountRepository),
+          ),
+          BlocProvider<FavoriteCubit>(
+            create: (context) =>
+                FavoriteCubit(repository: favoriteRepository)..loadIds(),
           ),
           BlocProvider<NotificationCubit>(
             create: (context) => NotificationCubit(
@@ -189,6 +202,7 @@ class MyApp extends StatelessWidget {
             ctx.read<ProductCubit>().reset();
             ctx.read<NotificationCubit>().stop();
             ctx.read<CallCubit>().stop();
+            ctx.read<FavoriteCubit>().reset();
 
             // Dùng navigatorKey — hoạt động dù đang ở màn hình nào
             _navigatorKey.currentState?.pushAndRemoveUntil(
@@ -196,6 +210,12 @@ class MyApp extends StatelessWidget {
               (route) => false,
             );
           },
+        ),
+        // Nạp sân yêu thích sau khi đăng nhập thành công (tim đúng trạng thái).
+        BlocListener<AuthCubit, AuthState>(
+          listenWhen: (previous, current) =>
+              current is AuthSuccess || current is AuthOtpVerified,
+          listener: (ctx, state) => ctx.read<FavoriteCubit>().loadIds(),
         ),
         // Đổ chuông / mở màn cuộc gọi ở bất kỳ đâu trong app.
         BlocListener<CallCubit, CallState>(

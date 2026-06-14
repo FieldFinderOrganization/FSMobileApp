@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -31,6 +32,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   static const _kRed = Color(0xFFEF4444);
   static const _kOrange = Color(0xFFF59E0B);
   static const _kProviderColor = Color(0xFF059669);
+  static const _kShipperColor = Color(0xFF2563EB);
   DateTime _lastUpdated = DateTime.now();
 
   // Avatar palette (Gmail-style)
@@ -250,6 +252,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                     {'label': 'Tất cả', 'value': null},
                     {'label': 'Admin', 'value': 'ADMIN'},
                     {'label': 'Nhà cung cấp', 'value': 'PROVIDER'},
+                    {'label': 'Shipper', 'value': 'SHIPPER'},
                     {'label': 'Người dùng', 'value': 'USER'},
                   ],
                   tempRole,
@@ -489,6 +492,308 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     _load();
   }
 
+  // ─── ADD USER ─────────────────────────────────────────────────────────────
+
+  Future<void> _showAddUserSheet() async {
+    final nameCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    final passwordCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    String role = 'USER';
+    String status = 'ACTIVE';
+    bool submitting = false;
+    bool obscure = true;
+
+    InputDecoration deco(String label, IconData icon) => InputDecoration(
+          labelText: label,
+          labelStyle: GoogleFonts.inter(fontSize: 13),
+          prefixIcon: Icon(icon, size: 20, color: _kPrimary),
+          filled: true,
+          fillColor: Colors.grey.shade50,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade200),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _kPrimary, width: 1.5),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _kRed),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _kRed, width: 1.5),
+          ),
+        );
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) {
+          Widget chipGroup(
+            String label,
+            List<Map<String, String>> items,
+            String selected,
+            void Function(String) onSelect,
+          ) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF1A1D2E),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: items.map((item) {
+                    final val = item['value']!;
+                    final isSelected = selected == val;
+                    return ChoiceChip(
+                      label: Text(
+                        item['label']!,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: isSelected
+                              ? Colors.white
+                              : const Color(0xFF1A1D2E),
+                        ),
+                      ),
+                      selected: isSelected,
+                      selectedColor: _kPrimary,
+                      checkmarkColor: Colors.white,
+                      backgroundColor: Colors.grey.shade100,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      side: BorderSide.none,
+                      onSelected: (_) => setLocal(() => onSelect(val)),
+                    );
+                  }).toList(),
+                ),
+              ],
+            );
+          }
+
+          Future<void> submit() async {
+            if (!formKey.currentState!.validate()) return;
+            setLocal(() => submitting = true);
+            try {
+              await widget.datasource.createUser(
+                name: nameCtrl.text.trim(),
+                email: emailCtrl.text.trim(),
+                phone: phoneCtrl.text.trim(),
+                password: passwordCtrl.text,
+                role: role,
+                status: status,
+              );
+              if (!ctx.mounted) return;
+              Navigator.pop(ctx);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Đã tạo người dùng ${nameCtrl.text.trim()}'),
+                    backgroundColor: _kTeal,
+                  ),
+                );
+                _currentPage = 0;
+                _load();
+              }
+            } catch (e) {
+              setLocal(() => submitting = false);
+              String msg = 'Tạo người dùng thất bại';
+              if (e is DioException) {
+                final data = e.response?.data;
+                if (data is Map && data['message'] != null) {
+                  msg = data['message'].toString();
+                } else if (data is String && data.isNotEmpty) {
+                  msg = data;
+                } else if (e.message != null) {
+                  msg = e.message!;
+                }
+              }
+              if (ctx.mounted) {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  SnackBar(content: Text(msg), backgroundColor: _kRed),
+                );
+              }
+            }
+          }
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: EdgeInsets.fromLTRB(
+                24,
+                20,
+                24,
+                MediaQuery.of(ctx).padding.bottom + 24,
+              ),
+              child: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Thêm người dùng',
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1A1D2E),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: nameCtrl,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: deco('Họ tên', Icons.person_outline),
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Nhập họ tên'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: emailCtrl,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: deco('Email', Icons.email_outlined),
+                        validator: (v) {
+                          final s = v?.trim() ?? '';
+                          if (s.isEmpty) return 'Nhập email';
+                          if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                              .hasMatch(s)) {
+                            return 'Email không hợp lệ';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: phoneCtrl,
+                        keyboardType: TextInputType.phone,
+                        decoration: deco('Số điện thoại', Icons.phone_outlined),
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Nhập số điện thoại'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: passwordCtrl,
+                        obscureText: obscure,
+                        decoration: deco('Mật khẩu', Icons.lock_outline).copyWith(
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              obscure
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              size: 20,
+                              color: Colors.grey.shade500,
+                            ),
+                            onPressed: () => setLocal(() => obscure = !obscure),
+                          ),
+                        ),
+                        validator: (v) => (v == null || v.length < 6)
+                            ? 'Tối thiểu 6 ký tự'
+                            : null,
+                      ),
+                      const SizedBox(height: 20),
+                      chipGroup(
+                        'Vai trò',
+                        [
+                          {'label': 'Người dùng', 'value': 'USER'},
+                          {'label': 'Nhà cung cấp', 'value': 'PROVIDER'},
+                          {'label': 'Shipper', 'value': 'SHIPPER'},
+                          {'label': 'Admin', 'value': 'ADMIN'},
+                        ],
+                        role,
+                        (v) => role = v,
+                      ),
+                      const SizedBox(height: 16),
+                      chipGroup(
+                        'Trạng thái',
+                        [
+                          {'label': 'Hoạt động', 'value': 'ACTIVE'},
+                          {'label': 'Bị khóa', 'value': 'BLOCKED'},
+                        ],
+                        status,
+                        (v) => status = v,
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: submitting ? null : submit,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _kPrimary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            elevation: 0,
+                          ),
+                          child: submitting
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(
+                                  'Tạo người dùng',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+
+    nameCtrl.dispose();
+    emailCtrl.dispose();
+    phoneCtrl.dispose();
+    passwordCtrl.dispose();
+  }
+
   // ─── BUILD ────────────────────────────────────────────────────────────────
 
   @override
@@ -691,7 +996,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             color: Colors.white,
             size: 22,
           ),
-          onPressed: () {},
+          onPressed: _showAddUserSheet,
         ),
         const SizedBox(width: 4),
       ],
@@ -1104,6 +1409,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     final isBlocked = user.status != 'ACTIVE';
     final isAdmin = user.role == 'ADMIN';
     final isProvider = user.role == 'PROVIDER';
+    final isShipper = user.role == 'SHIPPER';
 
     return Column(
       children: [
@@ -1169,6 +1475,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                         ] else if (isProvider) ...[
                           const SizedBox(width: 6),
                           _roleBadge('NCC', _kProviderColor),
+                        ] else if (isShipper) ...[
+                          const SizedBox(width: 6),
+                          _roleBadge('Shipper', _kShipperColor),
                         ] else if (user.tier != 'MEMBER') ...[
                           // User thường: hiện hạng thành viên (Bạc/Vàng/Kim cương)
                           const SizedBox(width: 6),
@@ -1255,6 +1564,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   String _roleLabel(String role) => switch (role) {
     'ADMIN' => 'Admin',
     'PROVIDER' => 'Nhà cung cấp',
+    'SHIPPER' => 'Shipper',
     _ => 'Người dùng',
   };
 

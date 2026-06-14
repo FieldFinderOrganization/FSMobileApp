@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../models/provider_model.dart';
 import '../models/provider_address_model.dart';
+import '../models/pitch_ranking_model.dart';
 
 class ProviderRemoteDatasource {
   final Dio _dio;
@@ -11,6 +12,15 @@ class ProviderRemoteDatasource {
   Future<ProviderModel> fetchProviderByUserId(String userId) async {
     final response = await _dio.get('${ApiConstants.providers}/user/$userId');
     return ProviderModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<List<PitchRankingModel>> fetchPitchRankings(String providerId) async {
+    final response =
+        await _dio.get(ApiConstants.providerPitchRankings(providerId));
+    final list = response.data as List;
+    return list
+        .map((e) => PitchRankingModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<ProviderModel> updateProvider(String providerId, Map<String, dynamic> data) async {
