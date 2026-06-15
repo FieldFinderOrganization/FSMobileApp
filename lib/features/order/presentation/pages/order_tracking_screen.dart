@@ -11,6 +11,9 @@ import '../../../../core/network/dio_client.dart';
 import '../../../../core/storage/token_storage.dart';
 import '../../../../core/tracking/route_path.dart';
 import '../../../../core/tracking/tracking_websocket_service.dart';
+import '../../../auth/login/presentation/bloc/auth_cubit.dart';
+import '../../../call/presentation/cubit/call_cubit.dart';
+import '../../../chat/presentation/pages/user_chat_screen.dart';
 import '../../../shipper/data/shipper_remote_data_source.dart';
 import '../../data/models/order_model.dart';
 
@@ -252,6 +255,45 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     super.dispose();
   }
 
+  /// Nút liên hệ shipper (chat + gọi) — chỉ khi đơn đã có shipper.
+  /// Đơn đã giao/huỷ → chat read-only, ẩn nút gọi.
+  List<Widget>? _buildShipperContactActions() {
+    final o = widget.order;
+    final shipperId = o.shipperId;
+    if (shipperId == null) return null;
+    final me = context.read<AuthCubit>().state.currentUser?.userId;
+    if (me == null) return null;
+    final status = o.status.toUpperCase();
+    final readOnly = status == 'DELIVERED' || status == 'CANCELED';
+    final shipperName = o.shipperName ?? 'Shipper';
+    return [
+      IconButton(
+        tooltip: 'Nhắn shipper',
+        icon: const Icon(Icons.chat_bubble_outline_rounded,
+            color: AppColors.primaryRed),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => UserChatScreen(
+              currentUserId: me,
+              otherUserId: shipperId,
+              otherUserName: shipperName,
+              readOnly: readOnly,
+              headerSubtitle: 'Đơn #${o.orderId}',
+            ),
+          ),
+        ),
+      ),
+      if (!readOnly)
+        IconButton(
+          tooltip: 'Gọi shipper',
+          icon: const Icon(Icons.call_rounded, color: AppColors.primaryRed),
+          onPressed: () =>
+              context.read<CallCubit>().startCall(shipperId, shipperName),
+        ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final dest = _dest;
@@ -266,6 +308,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
           'Theo dõi đơn #${widget.order.orderId}',
           style: GoogleFonts.inter(fontWeight: FontWeight.w700),
         ),
+        actions: _buildShipperContactActions(),
       ),
       body: SafeArea(
         top: false,

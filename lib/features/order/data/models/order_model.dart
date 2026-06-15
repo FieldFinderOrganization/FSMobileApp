@@ -13,6 +13,9 @@ class OrderModel {
   final double? destLat;
   final double? destLng;
   final String? shipperName;
+  final String? shipperId;
+  final String? customerId;
+  final String? customerPhone;
   final List<OrderItemModel> items;
 
   const OrderModel({
@@ -28,6 +31,9 @@ class OrderModel {
     this.destLat,
     this.destLng,
     this.shipperName,
+    this.shipperId,
+    this.customerId,
+    this.customerPhone,
     required this.items,
   });
 
@@ -49,6 +55,9 @@ class OrderModel {
       destLat: (json['destLat'] as num?)?.toDouble(),
       destLng: (json['destLng'] as num?)?.toDouble(),
       shipperName: json['shipperName'] as String?,
+      shipperId: json['shipperId'] as String?,
+      customerId: json['customerId'] as String?,
+      customerPhone: json['customerPhone'] as String?,
       items: (json['items'] as List<dynamic>? ?? [])
           .map((e) => OrderItemModel.fromJson(e as Map<String, dynamic>))
           .toList(),

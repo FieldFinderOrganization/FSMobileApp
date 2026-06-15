@@ -4,6 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../order/presentation/pages/order_history_screen.dart';
 import '../../../pitch/presentation/pages/booking_history_screen.dart';
+import '../../../chat/presentation/pages/user_chat_screen.dart';
+import '../../../discount/presentation/cubit/my_wallet_cubit.dart';
+import '../../../discount/presentation/pages/my_wallet_screen.dart';
 import '../../data/models/notification_model.dart';
 import '../cubit/notification_cubit.dart';
 import '../cubit/notification_state.dart';
@@ -46,6 +49,44 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   void _onItemTap(NotificationModel item) {
     context.read<NotificationCubit>().markRead(item);
+
+    // Điều hướng đặc thù theo loại thông báo mới
+    switch (item.type) {
+      case 'DISCOUNT_NEW':
+        // Mở ví voucher để xem mã vừa nhận (MyWalletCubit là provider toàn cục)
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => BlocProvider.value(
+              value: context.read<MyWalletCubit>(),
+              child: MyWalletScreen(userId: widget.currentUserId),
+            ),
+          ),
+        );
+        return;
+      case 'CALL_MISSED':
+        // Mở lại hội thoại với người đã gọi (refId = userId người gọi)
+        if (item.refId != null && item.refId!.isNotEmpty) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => UserChatScreen(
+                currentUserId: widget.currentUserId,
+                otherUserId: item.refId!,
+                otherUserName: item.title,
+              ),
+            ),
+          );
+        }
+        return;
+      case 'PROVIDER_BOOKING_NEW':
+      case 'PROVIDER_BOOKING_CANCELED':
+      case 'PROVIDER_REVIEW_NEW':
+        // Thông báo cho chủ sân — quản lý ở tab Hồ sơ, không deep-link từ đây.
+        return;
+    }
+
+    // Mặc định: điều hướng theo refType (thông báo của khách)
     switch (item.refType) {
       case 'ORDER':
         Navigator.push(
@@ -167,6 +208,11 @@ class _NotificationTile extends StatelessWidget {
         'ORDER_DELIVERED' => Icons.inventory_2_outlined,
         'BOOKING_CONFIRMED' => Icons.event_available_rounded,
         'BOOKING_PLAY_REMINDER' => Icons.sports_soccer_rounded,
+        'PROVIDER_BOOKING_NEW' => Icons.event_available_rounded,
+        'PROVIDER_BOOKING_CANCELED' => Icons.event_busy_rounded,
+        'PROVIDER_REVIEW_NEW' => Icons.star_outline_rounded,
+        'CALL_MISSED' => Icons.call_missed_rounded,
+        'DISCOUNT_NEW' => Icons.confirmation_number_outlined,
         _ => Icons.notifications_outlined,
       };
 

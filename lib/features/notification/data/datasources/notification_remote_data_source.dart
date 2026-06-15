@@ -32,6 +32,15 @@ class NotificationRemoteDataSource {
     return (response.data as num).toInt();
   }
 
+  /// Số tin nhắn chat chưa đọc — dùng cho badge tab Chat (badge khác chuông).
+  Future<int> fetchChatUnreadCount(String userId) async {
+    final response = await dioClient.dio.get(
+      '/chat/unread-count',
+      queryParameters: {'userId': userId},
+    );
+    return (response.data as num?)?.toInt() ?? 0;
+  }
+
   Future<void> markRead(String id) async {
     await dioClient.dio.post('/notifications/$id/mark-read');
   }

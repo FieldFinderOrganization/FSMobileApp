@@ -40,6 +40,9 @@ class NotificationState extends Equatable {
   final int page;
   final RealtimeNotificationEvent? lastRealtimeEvent;
 
+  /// Tin nhắn chat chưa đọc — badge tab Chat (tách biệt với chuông `unreadCount`).
+  final int chatUnreadCount;
+
   const NotificationState({
     this.status = NotificationStatus.initial,
     this.items = const [],
@@ -47,6 +50,7 @@ class NotificationState extends Equatable {
     this.hasMore = false,
     this.page = 0,
     this.lastRealtimeEvent,
+    this.chatUnreadCount = 0,
   });
 
   NotificationState copyWith({
@@ -57,6 +61,7 @@ class NotificationState extends Equatable {
     int? page,
     RealtimeNotificationEvent? lastRealtimeEvent,
     bool clearRealtimeEvent = false,
+    int? chatUnreadCount,
   }) {
     return NotificationState(
       status: status ?? this.status,
@@ -67,10 +72,18 @@ class NotificationState extends Equatable {
       lastRealtimeEvent: clearRealtimeEvent
           ? null
           : (lastRealtimeEvent ?? this.lastRealtimeEvent),
+      chatUnreadCount: chatUnreadCount ?? this.chatUnreadCount,
     );
   }
 
   @override
-  List<Object?> get props =>
-      [status, items, unreadCount, hasMore, page, lastRealtimeEvent];
+  List<Object?> get props => [
+        status,
+        items,
+        unreadCount,
+        hasMore,
+        page,
+        lastRealtimeEvent,
+        chatUnreadCount,
+      ];
 }

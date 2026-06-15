@@ -27,6 +27,13 @@ class ShipperRemoteDataSource {
     return OrderModel.fromJson(res.data as Map<String, dynamic>);
   }
 
+  /// Cập nhật hồ sơ shipper (online toggle + thông tin xe + cá nhân).
+  /// Dùng lại endpoint self-update PATCH /users/{id}/profile (owner-gated).
+  /// Chỉ gửi field cần đổi → BE set một phần.
+  Future<void> updateProfile(String userId, Map<String, dynamic> body) async {
+    await dioClient.dio.patch('/users/$userId/profile', data: body);
+  }
+
   Future<OrderModel> updateStatus(int orderId, String status) async {
     final res = await dioClient.dio.put(
       '/orders/$orderId/status',

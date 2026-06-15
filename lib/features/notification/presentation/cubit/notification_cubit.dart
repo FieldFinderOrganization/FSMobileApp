@@ -10,27 +10,49 @@ class NotificationCubit extends Cubit<NotificationState> {
 
   static const _pageSize = 20;
 
+  String? _userId;
+
   NotificationCubit({
     required this.remoteDataSource,
     required this.webSocketService,
   }) : super(const NotificationState());
 
-  /// Gọi sau login (MainShell initState): fetch badge + mở socket toàn cục.
+  /// Gọi sau login (MainShell initState): fetch badge chuông + badge chat + mở socket toàn cục.
   Future<void> start(String userId) async {
+    _userId = userId;
     try {
       final count = await remoteDataSource.fetchUnreadCount();
       emit(state.copyWith(unreadCount: count));
     } catch (_) {}
 
+    try {
+      final chat = await remoteDataSource.fetchChatUnreadCount(userId);
+      emit(state.copyWith(chatUnreadCount: chat));
+    } catch (_) {}
+
     await webSocketService.connect(userId: userId, onEvent: _onRealtimeEvent);
+  }
+
+  /// Đồng bộ lại badge chat từ server (gọi khi rời màn chat — tin đã đọc).
+  Future<void> refreshChatUnread() async {
+    final uid = _userId;
+    if (uid == null) return;
+    try {
+      final chat = await remoteDataSource.fetchChatUnreadCount(uid);
+      emit(state.copyWith(chatUnreadCount: chat));
+    } catch (_) {}
   }
 
   void _onRealtimeEvent(Map<String, dynamic> json) {
     final event = RealtimeNotificationEvent.fromJson(json);
 
     if (event.type == 'CHAT_MESSAGE') {
-      // Chat = realtime-only, không lưu DB → chỉ banner, không đổi badge chuông
-      emit(state.copyWith(lastRealtimeEvent: event));
+      // Chat = realtime-only, không lưu DB → banner + tăng badge tab Chat (không đổi badge chuông).
+      // Badge sẽ được đồng bộ chính xác từ server khi user rời màn chat (refreshChatUnread).
+      emit(state.copyWith(
+        lastRealtimeEvent: event,
+        chatUnreadCount: state.chatUnreadCount + 1,
+      ));
       return;
     }
 
@@ -93,6 +115,7 @@ class NotificationCubit extends Cubit<NotificationState> {
 
   /// Gọi khi logout — ngắt socket, reset badge.
   void stop() {
+    _userId = null;
     webSocketService.disconnect();
     emit(const NotificationState());
   }

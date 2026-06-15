@@ -64,7 +64,12 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
           );
         }
         if (state is ConversationListLoaded) {
-          if (state.conversations.isEmpty) {
+          // Chat shipper neo theo đơn (mở từ màn theo dõi), KHÔNG hiện ở inbox
+          // chung → lọc bỏ hội thoại với role SHIPPER.
+          final convos = state.conversations
+              .where((c) => c.otherUserRole != 'SHIPPER')
+              .toList();
+          if (convos.isEmpty) {
             return _EmptyConversations();
           }
           return RefreshIndicator(
@@ -77,12 +82,12 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
                 0,
                 8 + MediaQuery.of(context).padding.bottom,
               ),
-              itemCount: state.conversations.length,
+              itemCount: convos.length,
               separatorBuilder: (_, _) => const Divider(height: 1, indent: 76),
               itemBuilder: (context, index) {
                 return _ConversationTile(
-                  conversation: state.conversations[index],
-                  onTap: () => _openChat(context, state.conversations[index]),
+                  conversation: convos[index],
+                  onTap: () => _openChat(context, convos[index]),
                 );
               },
             ),
@@ -139,7 +144,7 @@ class _ConversationTile extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Expanded(
+                      Flexible(
                         child: Text(
                           conversation.otherUserName,
                           style: GoogleFonts.inter(
@@ -152,6 +157,8 @@ class _ConversationTile extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      _roleBadge(conversation.otherUserRole),
+                      const Spacer(),
                       Text(
                         timeStr,
                         style: GoogleFonts.inter(
@@ -224,6 +231,34 @@ class _ConversationTile extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Chip role cạnh tên (vd "Chủ sân"). USER/null → không hiện.
+  Widget _roleBadge(String? role) {
+    final label = switch (role) {
+      'PROVIDER' => 'Chủ sân',
+      'ADMIN' => 'Admin',
+      _ => null,
+    };
+    if (label == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(left: 6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFEE2E2),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: AppColors.primaryRed,
+          ),
         ),
       ),
     );

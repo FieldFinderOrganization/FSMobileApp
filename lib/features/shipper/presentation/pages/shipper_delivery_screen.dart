@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/location/location_helper.dart' as loc;
@@ -12,6 +15,9 @@ import '../../../../core/network/dio_client.dart';
 import '../../../../core/storage/token_storage.dart';
 import '../../../../core/tracking/route_path.dart';
 import '../../../../core/tracking/tracking_websocket_service.dart';
+import '../../../auth/login/presentation/bloc/auth_cubit.dart';
+import '../../../call/presentation/cubit/call_cubit.dart';
+import '../../../chat/presentation/pages/user_chat_screen.dart';
 import '../../../order/data/models/order_model.dart';
 import '../../data/shipper_remote_data_source.dart';
 
@@ -24,7 +30,8 @@ class ShipperDeliveryScreen extends StatefulWidget {
   State<ShipperDeliveryScreen> createState() => _ShipperDeliveryScreenState();
 }
 
-class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen> {
+class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen>
+    with WidgetsBindingObserver {
   static const _interval = Duration(seconds: 10);
   static const _demoInterval = Duration(seconds: 2);
   static const _demoSpeedMps = 12.0; // ~43 km/h
@@ -42,11 +49,20 @@ class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen> {
   bool _finishing = false;
   String _status = 'Đang khởi động…';
 
+  // Camera bám shipper; tắt khi user tự pan để xem tuyến (giống màn customer).
+  bool _follow = true;
+
   // Demo tự di chuyển (bảo vệ khoá luận: máy đứng yên → không có GPS thật).
   bool _demoMode = false;
   Timer? _demoTimer;
   RoutePath? _demoPath;
   double _demoDist = 0;
+  // Lưu lại để persist/khôi phục bot khi thoát màn / chuyển nền.
+  String? _demoGeometry; // polyline OSRM; null nếu fallback đường thẳng.
+  LatLng? _demoStart;
+  LatLng? _demoDest;
+
+  String get _demoKey => 'demo_state_${widget.order.orderId}';
 
   // Kho (chặng 1) — shipper tới kho lấy hàng trước khi giao khách.
   LatLng? _warehouse;
@@ -78,16 +94,23 @@ class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _ws = TrackingWebSocketService(tokenStorage: context.read<TokenStorage>());
     _ds = ShipperRemoteDataSource(dioClient: context.read<DioClient>());
     _loadWarehouse();
-    _start();
+    // Khôi phục bot trước (nếu có) → set _demoMode=true để _start không bật GPS thật.
+    _restoreDemo().then((_) {
+      if (mounted) _start();
+    });
   }
 
   Future<void> _start() async {
     // SHIPPING/DELIVERED = đã lấy hàng (chặng 2). Còn lại = chặng 1 (đến kho).
-    final s = widget.order.status.toUpperCase();
-    _picked = s == 'SHIPPING' || s == 'DELIVERED';
+    // Đang restore demo → giữ _picked đã khôi phục, không ghi đè từ status.
+    if (!_demoMode) {
+      final s = widget.order.status.toUpperCase();
+      _picked = s == 'SHIPPING' || s == 'DELIVERED';
+    }
     await _ws.connect(
       orderId: widget.order.orderId.toString(),
       onConnected: () {
@@ -119,7 +142,7 @@ class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen> {
         bearing: pos.heading,
         ts: pos.timestamp.millisecondsSinceEpoch,
       );
-      _mapController.move(p, _mapController.camera.zoom);
+      if (_follow) _mapController.move(p, _mapController.camera.zoom);
     } finally {
       _sending = false;
     }
@@ -144,6 +167,7 @@ class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen> {
         _demoPath = null;
         _status = 'Đang gửi vị trí (10s/lần)';
       });
+      _clearDemo(); // tắt demo → xoá state đã lưu, không resume.
       _sendOnce(); // bật lại GPS thật.
       _timer = Timer.periodic(_interval, (_) => _sendOnce());
     } else {
@@ -159,6 +183,7 @@ class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen> {
   Future<void> _startDemo(LatLng dest) async {
     final start = _me ?? _syntheticStart(dest);
     RoutePath? path;
+    String? geometry;
     try {
       final data = await _ds.getRoute(
         widget.order.orderId,
@@ -167,18 +192,25 @@ class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen> {
         toLat: dest.latitude,
         toLng: dest.longitude,
       );
-      final geometry = data?['geometry'] as String?;
+      geometry = data?['geometry'] as String?;
       if (geometry != null && geometry.isNotEmpty) path = RoutePath.decode(geometry);
     } catch (_) {
       // OSRM tắt/lỗi → đi thẳng.
     }
-    if (path == null || path.isEmpty) path = RoutePath([start, dest]);
+    if (path == null || path.isEmpty) {
+      path = RoutePath([start, dest]);
+      geometry = null; // fallback đường thẳng → rebuild từ start/dest khi restore.
+    }
     if (!mounted || !_demoMode) return;
     setState(() {
+      _demoGeometry = geometry;
+      _demoStart = start;
+      _demoDest = dest;
       _demoPath = path;
       _demoDist = 0;
       _status = 'DEMO: shipper đang di chuyển…';
     });
+    _persistDemo(); // lưu ngay khi bắt đầu chặng.
     _demoTick(); // gửi điểm đầu ngay.
     _demoTimer = Timer.periodic(_demoInterval, (_) => _demoTick());
   }
@@ -199,7 +231,7 @@ class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen> {
       bearing: path.bearingAt(m),
       ts: DateTime.now().millisecondsSinceEpoch,
     );
-    _mapController.move(p, _mapController.camera.zoom);
+    if (_follow) _mapController.move(p, _mapController.camera.zoom);
     if (reached) {
       _demoTimer?.cancel();
       if (mounted) {
@@ -240,11 +272,58 @@ class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen> {
     }
   }
 
+  /// Đơn CASH: xác nhận đã thu tiền mặt trước khi đánh dấu giao xong.
+  /// (BE tự ghi Payment=PAID khi DELIVERED+CASH.)
+  Future<bool> _confirmCodIfNeeded() async {
+    if (widget.order.paymentMethod.toUpperCase() != 'CASH') return true;
+    final amount =
+        NumberFormat('#,###', 'vi_VN').format(widget.order.totalAmount);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xác nhận thu COD'),
+        content: Text('Bạn đã thu đủ $amountđ tiền mặt từ khách?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Chưa'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Đã thu'),
+          ),
+        ],
+      ),
+    );
+    return ok ?? false;
+  }
+
+  void _openCustomerChat() {
+    final me = context.read<AuthCubit>().state.currentUser?.userId;
+    final customerId = widget.order.customerId;
+    if (me == null || customerId == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => UserChatScreen(
+          currentUserId: me,
+          otherUserId: customerId,
+          otherUserName: widget.order.userName,
+          headerSubtitle: 'Đơn #${widget.order.orderId}',
+        ),
+      ),
+    );
+  }
+
   Future<void> _markDelivered() async {
+    if (!await _confirmCodIfNeeded()) return;
+    if (!mounted) return;
     setState(() => _finishing = true);
     try {
       await _ds.updateStatus(widget.order.orderId, 'DELIVERED');
       _timer?.cancel();
+      _demoTimer?.cancel();
+      _clearDemo(); // giao xong → xoá state bot, không resume nữa.
       _ws.disconnect();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -261,7 +340,102 @@ class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      // Chuyển nền: timer bị OS treo → lưu mốc rồi huỷ, resume sẽ fast-forward.
+      if (_demoMode) {
+        _persistDemo();
+        _demoTimer?.cancel();
+      }
+    } else if (state == AppLifecycleState.resumed) {
+      if (_demoMode) _restoreDemo(); // tính thời gian đã trôi, chạy tiếp.
+    }
+  }
+
+  // ─── Persist / restore bot ────────────────────────────────────────────────
+  // Bot chỉ là sim client-side → State mất khi rời màn/chuyển nền. Lưu mốc
+  // (tuyến + quãng đã đi + ts) vào SharedPreferences; mở lại fast-forward theo
+  // thời gian đã trôi rồi chạy tiếp (không reset về đầu).
+
+  Future<void> _persistDemo() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (!_demoMode || _demoPath == null || _demoStart == null || _demoDest == null) {
+        await prefs.remove(_demoKey);
+        return;
+      }
+      await prefs.setString(
+        _demoKey,
+        jsonEncode({
+          'demoMode': true,
+          'picked': _picked,
+          'demoDist': _demoDist,
+          'speed': _demoSpeedMps,
+          'savedTs': DateTime.now().millisecondsSinceEpoch,
+          'routeGeometry': _demoGeometry,
+          'startLat': _demoStart!.latitude,
+          'startLng': _demoStart!.longitude,
+          'destLat': _demoDest!.latitude,
+          'destLng': _demoDest!.longitude,
+        }),
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _clearDemo() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_demoKey);
+    } catch (_) {}
+  }
+
+  Future<void> _restoreDemo() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_demoKey);
+      if (raw == null) return;
+      final m = jsonDecode(raw) as Map<String, dynamic>;
+      if (m['demoMode'] != true) return;
+
+      final start = LatLng(
+          (m['startLat'] as num).toDouble(), (m['startLng'] as num).toDouble());
+      final dest = LatLng(
+          (m['destLat'] as num).toDouble(), (m['destLng'] as num).toDouble());
+      final geom = m['routeGeometry'] as String?;
+      var path = (geom != null && geom.isNotEmpty)
+          ? RoutePath.decode(geom)
+          : RoutePath([start, dest]);
+      if (path.isEmpty) path = RoutePath([start, dest]);
+
+      final speed = (m['speed'] as num?)?.toDouble() ?? _demoSpeedMps;
+      final savedTs =
+          (m['savedTs'] as num?)?.toInt() ?? DateTime.now().millisecondsSinceEpoch;
+      final savedDist = (m['demoDist'] as num?)?.toDouble() ?? 0;
+      final elapsed = (DateTime.now().millisecondsSinceEpoch - savedTs) / 1000.0;
+      final dist = (savedDist + speed * elapsed).clamp(0.0, path.totalMeters);
+
+      if (!mounted) return;
+      _timer?.cancel(); // tắt GPS thật nếu lỡ bật.
+      _demoTimer?.cancel();
+      setState(() {
+        _demoMode = true;
+        _picked = m['picked'] == true;
+        _demoGeometry = geom;
+        _demoStart = start;
+        _demoDest = dest;
+        _demoPath = path;
+        _demoDist = dist;
+        _status = 'DEMO: shipper đang di chuyển…';
+      });
+      _demoTick(); // gửi vị trí hiện tại lên topic ngay cho customer thấy.
+      _demoTimer = Timer.periodic(_demoInterval, (_) => _demoTick());
+    } catch (_) {}
+  }
+
+  @override
   void dispose() {
+    if (_demoMode) _persistDemo(); // rời màn → lưu để mở lại chạy tiếp.
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     _demoTimer?.cancel();
     _ws.disconnect();
@@ -282,6 +456,21 @@ class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen> {
         title: Text('Giao đơn #${widget.order.orderId}',
             style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
         actions: [
+          if (widget.order.customerId != null) ...[
+            IconButton(
+              tooltip: 'Nhắn khách',
+              onPressed: _openCustomerChat,
+              icon: const Icon(Icons.chat_bubble_outline_rounded,
+                  color: Color(0xFF1565C0)),
+            ),
+            IconButton(
+              tooltip: 'Gọi khách',
+              onPressed: () => context.read<CallCubit>().startCall(
+                  widget.order.customerId!, widget.order.userName),
+              icon:
+                  const Icon(Icons.call_rounded, color: Color(0xFF1565C0)),
+            ),
+          ],
           IconButton(
             tooltip: _demoMode ? 'Dừng demo' : 'Demo tự di chuyển',
             onPressed: _toggleDemo,
@@ -331,7 +520,14 @@ class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen> {
           Expanded(
             child: FlutterMap(
               mapController: _mapController,
-              options: MapOptions(initialCenter: center, initialZoom: 15),
+              options: MapOptions(
+                initialCenter: center,
+                initialZoom: 15,
+                onPositionChanged: (camera, hasGesture) {
+                  // User tự pan/zoom → ngừng bám để xem tuyến, hiện nút recenter.
+                  if (hasGesture && _follow) setState(() => _follow = false);
+                },
+              ),
               children: [
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -392,6 +588,17 @@ class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen> {
           ),
         ],
       ),
+      floatingActionButton: (!_follow && _me != null)
+          ? FloatingActionButton.small(
+              onPressed: () {
+                setState(() => _follow = true);
+                _mapController.move(_me!, _mapController.camera.zoom);
+              },
+              backgroundColor: Colors.white,
+              child: const Icon(Icons.my_location_rounded,
+                  color: Color(0xFF1565C0)),
+            )
+          : null,
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(12),

@@ -20,6 +20,9 @@ class UserModel extends UserEntity {
     super.preferredPlayTime,
     super.latitude,
     super.longitude,
+    super.available,
+    super.vehicleType,
+    super.vehiclePlate,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -51,6 +54,9 @@ class UserModel extends UserEntity {
       preferredPlayTime: json['preferredPlayTime'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
+      available: json['available'] as bool?,
+      vehicleType: json['vehicleType'] as String?,
+      vehiclePlate: json['vehiclePlate'] as String?,
     );
   }
 }

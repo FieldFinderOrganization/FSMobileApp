@@ -2,6 +2,7 @@ class ConversationModel {
   final String otherUserId;
   final String otherUserName;
   final String? otherUserImageUrl;
+  final String? otherUserRole; // USER / PROVIDER / SHIPPER / ADMIN
   final String lastMessage;
   final DateTime? lastMessageTime;
   final bool isLastMessageFromMe;
@@ -11,6 +12,7 @@ class ConversationModel {
     required this.otherUserId,
     required this.otherUserName,
     this.otherUserImageUrl,
+    this.otherUserRole,
     required this.lastMessage,
     this.lastMessageTime,
     required this.isLastMessageFromMe,
@@ -34,6 +36,7 @@ class ConversationModel {
       otherUserId: json['otherUserId'] as String? ?? '',
       otherUserName: json['otherUserName'] as String? ?? '',
       otherUserImageUrl: json['otherUserImageUrl'] as String?,
+      otherUserRole: json['otherUserRole'] as String?,
       lastMessage: json['lastMessage'] as String? ?? '',
       lastMessageTime: time,
       isLastMessageFromMe: json['isLastMessageFromMe'] as bool? ?? false,

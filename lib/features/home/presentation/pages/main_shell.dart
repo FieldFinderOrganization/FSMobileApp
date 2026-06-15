@@ -85,6 +85,10 @@ class _MainShellState extends State<MainShell>
   void _onTabTapped(int index) {
     if (index == _currentIndex) return;
     HapticFeedback.selectionClick();
+    // Rời tab Chat → đồng bộ lại badge chưa đọc (tin vừa đọc trong màn chat).
+    if (_currentIndex == 3) {
+      context.read<NotificationCubit>().refreshChatUnread();
+    }
     // Không gọi ProductCubit.reload() khi vào Shop: [IndexedStack] đã giữ state;
     // reload mỗi lần chuyển tab làm xóa list + loading ~10s+ dù dữ liệu vẫn còn trong cubit.
     // Đồng bộ tồn kho: kéo refresh trên Shop, hoặc sau khi thanh toán (checkout đã gọi loadProducts).
@@ -143,12 +147,16 @@ class _MainShellState extends State<MainShell>
                   ProfileScreen(user: currentUser),
                 ],
               ),
-              // Bottom Navigation Bar
-              bottomNavigationBar: _AppBottomBar(
-                currentIndex: _currentIndex,
-                tabs: _tabs,
-                bottomPadding: bottomPadding,
-                onTap: _onTabTapped,
+              // Bottom Navigation Bar — badge tab Chat đọc từ NotificationCubit
+              bottomNavigationBar: BlocBuilder<NotificationCubit, NotificationState>(
+                buildWhen: (p, c) => p.chatUnreadCount != c.chatUnreadCount,
+                builder: (context, notifState) => _AppBottomBar(
+                  currentIndex: _currentIndex,
+                  tabs: _tabs,
+                  bottomPadding: bottomPadding,
+                  onTap: _onTabTapped,
+                  chatUnread: notifState.chatUnreadCount,
+                ),
               ),
               ),
             );
@@ -243,11 +251,18 @@ class _AppBottomBar extends StatelessWidget {
   final double bottomPadding;
   final ValueChanged<int> onTap;
 
+  /// Số tin nhắn chưa đọc → badge trên tab Chat (index 3).
+  final int chatUnread;
+
+  // Index của tab Chat trong [_tabs] — nơi hiển thị badge tin nhắn.
+  static const int _chatTabIndex = 3;
+
   const _AppBottomBar({
     required this.currentIndex,
     required this.tabs,
     required this.bottomPadding,
     required this.onTap,
+    this.chatUnread = 0,
   });
 
   @override
@@ -271,6 +286,7 @@ class _AppBottomBar extends StatelessWidget {
             children: List.generate(tabs.length, (i) {
               final tab = tabs[i];
               final isActive = i == currentIndex;
+              final badge = i == _chatTabIndex ? chatUnread : 0;
               return Expanded(
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
@@ -279,6 +295,7 @@ class _AppBottomBar extends StatelessWidget {
                     icon: tab.icon,
                     label: tab.label,
                     isActive: isActive,
+                    badge: badge,
                   ),
                 ),
               );
@@ -296,11 +313,13 @@ class _TabBarItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isActive;
+  final int badge;
 
   const _TabBarItem({
     required this.icon,
     required this.label,
     required this.isActive,
+    this.badge = 0,
   });
 
   @override
@@ -308,21 +327,52 @@ class _TabBarItem extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          decoration: BoxDecoration(
-            color: isActive
-                ? AppColors.primaryRed.withValues(alpha: 0.1)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            icon,
-            size: 22,
-            color: isActive ? AppColors.primaryRed : const Color(0xFFB0B0B0),
-          ),
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                color: isActive
+                    ? AppColors.primaryRed.withValues(alpha: 0.1)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                size: 22,
+                color:
+                    isActive ? AppColors.primaryRed : const Color(0xFFB0B0B0),
+              ),
+            ),
+            if (badge > 0)
+              Positioned(
+                right: -1,
+                top: -3,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                  constraints: const BoxConstraints(minWidth: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryRed,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.white, width: 1.5),
+                  ),
+                  child: Text(
+                    badge > 99 ? '99+' : '$badge',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      height: 1.2,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 2),
         AnimatedDefaultTextStyle(

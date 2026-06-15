@@ -35,11 +35,19 @@ class UserChatScreen extends StatefulWidget {
   final String otherUserId;
   final String otherUserName;
 
+  /// Chế độ chỉ đọc (vd chat shipper sau khi đơn đã giao): ẩn ô nhập + nút gọi.
+  final bool readOnly;
+
+  /// Dòng phụ dưới tên (vd "Đơn #123"); null = dùng trạng thái hoạt động mặc định.
+  final String? headerSubtitle;
+
   const UserChatScreen({
     super.key,
     required this.currentUserId,
     required this.otherUserId,
     required this.otherUserName,
+    this.readOnly = false,
+    this.headerSubtitle,
   });
 
   @override
@@ -215,63 +223,75 @@ class _UserChatScreenState extends State<UserChatScreen> {
                   color: AppColors.textDark,
                 ),
               ),
-              BlocBuilder<UserChatCubit, UserChatState>(
-                builder: (context, state) {
-                  final connected = state is UserChatLoaded && state.isConnected;
-                  if (!connected) {
+              if (widget.headerSubtitle != null)
+                Text(
+                  widget.headerSubtitle!,
+                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textGrey),
+                )
+              else
+                BlocBuilder<UserChatCubit, UserChatState>(
+                  builder: (context, state) {
+                    final connected = state is UserChatLoaded && state.isConnected;
+                    if (!connected) {
+                      return Text(
+                        'Đang kết nối...',
+                        style: GoogleFonts.inter(fontSize: 12, color: AppColors.textGrey),
+                      );
+                    }
+                    final label = _formatLastLogin(_otherUserLastLogin);
+                    if (label.isEmpty) return const SizedBox.shrink();
                     return Text(
-                      'Đang kết nối...',
+                      label,
                       style: GoogleFonts.inter(fontSize: 12, color: AppColors.textGrey),
                     );
-                  }
-                  final label = _formatLastLogin(_otherUserLastLogin);
-                  if (label.isEmpty) return const SizedBox.shrink();
-                  return Text(
-                    label,
-                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textGrey),
-                  );
-                },
-              ),
+                  },
+                ),
             ],
           ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.call_rounded,
-                  color: AppColors.primaryRed, size: 24),
-              tooltip: 'Gọi thoại',
-              onPressed: () => context
-                  .read<CallCubit>()
-                  .startCall(widget.otherUserId, widget.otherUserName),
-            ),
-            IconButton(
-              icon: const Icon(Icons.videocam_rounded,
-                  color: AppColors.primaryRed, size: 26),
-              tooltip: 'Gọi video',
-              onPressed: () => context.read<CallCubit>().startCall(
-                  widget.otherUserId, widget.otherUserName,
-                  video: true),
-            ),
-          ],
+          actions: widget.readOnly
+              ? null
+              : [
+                  IconButton(
+                    icon: const Icon(Icons.call_rounded,
+                        color: AppColors.primaryRed, size: 24),
+                    tooltip: 'Gọi thoại',
+                    onPressed: () => context
+                        .read<CallCubit>()
+                        .startCall(widget.otherUserId, widget.otherUserName),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.videocam_rounded,
+                        color: AppColors.primaryRed, size: 26),
+                    tooltip: 'Gọi video',
+                    onPressed: () => context.read<CallCubit>().startCall(
+                        widget.otherUserId, widget.otherUserName,
+                        video: true),
+                  ),
+                ],
         ),
         body: Column(
           children: [
             const Divider(height: 1, color: Color(0xFFEEEEEE)),
             Expanded(child: _buildMessageList()),
-            _buildInputBar(),
-            Offstage(
-              offstage: !_showEmojiPanel,
-              child: SizedBox(
-                height: 280,
-                child: emoji.EmojiPicker(
-                  textEditingController: _textController,
-                  config: const emoji.Config(
-                    height: 280,
-                    checkPlatformCompatibility: true,
-                    emojiViewConfig: emoji.EmojiViewConfig(emojiSizeMax: 28),
+            if (widget.readOnly)
+              _buildReadOnlyNotice()
+            else ...[
+              _buildInputBar(),
+              Offstage(
+                offstage: !_showEmojiPanel,
+                child: SizedBox(
+                  height: 280,
+                  child: emoji.EmojiPicker(
+                    textEditingController: _textController,
+                    config: const emoji.Config(
+                      height: 280,
+                      checkPlatformCompatibility: true,
+                      emojiViewConfig: emoji.EmojiViewConfig(emojiSizeMax: 28),
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -394,9 +414,11 @@ class _UserChatScreenState extends State<UserChatScreen> {
         : (video ? Icons.videocam_rounded : Icons.phone_rounded);
 
     return GestureDetector(
-      onTap: () => context.read<CallCubit>().startCall(
-          widget.otherUserId, widget.otherUserName,
-          video: video),
+      onTap: widget.readOnly
+          ? null
+          : () => context.read<CallCubit>().startCall(
+              widget.otherUserId, widget.otherUserName,
+              video: video),
       child: Container(
         margin: const EdgeInsets.only(bottom: 4),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -766,6 +788,31 @@ class _UserChatScreenState extends State<UserChatScreen> {
                   ),
                 );
               },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReadOnlyNotice() {
+    return SafeArea(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: const BoxDecoration(
+          color: Color(0xFFF5F5F5),
+          border: Border(top: BorderSide(color: Color(0xFFEEEEEE))),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.lock_outline_rounded,
+                size: 16, color: AppColors.textGrey),
+            const SizedBox(width: 6),
+            Text(
+              'Đơn đã hoàn tất — chỉ xem lại',
+              style: GoogleFonts.inter(fontSize: 13, color: AppColors.textGrey),
             ),
           ],
         ),

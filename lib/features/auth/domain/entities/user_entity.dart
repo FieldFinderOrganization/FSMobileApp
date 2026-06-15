@@ -26,6 +26,11 @@ class UserEntity extends Equatable {
   final double? latitude;
   final double? longitude;
 
+  // Shipper-only: online toggle + thông tin xe
+  final bool? available;
+  final String? vehicleType;
+  final String? vehiclePlate;
+
   const UserEntity({
     required this.userId,
     required this.name,
@@ -45,6 +50,9 @@ class UserEntity extends Equatable {
     this.preferredPlayTime,
     this.latitude,
     this.longitude,
+    this.available,
+    this.vehicleType,
+    this.vehiclePlate,
   });
 
   @override
@@ -52,6 +60,7 @@ class UserEntity extends Equatable {
         userId, name, email, phone, role, status, imageUrl, hasPassword,
         gender, dateOfBirth, address, province, district, occupation,
         preferredPitchType, preferredPlayTime, latitude, longitude,
+        available, vehicleType, vehiclePlate,
       ];
 
   UserEntity copyWith({
@@ -73,6 +82,9 @@ class UserEntity extends Equatable {
     String? preferredPlayTime,
     double? latitude,
     double? longitude,
+    bool? available,
+    String? vehicleType,
+    String? vehiclePlate,
   }) {
     return UserEntity(
       userId: userId ?? this.userId,
@@ -93,6 +105,9 @@ class UserEntity extends Equatable {
       preferredPlayTime: preferredPlayTime ?? this.preferredPlayTime,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      available: available ?? this.available,
+      vehicleType: vehicleType ?? this.vehicleType,
+      vehiclePlate: vehiclePlate ?? this.vehiclePlate,
     );
   }
 }
