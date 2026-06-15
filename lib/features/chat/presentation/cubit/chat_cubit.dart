@@ -309,9 +309,7 @@ class ChatCubit extends Cubit<ChatState> {
     required String deliveryAddress,
     required double destLat,
     required double destLng,
-    required int productId,
-    required String size,
-    required int quantity,
+    required List<Map<String, dynamic>> items,
     required List<String> discountCodes,
     required double total,
   }) async {
@@ -323,9 +321,7 @@ class ChatCubit extends Cubit<ChatState> {
         'deliveryAddress': deliveryAddress,
         'destLat': destLat,
         'destLng': destLng,
-        'items': [
-          {'productId': productId, 'size': size, 'quantity': quantity},
-        ],
+        'items': items,
         'discountCodes': discountCodes,
       });
       final orderId = orderData['orderId'] as int;
@@ -363,7 +359,8 @@ class ChatCubit extends Cubit<ChatState> {
             'ownerName': paymentResp.ownerName,
             'ownerCardNumber': paymentResp.ownerCardNumber,
             'ownerBank': paymentResp.ownerBank,
-            'amount': total,
+            // Tổng server (đã gồm phí ship) — hiển thị khớp số tiền QR.
+            'amount': (orderData['totalAmount'] as num?)?.toDouble() ?? total,
             'paymentStatus': 'PENDING',
           },
         );

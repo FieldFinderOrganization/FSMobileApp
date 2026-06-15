@@ -13,6 +13,7 @@ import '../../../checkout/presentation/pages/checkout_screen.dart';
 import '../../../checkout/presentation/widgets/voucher_bottom_sheet.dart';
 import '../../../discount/data/datasources/discount_remote_data_source.dart';
 import '../../../discount/domain/entities/user_discount_entity.dart';
+import '../../../pitch/data/datasources/payment_remote_datasource.dart';
 import '../cubit/chat_cubit.dart';
 
 /// Card xác nhận đặt sản phẩm inline trong AI chat — thay cho việc
@@ -44,6 +45,14 @@ class _ChatOrderCheckoutCardState extends State<ChatOrderCheckoutCard> {
   final List<UserDiscountEntity> _selectedVouchers = [];
   bool _walletLoading = false;
 
+  // Phí ship (preview từ BE). null = chưa quote / lỗi quote. BE vẫn tính lại
+  // authoritative khi tạo đơn nên lỗi quote không chặn đặt hàng.
+  double? _shippingFee;
+  bool _freeship = false;
+  double _amountToFreeship = 0;
+  double _freeshipMaxKm = 0;
+  bool _feeLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -52,12 +61,18 @@ class _ChatOrderCheckoutCardState extends State<ChatOrderCheckoutCard> {
     _address = user?.address ?? '';
     _destLat = user?.latitude;
     _destLng = user?.longitude;
+    // Có sẵn toạ độ profile → quote phí ship ngay để total không lệch.
+    if (_destLat != null && _destLng != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _fetchShippingQuote();
+      });
+    }
   }
 
   Map<String, dynamic> get _product =>
       (widget.aiData['product'] as Map?)?.cast<String, dynamic>() ?? {};
 
-  CheckoutItemEntity get _item {
+  CheckoutItemEntity _itemFor(String size, int quantity) {
     final p = _product;
     final price = (p['price'] as num?)?.toDouble() ?? 0;
     return CheckoutItemEntity(
@@ -65,22 +80,72 @@ class _ChatOrderCheckoutCardState extends State<ChatOrderCheckoutCard> {
       productName: p['name'] as String? ?? '',
       brand: p['brand'] as String? ?? '',
       imageUrl: p['imageUrl'] as String? ?? '',
-      size: widget.aiData['selectedSize'] as String? ?? '',
+      size: size,
       unitPrice: (p['salePrice'] as num?)?.toDouble() ?? price,
       originalPrice: price,
       salePercent: (p['salePercent'] as num?)?.toInt(),
-      quantity: (widget.aiData['selectedQuantity'] as num?)?.toInt() ?? 1,
+      quantity: quantity,
       categoryId: (p['categoryId'] as num?)?.toInt(),
     );
   }
 
+  /// Danh sách dòng hàng. Ưu tiên "selectedItems" (đặt nhiều size 1 lần);
+  /// fallback "selectedSize" + "selectedQuantity" (đơn 1 size, back-compat).
+  List<CheckoutItemEntity> get _items {
+    final raw = widget.aiData['selectedItems'];
+    if (raw is List && raw.isNotEmpty) {
+      return raw
+          .whereType<Map>()
+          .map((m) => _itemFor(
+                m['size'] as String? ?? '',
+                (m['quantity'] as num?)?.toInt() ?? 1,
+              ))
+          .toList();
+    }
+    return [
+      _itemFor(
+        widget.aiData['selectedSize'] as String? ?? '',
+        (widget.aiData['selectedQuantity'] as num?)?.toInt() ?? 1,
+      ),
+    ];
+  }
+
   CheckoutPricing get _pricing =>
-      CheckoutPricing(items: [_item], selectedVouchers: _selectedVouchers);
+      CheckoutPricing(items: _items, selectedVouchers: _selectedVouchers);
+
+  /// Tổng phải trả = tiền hàng sau giảm + phí ship (server tính lại khi tạo đơn).
+  double get _grandTotal => _pricing.total + (_shippingFee ?? 0);
 
   String? get _status => widget.aiData['checkoutStatus'] as String?;
   bool get _isProcessing => _status == 'processing';
   bool get _isDone => _status == 'done';
   bool get _hasLocation => _destLat != null && _destLng != null;
+
+  /// Báo giá phí ship từ BE (preview). Lỗi không chặn đặt hàng.
+  Future<void> _fetchShippingQuote() async {
+    if (_destLat == null || _destLng == null) return;
+    setState(() => _feeLoading = true);
+    try {
+      final dataSource =
+          PaymentRemoteDataSource(dioClient: context.read<DioClient>());
+      final q = await dataSource.getShippingQuote(
+        destLat: _destLat!,
+        destLng: _destLng!,
+        subtotal: _pricing.total, // sau giảm giá → xét ngưỡng freeship
+      );
+      if (!mounted) return;
+      setState(() {
+        _shippingFee = (q['fee'] as num?)?.toDouble() ?? 0;
+        _freeship = q['freeshipApplied'] as bool? ?? false;
+        _amountToFreeship = (q['amountToFreeship'] as num?)?.toDouble() ?? 0;
+        _freeshipMaxKm = (q['freeshipMaxKm'] as num?)?.toDouble() ?? 0;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _shippingFee = null);
+    } finally {
+      if (mounted) setState(() => _feeLoading = false);
+    }
+  }
 
   // ── Actions ───────────────────────────────────────────────────────────
 
@@ -103,6 +168,7 @@ class _ChatOrderCheckoutCardState extends State<ChatOrderCheckoutCard> {
         _address = result.address!;
       }
     });
+    _fetchShippingQuote();
   }
 
   void _toggleVoucher(UserDiscountEntity v) {
@@ -120,6 +186,8 @@ class _ChatOrderCheckoutCardState extends State<ChatOrderCheckoutCard> {
         _selectedVouchers.add(v);
       }
     });
+    // Đổi voucher → subtotal đổi → ngưỡng freeship đổi → quote lại.
+    if (_destLat != null) _fetchShippingQuote();
   }
 
   Future<void> _openVoucherSheet() async {
@@ -146,7 +214,7 @@ class _ChatOrderCheckoutCardState extends State<ChatOrderCheckoutCard> {
       context,
       vouchers: _walletVouchers,
       selected: _selectedVouchers,
-      items: [_item],
+      items: _items,
       onToggle: _toggleVoucher,
     );
   }
@@ -168,7 +236,7 @@ class _ChatOrderCheckoutCardState extends State<ChatOrderCheckoutCard> {
       return;
     }
 
-    final item = _item;
+    final items = _items;
     context.read<ChatCubit>().placeProductOrderFromChat(
           messageId: widget.messageId,
           userId: user.userId,
@@ -176,19 +244,23 @@ class _ChatOrderCheckoutCardState extends State<ChatOrderCheckoutCard> {
           deliveryAddress: _address.trim(),
           destLat: _destLat!,
           destLng: _destLng!,
-          productId: item.productId,
-          size: item.size,
-          quantity: item.quantity,
+          items: items
+              .map((i) => {
+                    'productId': i.productId,
+                    'size': i.size,
+                    'quantity': i.quantity,
+                  })
+              .toList(),
           discountCodes:
               _selectedVouchers.map((v) => v.discountCode).toList(),
-          total: _pricing.total,
+          total: _grandTotal,
         );
   }
 
   void _openFullCheckout() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => CheckoutScreen(items: [_item])),
+      MaterialPageRoute(builder: (_) => CheckoutScreen(items: _items)),
     );
   }
 
@@ -196,8 +268,10 @@ class _ChatOrderCheckoutCardState extends State<ChatOrderCheckoutCard> {
 
   @override
   Widget build(BuildContext context) {
-    final item = _item;
-    if (item.productId == 0) return const SizedBox.shrink();
+    final items = _items;
+    if (items.isEmpty || items.first.productId == 0) {
+      return const SizedBox.shrink();
+    }
 
     return Container(
       margin: const EdgeInsets.only(left: 12, right: 60, top: 6, bottom: 8),
@@ -219,7 +293,10 @@ class _ChatOrderCheckoutCardState extends State<ChatOrderCheckoutCard> {
         children: [
           _buildHeader('Xác nhận đơn hàng', Icons.shopping_bag_outlined),
           const SizedBox(height: 12),
-          _buildProductRow(item),
+          for (int i = 0; i < items.length; i++) ...[
+            if (i > 0) const SizedBox(height: 10),
+            _buildProductRow(items[i]),
+          ],
           const Divider(height: 24),
           _buildAddressRow(),
           const SizedBox(height: 10),
@@ -480,7 +557,26 @@ class _ChatOrderCheckoutCardState extends State<ChatOrderCheckoutCard> {
   Widget _buildPriceSummary() {
     final subtotal = _pricing.subtotal;
     final discount = _pricing.discountAmount;
-    final total = _pricing.total;
+
+    // Phí ship theo trạng thái quote (mirror CheckoutScreen).
+    final String shipText;
+    Color? shipColor;
+    if (!_hasLocation) {
+      shipText = 'Chọn điểm giao';
+      shipColor = AppColors.textGrey;
+    } else if (_feeLoading) {
+      shipText = 'Đang tính...';
+      shipColor = AppColors.textGrey;
+    } else if (_shippingFee == null) {
+      shipText = 'Tính khi đặt';
+      shipColor = AppColors.textGrey;
+    } else if (_freeship || _shippingFee == 0) {
+      shipText = 'Miễn phí';
+      shipColor = Colors.green.shade700;
+    } else {
+      shipText = '${_currencyFormat.format(_shippingFee)}đ';
+      shipColor = null;
+    }
 
     return Column(
       children: [
@@ -491,6 +587,23 @@ class _ChatOrderCheckoutCardState extends State<ChatOrderCheckoutCard> {
             'Giảm giá',
             '- ${_currencyFormat.format(discount)}đ',
             valueColor: Colors.green.shade700,
+          ),
+        ],
+        const SizedBox(height: 6),
+        _summaryRow('Phí vận chuyển', shipText, valueColor: shipColor),
+        if (_amountToFreeship > 0) ...[
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Mua thêm ${_currencyFormat.format(_amountToFreeship)}đ để được miễn phí ship'
+              '${_freeshipMaxKm > 0 ? ' (trong ${_freeshipMaxKm.toStringAsFixed(0)}km)' : ''}',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                color: AppColors.primaryRed,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
           ),
         ],
         const SizedBox(height: 6),
@@ -506,7 +619,7 @@ class _ChatOrderCheckoutCardState extends State<ChatOrderCheckoutCard> {
               ),
             ),
             Text(
-              '${_currencyFormat.format(total)}đ',
+              '${_currencyFormat.format(_grandTotal)}đ',
               style: GoogleFonts.inter(
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
@@ -622,7 +735,7 @@ class _ChatOrderCheckoutCardState extends State<ChatOrderCheckoutCard> {
                     strokeWidth: 2, color: Colors.white),
               )
             : Text(
-                'Đặt hàng · ${_currencyFormat.format(_pricing.total)}đ',
+                'Đặt hàng · ${_currencyFormat.format(_grandTotal)}đ',
                 style: GoogleFonts.inter(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w700,
