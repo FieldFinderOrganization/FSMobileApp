@@ -22,6 +22,12 @@ class ShipperRemoteDataSource {
         .toList();
   }
 
+  /// Thu nhập shipper tính server-side: { today, week, month, todayCount, weekCount, monthCount }.
+  Future<Map<String, dynamic>> getMyEarnings() async {
+    final res = await dioClient.dio.get('/orders/shipper/me/earnings');
+    return (res.data as Map<String, dynamic>);
+  }
+
   Future<OrderModel> claimOrder(int orderId) async {
     final res = await dioClient.dio.put('/orders/$orderId/claim');
     return OrderModel.fromJson(res.data as Map<String, dynamic>);

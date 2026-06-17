@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../data/models/conversation_model.dart';
 import '../cubit/conversation_list_cubit.dart';
+import '../../../notification/presentation/cubit/notification_cubit.dart';
 import 'user_chat_screen.dart';
 
 class ConversationListScreen extends StatefulWidget {
@@ -64,33 +65,42 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
           );
         }
         if (state is ConversationListLoaded) {
-          // Chat shipper neo theo đơn (mở từ màn theo dõi), KHÔNG hiện ở inbox
-          // chung → lọc bỏ hội thoại với role SHIPPER.
-          final convos = state.conversations
-              .where((c) => c.otherUserRole != 'SHIPPER')
-              .toList();
-          if (convos.isEmpty) {
-            return _EmptyConversations();
-          }
-          return RefreshIndicator(
-            color: AppColors.primaryRed,
-            onRefresh: () => context.read<ConversationListCubit>().refresh(),
-            child: ListView.separated(
-              padding: EdgeInsets.fromLTRB(
-                0,
-                8,
-                0,
-                8 + MediaQuery.of(context).padding.bottom,
+          final convos = state.conversations;
+          final activeFilter = state.activeFilter;
+          return Column(
+            children: [
+              _FilterChips(
+                activeFilter: activeFilter,
+                onSelected: (f) =>
+                    context.read<ConversationListCubit>().setFilter(f),
               ),
-              itemCount: convos.length,
-              separatorBuilder: (_, _) => const Divider(height: 1, indent: 76),
-              itemBuilder: (context, index) {
-                return _ConversationTile(
-                  conversation: convos[index],
-                  onTap: () => _openChat(context, convos[index]),
-                );
-              },
-            ),
+              Expanded(
+                child: convos.isEmpty
+                    ? _EmptyConversations(filter: activeFilter)
+                    : RefreshIndicator(
+                        color: AppColors.primaryRed,
+                        onRefresh: () =>
+                            context.read<ConversationListCubit>().refresh(),
+                        child: ListView.separated(
+                          padding: EdgeInsets.fromLTRB(
+                            0,
+                            8,
+                            0,
+                            8 + MediaQuery.of(context).padding.bottom,
+                          ),
+                          itemCount: convos.length,
+                          separatorBuilder: (_, _) =>
+                              const Divider(height: 1, indent: 76),
+                          itemBuilder: (context, index) {
+                            return _ConversationTile(
+                              conversation: convos[index],
+                              onTap: () => _openChat(context, convos[index]),
+                            );
+                          },
+                        ),
+                      ),
+              ),
+            ],
           );
         }
         return const SizedBox.shrink();
@@ -111,7 +121,12 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
           otherUserName: conv.otherUserName,
         ),
       ),
-    ).then((_) => context.read<ConversationListCubit>().refresh());
+    ).then((_) {
+      if (!context.mounted) return;
+      context.read<ConversationListCubit>().refresh();
+      // Tin đã đọc khi mở chat → đồng bộ lại badge chat toàn cục (bottom-nav).
+      context.read<NotificationCubit>().refreshChatUnread();
+    });
   }
 }
 
@@ -236,20 +251,22 @@ class _ConversationTile extends StatelessWidget {
     );
   }
 
-  /// Chip role cạnh tên (vd "Chủ sân"). USER/null → không hiện.
+  /// Chip role cạnh tên (vd "Chủ sân", "Shipper"). USER/null → không hiện.
   Widget _roleBadge(String? role) {
-    final label = switch (role) {
-      'PROVIDER' => 'Chủ sân',
-      'ADMIN' => 'Admin',
+    final (String, Color, Color)? badge = switch (role) {
+      'PROVIDER' => ('Chủ sân', const Color(0xFFFEE2E2), AppColors.primaryRed),
+      'SHIPPER' => ('Shipper', const Color(0xFFDBEAFE), const Color(0xFF2563EB)),
+      'ADMIN' => ('Admin', const Color(0xFFFEE2E2), AppColors.primaryRed),
       _ => null,
     };
-    if (label == null) return const SizedBox.shrink();
+    if (badge == null) return const SizedBox.shrink();
+    final (label, bgColor, fgColor) = badge;
     return Padding(
       padding: const EdgeInsets.only(left: 6),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
         decoration: BoxDecoration(
-          color: const Color(0xFFFEE2E2),
+          color: bgColor,
           borderRadius: BorderRadius.circular(6),
         ),
         child: Text(
@@ -257,7 +274,7 @@ class _ConversationTile extends StatelessWidget {
           style: GoogleFonts.inter(
             fontSize: 10,
             fontWeight: FontWeight.w700,
-            color: AppColors.primaryRed,
+            color: fgColor,
           ),
         ),
       ),
@@ -321,9 +338,84 @@ class _Avatar extends StatelessWidget {
   }
 }
 
-class _EmptyConversations extends StatelessWidget {
+class _FilterChips extends StatelessWidget {
+  final ConversationFilter activeFilter;
+  final ValueChanged<ConversationFilter> onSelected;
+
+  const _FilterChips({
+    required this.activeFilter,
+    required this.onSelected,
+  });
+
   @override
   Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFFF3F4F6))),
+      ),
+      child: Row(
+        children: [
+          _chip(context, 'Tất cả', ConversationFilter.all),
+          const SizedBox(width: 8),
+          _chip(context, 'Chủ sân', ConversationFilter.provider),
+          const SizedBox(width: 8),
+          _chip(context, 'Shipper', ConversationFilter.shipper),
+        ],
+      ),
+    );
+  }
+
+  Widget _chip(BuildContext context, String label, ConversationFilter filter) {
+    final selected = activeFilter == filter;
+    return GestureDetector(
+      onTap: () => onSelected(filter),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.primaryRed
+              : AppColors.primaryRed.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : AppColors.primaryRed,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyConversations extends StatelessWidget {
+  final ConversationFilter filter;
+  const _EmptyConversations({this.filter = ConversationFilter.all});
+
+  @override
+  Widget build(BuildContext context) {
+    final (icon, title, subtitle) = switch (filter) {
+      ConversationFilter.all => (
+          Icons.chat_bubble_outline_rounded,
+          'Chưa có tin nhắn nào',
+          'Bấm "Nhắn tin" trên trang sân để bắt đầu\ncuộc trò chuyện với chủ sân',
+        ),
+      ConversationFilter.provider => (
+          Icons.store_outlined,
+          'Chưa có tin nhắn với chủ sân',
+          'Các cuộc trò chuyện với chủ sân\nsẽ hiện ở đây',
+        ),
+      ConversationFilter.shipper => (
+          Icons.delivery_dining_outlined,
+          'Chưa có tin nhắn với shipper',
+          'Các cuộc trò chuyện với shipper\nsẽ hiện ở đây',
+        ),
+    };
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -335,15 +427,11 @@ class _EmptyConversations extends StatelessWidget {
               color: AppColors.primaryRed.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.chat_bubble_outline_rounded,
-              size: 36,
-              color: AppColors.primaryRed,
-            ),
+            child: Icon(icon, size: 36, color: AppColors.primaryRed),
           ),
           const SizedBox(height: 20),
           Text(
-            'Chưa có tin nhắn nào',
+            title,
             style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -352,7 +440,7 @@ class _EmptyConversations extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Bấm "Nhắn tin" trên trang sân để bắt đầu\ncuộc trò chuyện với chủ sân',
+            subtitle,
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(fontSize: 14, color: Colors.grey),
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/admin_discount_entity.dart';
+import '../../domain/entities/tier_info_entity.dart';
 import '../../domain/repositories/discount_repository.dart';
 
 enum AvailableVouchersStatus { initial, loading, success, failure }
@@ -48,10 +49,17 @@ class AvailableVouchersCubit extends Cubit<AvailableVouchersState> {
       final ownedCodes =
           wallet.map((w) => w.discountCode).toSet(); // loại mã đã có trong ví
 
+      // Hạng user → ẩn mã gắn hạng cao hơn (BE chặn khi lưu → tránh hiển thị mã không claim được).
+      String userTier = 'MEMBER';
+      try {
+        userTier = (await _repository.getTierInfo(userId)).tier;
+      } catch (_) {}
+
       final claimable = all
           .where((d) =>
               d.isClaimable &&
               d.pointCost == null && // mã đổi điểm nằm ở màn Đổi quà, không lưu free
+              TierInfoEntity.meetsTier(userTier, d.minTier) &&
               !ownedCodes.contains(d.code))
           .toList()
         ..sort((a, b) => a.endDate.compareTo(b.endDate)); // sắp hết hạn lên trước

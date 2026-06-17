@@ -67,7 +67,8 @@ class UserChatRemoteDatasource {
   Future<DateTime?> getUserLastLogin(String userId) async {
     try {
       final response = await dioClient.dio.get(ApiConstants.userById(userId));
-      final raw = response.data['lastLoginAt'];
+      // Ưu tiên lastSeenAt (mốc rời WS thật); fallback lastLoginAt cho acc chưa có presence.
+      final raw = response.data['lastSeenAt'] ?? response.data['lastLoginAt'];
       if (raw == null) return null;
       if (raw is int) return DateTime.fromMillisecondsSinceEpoch(raw).toLocal();
       final normalized = raw.toString().endsWith('Z') || raw.toString().contains('+')

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../discount/domain/entities/user_discount_entity.dart';
+import '../../../discount/domain/entities/tier_info_entity.dart';
 import '../../domain/checkout_pricing.dart';
 import '../../domain/entities/checkout_item_entity.dart';
 
@@ -15,6 +16,7 @@ class VoucherBottomSheet extends StatelessWidget {
   final List<CheckoutItemEntity> items;
   final ValueChanged<UserDiscountEntity> onToggle;
   final VoidCallback onConfirm;
+  final String userTier;
 
   const VoucherBottomSheet({
     super.key,
@@ -23,6 +25,7 @@ class VoucherBottomSheet extends StatelessWidget {
     required this.items,
     required this.onToggle,
     required this.onConfirm,
+    this.userTier = 'MEMBER',
   });
 
   /// Mở sheet với wrapper StatefulBuilder chuẩn (rebuild ticks khi toggle).
@@ -32,6 +35,7 @@ class VoucherBottomSheet extends StatelessWidget {
     required List<UserDiscountEntity> selected,
     required List<CheckoutItemEntity> items,
     required ValueChanged<UserDiscountEntity> onToggle,
+    String userTier = 'MEMBER',
   }) {
     return showModalBottomSheet(
       context: context,
@@ -45,6 +49,7 @@ class VoucherBottomSheet extends StatelessWidget {
           vouchers: vouchers,
           selected: selected,
           items: items,
+          userTier: userTier,
           onToggle: (v) {
             onToggle(v);
             setSheetState(() {});
@@ -55,12 +60,18 @@ class VoucherBottomSheet extends StatelessWidget {
     );
   }
 
-  CheckoutPricing get _pricing =>
-      CheckoutPricing(items: items, selectedVouchers: selected);
+  CheckoutPricing get _pricing => CheckoutPricing(
+        items: items,
+        selectedVouchers: selected,
+        userTier: userTier,
+      );
 
   String? _disabledReason(UserDiscountEntity v, NumberFormat currFmt) {
     final pricing = _pricing;
     if (!v.isAvailable) return 'Voucher không còn khả dụng';
+    if (!TierInfoEntity.meetsTier(userTier, v.minTier)) {
+      return 'Chỉ dành cho hạng ${TierInfoEntity.labelOf(v.minTier!)} trở lên';
+    }
     if (v.scope == 'GLOBAL') {
       final currentSubAfterSpecific = pricing.subAfterSpecificFor(
         selected.where((s) => s.scope != 'GLOBAL').toList(),

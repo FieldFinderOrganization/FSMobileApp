@@ -40,9 +40,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final List<UserDiscountEntity> _selectedVouchers = [];
   bool _walletLoading = false;
   bool _autoApplied = false;
+  String _userTier = 'MEMBER'; // hạng user → lọc mã gắn hạng (minTier)
 
   // Phí ship (preview từ BE). null = chưa có điểm giao / chưa quote xong.
   double? _shippingFee;
+  double? _grossFee; // phí gốc theo khoảng cách (trước freeship) — để tính lại freeship local
   double? _distanceKm;
   bool _freeship = false;
   bool _feeLoading = false;
@@ -59,7 +61,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final userId = context.read<AuthCubit>().state.currentUser?.userId;
     if (userId != null) {
       _loadWallet(userId).then((_) => _autoApplyPreCodes());
+      _loadTier(userId);
     }
+  }
+
+  /// Lấy hạng user để chặn mã gắn hạng (minTier). Lỗi → giữ MEMBER.
+  Future<void> _loadTier(String userId) async {
+    try {
+      final ds = DiscountRemoteDataSource(context.read<DioClient>().dio);
+      final info = await ds.getTierInfo(userId);
+      if (!mounted) return;
+      setState(() {
+        _userTier = info.tier;
+        // Bỏ chọn mã không còn hợp lệ theo hạng vừa load.
+        _selectedVouchers.removeWhere((v) => !_isVoucherSelectable(v));
+      });
+    } catch (_) {}
   }
 
   @override
@@ -70,8 +87,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   /// Toàn bộ logic tính giá/điều kiện voucher nằm trong CheckoutPricing
   /// (dùng chung với card checkout trong AI chat).
-  CheckoutPricing get _pricing =>
-      CheckoutPricing(items: widget.items, selectedVouchers: _selectedVouchers);
+  CheckoutPricing get _pricing => CheckoutPricing(
+        items: widget.items,
+        selectedVouchers: _selectedVouchers,
+        userTier: _userTier,
+      );
 
   double get _subtotal => _pricing.subtotal;
 
@@ -124,8 +144,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         _selectedVouchers.add(v);
       }
     });
-    // Đổi voucher → _total đổi → ngưỡng/nudge freeship đổi → quote lại.
-    if (_destLat != null) _fetchShippingQuote();
+    // Đổi voucher chỉ đổi _total → ngưỡng/nudge freeship. Khoảng cách (địa chỉ)
+    // không đổi nên KHÔNG gọi lại OSRM; tính lại freeship local từ phí gốc đã có.
+    _recomputeFreeshipLocally();
+  }
+
+  /// Tính lại phí ship khi _total đổi (đổi voucher) mà KHÔNG gọi mạng.
+  /// Dùng phí gốc + khoảng cách đã quote; chỉ xét lại ngưỡng freeship.
+  void _recomputeFreeshipLocally() {
+    final gross = _grossFee;
+    final dist = _distanceKm;
+    if (gross == null || dist == null) return; // chưa có quote nào → bỏ qua
+    final freeshipEnabled = _freeshipThreshold > 0;
+    final inFreeRadius = _freeshipMaxKm <= 0 || dist <= _freeshipMaxKm;
+    final freeshipApplied =
+        freeshipEnabled && _total >= _freeshipThreshold && inFreeRadius;
+    final remaining = _freeshipThreshold - _total;
+    setState(() {
+      _freeship = freeshipApplied;
+      _shippingFee = freeshipApplied ? 0 : gross;
+      _amountToFreeship =
+          (freeshipEnabled && inFreeRadius && remaining > 0) ? remaining : 0;
+    });
   }
 
   void _autoApplyPreCodes() {
@@ -200,6 +240,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       selected: _selectedVouchers,
       items: widget.items,
       onToggle: _toggleVoucher,
+      userTier: _userTier,
     );
   }
 
@@ -243,6 +284,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       if (!mounted) return;
       setState(() {
         _shippingFee = (q['fee'] as num?)?.toDouble() ?? 0;
+        _grossFee = (q['grossFee'] as num?)?.toDouble() ?? _shippingFee;
         _distanceKm = (q['distanceKm'] as num?)?.toDouble();
         _freeship = q['freeshipApplied'] as bool? ?? false;
         _amountToFreeship = (q['amountToFreeship'] as num?)?.toDouble() ?? 0;

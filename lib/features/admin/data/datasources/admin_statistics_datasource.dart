@@ -105,7 +105,8 @@ class AdminStatisticsDatasource {
     String? sort,
   }) async {
     final params = <String, dynamic>{'page': page, 'size': size};
-    if (search.isNotEmpty) params['search'] = search;
+    // BE GET /products lọc theo param `name` (LOWER(name)/brand LIKE), không phải `search`.
+    if (search.isNotEmpty) params['name'] = search;
     if (sort != null && sort.isNotEmpty) params['sort'] = sort;
     final response = await dioClient.dio.get(
       ApiConstants.products,

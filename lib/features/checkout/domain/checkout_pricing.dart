@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import '../../discount/domain/entities/user_discount_entity.dart';
+import '../../discount/domain/entities/tier_info_entity.dart';
 import 'entities/checkout_item_entity.dart';
 
 /// Kết quả tính giá: specific/category per-item → GLOBAL → REFUND_CREDIT.
@@ -18,9 +19,13 @@ class CheckoutPricing {
   final List<CheckoutItemEntity> items;
   final List<UserDiscountEntity> selectedVouchers;
 
+  /// Hạng hiện tại của user — để chặn mã yêu cầu hạng cao hơn (minTier).
+  final String userTier;
+
   const CheckoutPricing({
     required this.items,
     required this.selectedVouchers,
+    this.userTier = 'MEMBER',
   });
 
   /// Subtotal theo GIÁ GỐC — base để tính lại discount ở checkout.
@@ -69,6 +74,8 @@ class CheckoutPricing {
 
   bool isVoucherSelectable(UserDiscountEntity v) {
     if (!v.isAvailable) return false;
+    // Mã gắn hạng: user chưa đủ hạng thì không được chọn (BE cũng chặn → tránh 400 khi đặt).
+    if (!TierInfoEntity.meetsTier(userTier, v.minTier)) return false;
 
     // REFUND_CREDIT có thể stack tự do với mọi promo (GLOBAL/CATEGORY/SPECIFIC).
     // Refund là tiền thật của user → trừ trực tiếp lên subtotal sau khi đã áp promo.

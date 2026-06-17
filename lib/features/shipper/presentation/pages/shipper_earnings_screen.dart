@@ -11,8 +11,9 @@ import '../../data/shipper_remote_data_source.dart';
 
 enum _Period { today, week, month }
 
-/// Tab "Thu nhập": tổng shippingFee các đơn DELIVERED, lọc theo kỳ.
-/// Tính 100% client-side từ /orders/shipper/me.
+/// Tab "Thu nhập": tổng phí ship GỐC các đơn DELIVERED, theo kỳ.
+/// Số tiền tính SERVER-SIDE (GET /orders/shipper/me/earnings) — khách được freeship
+/// vẫn tính cho shipper. Danh sách đơn (/orders/shipper/me) chỉ dùng cho tỉ lệ thành công.
 class ShipperEarningsScreen extends StatefulWidget {
   final UserEntity user;
   const ShipperEarningsScreen({super.key, required this.user});
@@ -26,6 +27,7 @@ class _ShipperEarningsScreenState extends State<ShipperEarningsScreen> {
   final _currency = NumberFormat('#,###', 'vi_VN');
 
   List<OrderModel> _mine = [];
+  Map<String, dynamic> _earnings = const {}; // số tiền theo kỳ từ server
   bool _loading = true;
   String? _error;
   _Period _period = _Period.today;
@@ -43,10 +45,11 @@ class _ShipperEarningsScreenState extends State<ShipperEarningsScreen> {
       _error = null;
     });
     try {
-      final mine = await _ds.getMyOrders();
+      final results = await Future.wait([_ds.getMyOrders(), _ds.getMyEarnings()]);
       if (!mounted) return;
       setState(() {
-        _mine = mine;
+        _mine = results[0] as List<OrderModel>;
+        _earnings = results[1] as Map<String, dynamic>;
         _loading = false;
       });
     } catch (e) {
@@ -58,20 +61,17 @@ class _ShipperEarningsScreenState extends State<ShipperEarningsScreen> {
     }
   }
 
-  DateTime _orderDate(OrderModel o) => o.paymentTime ?? o.createdAt;
+  double _num(String k) => (_earnings[k] as num?)?.toDouble() ?? 0;
+  int _int(String k) => (_earnings[k] as num?)?.toInt() ?? 0;
 
-  bool _inPeriod(DateTime d) {
-    final now = DateTime.now();
+  ({double total, int count}) get _periodEarning {
     switch (_period) {
       case _Period.today:
-        return d.year == now.year && d.month == now.month && d.day == now.day;
+        return (total: _num('today'), count: _int('todayCount'));
       case _Period.week:
-        // Đầu tuần (thứ 2) tới giờ.
-        final startOfWeek = DateTime(now.year, now.month, now.day)
-            .subtract(Duration(days: now.weekday - 1));
-        return !d.isBefore(startOfWeek);
+        return (total: _num('week'), count: _int('weekCount'));
       case _Period.month:
-        return d.year == now.year && d.month == now.month;
+        return (total: _num('month'), count: _int('monthCount'));
     }
   }
 
@@ -79,10 +79,8 @@ class _ShipperEarningsScreenState extends State<ShipperEarningsScreen> {
   Widget build(BuildContext context) {
     final delivered =
         _mine.where((o) => o.status.toUpperCase() == 'DELIVERED').toList();
-    final inPeriod =
-        delivered.where((o) => _inPeriod(_orderDate(o))).toList();
-    final totalEarning =
-        inPeriod.fold<double>(0, (s, o) => s + o.shippingFee);
+    final periodEarning = _periodEarning;
+    final totalEarning = periodEarning.total;
 
     // Tỉ lệ thành công toàn thời gian (giao / (giao + huỷ)).
     final canceledAll =
@@ -115,7 +113,7 @@ class _ShipperEarningsScreenState extends State<ShipperEarningsScreen> {
                     children: [
                       _periodToggle(),
                       const SizedBox(height: 16),
-                      _totalCard(totalEarning, inPeriod.length),
+                      _totalCard(totalEarning, periodEarning.count),
                       const SizedBox(height: 12),
                       Row(
                         children: [
