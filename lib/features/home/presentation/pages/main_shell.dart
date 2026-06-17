@@ -199,7 +199,7 @@ class _MainShellState extends State<MainShell>
         ),
         action: SnackBarAction(
           label: 'Xem',
-          textColor: AppColors.primaryRed,
+          textColor: Colors.white,
           onPressed: () => _openNotificationTarget(event, currentUser),
         ),
       ),

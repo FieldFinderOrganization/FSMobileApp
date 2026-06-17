@@ -202,6 +202,7 @@ class _NotificationTile extends StatelessWidget {
   const _NotificationTile({required this.item, required this.onTap});
 
   IconData get _icon => switch (item.type) {
+        'ORDER_PLACED' => Icons.receipt_long_rounded,
         'ORDER_CONFIRMED' => Icons.check_circle_outline_rounded,
         'ORDER_CLAIMED' => Icons.delivery_dining_rounded,
         'ORDER_SHIPPING' => Icons.local_shipping_outlined,

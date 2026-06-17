@@ -973,7 +973,12 @@ class _OrderItemCardState extends State<_OrderItemCard> {
       case 'PENDING':
         return Colors.orange;
       case 'CONFIRMED':
-        return const Color(0xFF2E7D32);
+      case 'PAID':
+        return const Color(0xFF64748B); // slate — phụ, kém nổi hơn shipping/delivered
+      case 'SHIPPING':
+        return const Color(0xFF1565C0); // xanh dương nổi — đang giao
+      case 'DELIVERED':
+        return const Color(0xFF2E7D32); // xanh lá đậm — đã giao (nổi bật nhất)
       case 'CANCELED':
         return AppColors.primaryRed;
       default:
@@ -987,6 +992,12 @@ class _OrderItemCardState extends State<_OrderItemCard> {
         return 'Chờ TT';
       case 'CONFIRMED':
         return 'Đã xác nhận';
+      case 'PAID':
+        return 'Đã thanh toán';
+      case 'SHIPPING':
+        return 'Đang giao';
+      case 'DELIVERED':
+        return 'Đã giao';
       case 'CANCELED':
         return 'Đã hủy';
       default:

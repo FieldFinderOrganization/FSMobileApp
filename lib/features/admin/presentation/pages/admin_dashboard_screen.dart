@@ -20,6 +20,7 @@ import '../cubit/admin_dashboard_state.dart';
 import 'admin_bookings_screen.dart';
 import 'admin_orders_screen.dart';
 import 'admin_pitches_screen.dart';
+import 'admin_products_screen.dart';
 import 'admin_rating_screen.dart';
 import 'admin_revenue_screen.dart';
 import 'admin_users_screen.dart';
@@ -267,28 +268,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              ClipOval(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.25),
-                        width: 1,
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.notifications_outlined,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
               ClipOval(
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
@@ -1885,12 +1864,30 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   color: Colors.black87,
                 ),
               ),
-              Text(
-                'Xem tất cả →',
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primaryRed,
+              InkWell(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AdminProductsScreen(
+                      datasource:
+                          context.read<AdminDashboardCubit>().datasource,
+                    ),
+                  ),
+                ),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
+                  child: Text(
+                    'Xem tất cả →',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primaryRed,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -2187,12 +2184,30 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   color: Colors.black87,
                 ),
               ),
-              Text(
-                'Xem tất cả →',
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primaryRed,
+              InkWell(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AdminBookingsScreen(
+                      datasource:
+                          context.read<AdminDashboardCubit>().datasource,
+                    ),
+                  ),
+                ),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
+                  child: Text(
+                    'Xem tất cả →',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primaryRed,
+                    ),
+                  ),
                 ),
               ),
             ],

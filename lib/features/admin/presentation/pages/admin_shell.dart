@@ -132,7 +132,7 @@ class _AdminShellState extends State<AdminShell> {
   Widget _buildCleanDrawer() {
     return Drawer(
       width: 280,
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: Colors.white,
       surfaceTintColor: Colors.transparent,
       child: SafeArea(
         child: BlocBuilder<AdminDashboardCubit, AdminDashboardState>(
@@ -143,10 +143,10 @@ class _AdminShellState extends State<AdminShell> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildDrawerHeader(),
-                const Divider(
+                Divider(
                   height: 1,
                   thickness: 1,
-                  color: Color(0xFF2A2A4A),
+                  color: Colors.grey.shade200,
                 ),
                 const SizedBox(height: 12),
                 _buildDrawerItem(
@@ -210,10 +210,10 @@ class _AdminShellState extends State<AdminShell> {
                   ),
                 ),
                 const Spacer(),
-                const Divider(
+                Divider(
                   height: 1,
                   thickness: 1,
-                  color: Color(0xFF2A2A4A),
+                  color: Colors.grey.shade200,
                 ),
                 _buildBackToAppItem(),
                 _buildLogoutItem(),
@@ -250,14 +250,17 @@ class _AdminShellState extends State<AdminShell> {
             style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.w900,
-              color: Colors.white,
+              color: Colors.black87,
               letterSpacing: -0.3,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             widget.user.name,
-            style: GoogleFonts.inter(fontSize: 13, color: Colors.white60),
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: Colors.grey.shade500,
+            ),
           ),
         ],
       ),
@@ -294,7 +297,9 @@ class _AdminShellState extends State<AdminShell> {
             children: [
               Icon(
                 icon,
-                color: isSelected ? AppColors.primaryRed : Colors.white38,
+                color: isSelected
+                    ? AppColors.primaryRed
+                    : Colors.grey.shade400,
                 size: 20,
               ),
               const SizedBox(width: 14),
@@ -303,7 +308,9 @@ class _AdminShellState extends State<AdminShell> {
                 style: GoogleFonts.inter(
                   fontSize: 15,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? Colors.white : Colors.white54,
+                  color: isSelected
+                      ? AppColors.primaryRed
+                      : Colors.grey.shade700,
                 ),
               ),
             ],
@@ -325,9 +332,9 @@ class _AdminShellState extends State<AdminShell> {
         },
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.arrow_back_ios_new_rounded,
-              color: Colors.white54,
+              color: Colors.grey.shade600,
               size: 20,
             ),
             const SizedBox(width: 14),
@@ -336,7 +343,7 @@ class _AdminShellState extends State<AdminShell> {
               style: GoogleFonts.inter(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: Colors.white54,
+                color: Colors.grey.shade600,
               ),
             ),
           ],

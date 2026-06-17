@@ -96,6 +96,24 @@ class AdminStatisticsDatasource {
     );
   }
 
+  /// Danh sách sản phẩm phân trang cho admin (tái dùng GET /products).
+  /// Trả raw Spring Page map: { content: [...], totalElements, last, ... }.
+  Future<Map<String, dynamic>> getProducts({
+    int page = 0,
+    int size = 20,
+    String search = '',
+    String? sort,
+  }) async {
+    final params = <String, dynamic>{'page': page, 'size': size};
+    if (search.isNotEmpty) params['search'] = search;
+    if (sort != null && sort.isNotEmpty) params['sort'] = sort;
+    final response = await dioClient.dio.get(
+      ApiConstants.products,
+      queryParameters: params,
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
   Future<AdminPitchListModel> getAdminPitches({
     int page = 0,
     int size = 10,
