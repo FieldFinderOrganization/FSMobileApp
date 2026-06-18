@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../../core/utils/money_utils.dart';
 import '../../../auth/login/presentation/bloc/auth_cubit.dart';
 import '../../../auth/login/presentation/bloc/auth_state.dart';
 import '../../../../shared/widgets/cancel_reason_sheet.dart';
@@ -426,7 +427,7 @@ class _BookingView extends StatelessWidget {
           title: 'Mã ưu đãi',
           subtitle: state.discountCodes.isEmpty
               ? 'Chưa áp dụng mã nào'
-              : '${state.discountCodes.length} mã · -${state.discountAmount.toStringAsFixed(0)}k',
+              : '${state.discountCodes.length} mã · -${formatVnd(state.discountAmount)}',
           actionLabel: state.discountCodes.isEmpty ? 'Chọn mã' : 'Đổi',
           onTap: () => _openDiscountPicker(context, state),
         ),
@@ -479,7 +480,7 @@ class _BookingView extends StatelessWidget {
             children: [
               _buildPriceRow(
                 'Đơn giá:',
-                '${context.read<BookingCubit>().pitch.price.toStringAsFixed(0)}k đ/h',
+                '${formatVnd(context.read<BookingCubit>().pitch.price)}/giờ',
               ),
               const SizedBox(height: 8),
               _buildPriceRow(
@@ -490,7 +491,7 @@ class _BookingView extends StatelessWidget {
                 const SizedBox(height: 8),
                 _buildPriceRow(
                   'Giảm giá:',
-                  '-${state.discountAmount.toStringAsFixed(0)}k đ',
+                  '-${formatVnd(state.discountAmount)}',
                   valueColor: const Color(0xFF15803D),
                 ),
               ],
@@ -507,7 +508,7 @@ class _BookingView extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${state.totalAmount.toStringAsFixed(0)}k đ',
+                    formatVnd(state.totalAmount),
                     style: GoogleFonts.inter(
                       fontSize: 18,
                       fontWeight: FontWeight.w900,

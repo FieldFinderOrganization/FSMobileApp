@@ -62,7 +62,10 @@ class DioClient {
         );
 
         final newAccessToken = response.data['accessToken'] as String;
-        final newRefreshToken = response.data['refreshToken'] as String;
+        // BE /refresh-token chỉ trả accessToken (refresh token KHÔNG xoay vòng) →
+        // đọc nullable, giữ refresh token cũ nếu response không kèm field này.
+        final newRefreshToken =
+            response.data['refreshToken'] as String? ?? refreshToken;
         final userId = await _tokenStorage.getUserId() ?? '';
         final role = await _tokenStorage.getRole() ?? '';
 

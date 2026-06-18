@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../../core/utils/money_utils.dart';
 import '../../../../shared/widgets/cancel_reason_sheet.dart';
 import '../../../../shared/widgets/cancel_window_countdown.dart';
 import '../../../../shared/widgets/refund_code_dialog.dart';
@@ -448,7 +449,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Widget _buildProductItem(OrderItemModel item) {
-    final currencyFmt = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -494,7 +494,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           ),
           const SizedBox(width: 8),
           Text(
-            currencyFmt.format(item.price),
+            formatVnd(item.price),
             style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.w800,
@@ -507,7 +507,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Widget _buildBillingCard() {
-    final currencyFmt = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -518,11 +517,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       child: Column(
         children: [
           _billingRow('Tạm tính',
-              currencyFmt.format(_order.totalAmount - _order.shippingFee)),
+              formatVnd(_order.totalAmount - _order.shippingFee)),
           _billingRow(
             'Phí vận chuyển',
             _order.shippingFee > 0
-                ? currencyFmt.format(_order.shippingFee)
+                ? formatVnd(_order.shippingFee)
                 : 'Miễn phí',
           ),
           const Padding(
@@ -541,7 +540,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 ),
               ),
               Text(
-                currencyFmt.format(_order.totalAmount),
+                formatVnd(_order.totalAmount),
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.w900,
                   fontSize: 20,

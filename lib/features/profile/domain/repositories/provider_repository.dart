@@ -12,4 +12,5 @@ abstract class ProviderRepository {
   Future<ProviderAddressEntity> updateAddress(String addressId, String address,
       {double? latitude, double? longitude});
   Future<void> deleteAddress(String addressId);
+  Future<List<String>> getAreas();
 }

@@ -64,6 +64,22 @@ class UserChatRemoteDatasource {
     }
   }
 
+  /// Hội thoại với peer có bị khóa nhắn tin không (đơn shipper đã hoàn tất/hủy).
+  Future<bool> getChatLockStatus({
+    required String userId,
+    required String peerId,
+  }) async {
+    try {
+      final response = await dioClient.dio.get(
+        ApiConstants.chatLockStatus,
+        queryParameters: {'userId': userId, 'peerId': peerId},
+      );
+      return response.data['locked'] == true;
+    } catch (_) {
+      return false; // lỗi mạng -> không khóa nhầm
+    }
+  }
+
   Future<DateTime?> getUserLastLogin(String userId) async {
     try {
       final response = await dioClient.dio.get(ApiConstants.userById(userId));

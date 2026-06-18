@@ -58,6 +58,9 @@ class UserChatCubit extends Cubit<UserChatState> {
   // Queue for messages sent before WS is connected
   final List<String> _pendingMessages = [];
 
+  /// Báo lên UI khi server khóa hội thoại (đơn hoàn tất) — UI chuyển sang chỉ đọc.
+  void Function(String message)? onLocked;
+
   UserChatCubit({
     required this.remoteDatasource,
     required this.wsService,
@@ -86,6 +89,7 @@ class UserChatCubit extends Cubit<UserChatState> {
         receiverId: currentUserId,
         onMessage: _onIncomingMessage,
         onReaction: applyReaction,
+        onLocked: (msg) => onLocked?.call(msg),
         onConnected: () {
           if (state is UserChatLoaded) {
             emit((state as UserChatLoaded).copyWith(isConnected: true));

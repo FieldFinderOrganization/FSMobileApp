@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../../core/utils/money_utils.dart';
 import '../../data/datasources/order_remote_data_source.dart';
 import '../../data/models/order_item_model.dart';
 import '../../data/models/order_model.dart';
@@ -485,7 +486,6 @@ class _OrderItemCardState extends State<_OrderItemCard> {
   Widget build(BuildContext context) {
     final statusColor = _getStatusColor(widget.order.status);
     final statusBg = statusColor.withValues(alpha: 0.1);
-    final currencyFmt = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
     final dateFmt = DateFormat('dd/MM/yyyy HH:mm');
 
     final items = widget.order.items;
@@ -680,7 +680,7 @@ class _OrderItemCardState extends State<_OrderItemCard> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        currencyFmt.format(widget.order.totalAmount),
+                        formatVnd(widget.order.totalAmount),
                         style: GoogleFonts.inter(
                           fontSize: 15,
                           fontWeight: FontWeight.w900,
@@ -895,7 +895,6 @@ class _OrderItemCardState extends State<_OrderItemCard> {
   }
 
   Widget _buildItemRow(OrderItemModel item) {
-    final currencyFmt = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -942,7 +941,7 @@ class _OrderItemCardState extends State<_OrderItemCard> {
           ),
           const SizedBox(width: 8),
           Text(
-            currencyFmt.format(item.price),
+            formatVnd(item.price),
             style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.w700,

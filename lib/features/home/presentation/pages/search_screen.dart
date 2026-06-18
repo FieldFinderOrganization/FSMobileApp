@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/utils/string_utils.dart';
+import '../../../../core/utils/money_utils.dart';
 import '../../../pitch/domain/entities/pitch_entity.dart';
 import '../../../pitch/presentation/pages/pitch_detail_screen.dart';
 import '../../../pitch/presentation/widgets/filter_sheet.dart';
@@ -550,7 +550,7 @@ class _PitchCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${pitch.price.toStringAsFixed(0)}k/h',
+                        '${formatVnd(pitch.price)}/giờ',
                         style: GoogleFonts.inter(
                           fontSize: 16,
                           fontWeight: FontWeight.w900,
@@ -652,7 +652,7 @@ class _ProductCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    NumberFormat.currency(locale: 'vi_VN', symbol: 'đ').format(product.price),
+                    formatVnd(product.price),
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       color: AppColors.primaryRed,

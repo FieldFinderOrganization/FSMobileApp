@@ -1,3 +1,5 @@
+import '../../../../core/utils/money_utils.dart';
+
 class AdminDiscountEntity {
   final String id;
   final String code;
@@ -63,5 +65,5 @@ class AdminDiscountEntity {
   }
 
   String get displayValue =>
-      isPercentage ? '${value.toInt()}%' : '${value.toInt()}đ';
+      isPercentage ? '${value.toInt()}%' : formatVnd(value);
 }

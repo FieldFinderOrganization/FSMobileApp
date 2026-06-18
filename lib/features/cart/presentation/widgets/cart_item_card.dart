@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../domain/entities/cart_item_entity.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/image_url.dart';
+import '../../../../core/utils/money_utils.dart';
 
 class CartItemCard extends StatelessWidget {
   final CartItemEntity item;
@@ -22,7 +22,6 @@ class CartItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formatter = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
     final hasSale = item.salePercent != null && item.salePercent! > 0;
     final isOut = item.isOutOfStock;
 
@@ -160,7 +159,7 @@ class CartItemCard extends StatelessWidget {
                                     fit: BoxFit.scaleDown,
                                     alignment: Alignment.centerLeft,
                                     child: Text(
-                                      formatter.format(item.originalPrice),
+                                      formatVnd(item.originalPrice),
                                       maxLines: 1,
                                       style: GoogleFonts.inter(
                                         fontSize: 11,
@@ -174,7 +173,7 @@ class CartItemCard extends StatelessWidget {
                                   fit: BoxFit.scaleDown,
                                   alignment: Alignment.centerLeft,
                                   child: Text(
-                                    formatter.format(item.unitPrice),
+                                    formatVnd(item.unitPrice),
                                     maxLines: 1,
                                     style: GoogleFonts.inter(
                                       fontSize: 15,

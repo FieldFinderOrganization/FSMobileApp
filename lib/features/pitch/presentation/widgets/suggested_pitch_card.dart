@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/money_utils.dart';
 import '../../domain/entities/pitch_entity.dart';
 import '../pages/pitch_detail_screen.dart';
 
@@ -80,7 +81,7 @@ class SuggestedPitchCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    '${pitch.price.toStringAsFixed(0)}k/h',
+                    '${formatVnd(pitch.price)}/giờ',
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w900,

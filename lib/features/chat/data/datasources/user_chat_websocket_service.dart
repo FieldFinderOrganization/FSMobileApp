@@ -15,6 +15,7 @@ class UserChatWebSocketService {
 
   void Function(UserChatMessageModel)? _onMessage;
   void Function(String messageId, String? reaction)? _onReaction;
+  void Function(String message)? _onLocked;
   void Function()? _onConnected;
   void Function(String)? _onError;
   String? _subscribedReceiverId;
@@ -27,11 +28,13 @@ class UserChatWebSocketService {
     required String receiverId,
     required void Function(UserChatMessageModel msg) onMessage,
     void Function(String messageId, String? reaction)? onReaction,
+    void Function(String message)? onLocked,
     void Function()? onConnected,
     void Function(String error)? onError,
   }) async {
     _onMessage = onMessage;
     _onReaction = onReaction;
+    _onLocked = onLocked;
     _onConnected = onConnected;
     _onError = onError;
     _subscribedReceiverId = receiverId;
@@ -69,6 +72,8 @@ class UserChatWebSocketService {
                   json['messageId']?.toString() ?? '',
                   json['reaction']?.toString(),
                 );
+              } else if (json['type'] == 'LOCKED') {
+                _onLocked?.call(json['message']?.toString() ?? '');
               } else {
                 _onMessage?.call(UserChatMessageModel.fromJson(json));
               }

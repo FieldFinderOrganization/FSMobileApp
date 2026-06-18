@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../../core/utils/money_utils.dart';
 import '../../../auth/login/presentation/bloc/auth_cubit.dart';
 import '../../../discount/data/datasources/discount_remote_data_source.dart';
 import '../../../discount/domain/entities/user_discount_entity.dart';
@@ -369,14 +370,14 @@ class _ChatBookingCheckoutCardState extends State<ChatBookingCheckoutCard> {
     return Column(
       children: [
         _summaryRow(
-          'Giá sân (${_slotList.length} giờ × ${_pitch.price.toStringAsFixed(0)}k)',
-          '${_subtotal.toStringAsFixed(0)}k đ',
+          'Giá sân (${_slotList.length} giờ × ${formatVnd(_pitch.price)})',
+          formatVnd(_subtotal),
         ),
         if (_discountAmount > 0) ...[
           const SizedBox(height: 6),
           _summaryRow(
             'Giảm giá',
-            '- ${_discountAmount.toStringAsFixed(0)}k đ',
+            '- ${formatVnd(_discountAmount)}',
             valueColor: Colors.green.shade700,
           ),
         ],
@@ -393,7 +394,7 @@ class _ChatBookingCheckoutCardState extends State<ChatBookingCheckoutCard> {
               ),
             ),
             Text(
-              '${_total.toStringAsFixed(0)}k đ',
+              formatVnd(_total),
               style: GoogleFonts.inter(
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
@@ -509,7 +510,7 @@ class _ChatBookingCheckoutCardState extends State<ChatBookingCheckoutCard> {
                     strokeWidth: 2, color: Colors.white),
               )
             : Text(
-                'Đặt sân · ${_total.toStringAsFixed(0)}k đ',
+                'Đặt sân · ${formatVnd(_total)}',
                 style: GoogleFonts.inter(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w700,

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/string_utils.dart';
+import '../../../../core/utils/money_utils.dart';
 import '../../domain/entities/pitch_entity.dart';
 import '../../../home/presentation/cubit/home_cubit.dart';
 import '../../../home/presentation/pages/search_screen.dart';
@@ -400,7 +401,7 @@ class _PitchCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${pitch.price.toStringAsFixed(0)}k/h',
+                        '${formatVnd(pitch.price)}/giờ',
                         style: GoogleFonts.inter(
                           fontSize: 16,
                           fontWeight: FontWeight.w900,

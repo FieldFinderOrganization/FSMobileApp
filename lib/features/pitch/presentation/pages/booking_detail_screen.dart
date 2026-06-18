@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../../core/utils/money_utils.dart';
 import '../../../../shared/widgets/cancel_reason_sheet.dart';
 import '../../../../shared/widgets/cancel_window_countdown.dart';
 import '../../../../shared/widgets/refund_code_dialog.dart';
@@ -482,7 +483,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           ),
           const SizedBox(height: 16),
           _invoiceRow(
-              'Tiền sân', '${_booking.totalPrice.toStringAsFixed(0)}k'),
+              'Tiền sân', formatVnd(_booking.totalPrice)),
           _invoiceRow('Phí dịch vụ', '0k'),
           const Divider(height: 24),
           Row(
@@ -496,7 +497,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 ),
               ),
               Text(
-                '${_booking.totalPrice.toStringAsFixed(0)}k',
+                formatVnd(_booking.totalPrice),
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.w900,
                   fontSize: 20,

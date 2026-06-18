@@ -65,6 +65,10 @@ class _UserChatScreenState extends State<UserChatScreen> {
   DateTime? _otherUserLastLogin;
   Timer? _labelTimer;
 
+  /// Khóa từ server (đơn shipper đã hoàn tất/hủy). Gộp với widget.readOnly.
+  bool _serverLocked = false;
+  bool get _readOnly => widget.readOnly || _serverLocked;
+
   @override
   void initState() {
     super.initState();
@@ -77,8 +81,10 @@ class _UserChatScreenState extends State<UserChatScreen> {
       currentUserId: widget.currentUserId,
       otherUserId: widget.otherUserId,
     );
+    _cubit.onLocked = _handleServerLocked;
     _cubit.initChat();
     _fetchOtherUserInfo();
+    _checkLockStatus();
     _labelTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) setState(() {});
     });
@@ -87,6 +93,31 @@ class _UserChatScreenState extends State<UserChatScreen> {
   Future<void> _fetchOtherUserInfo() async {
     final lastLogin = await _datasource.getUserLastLogin(widget.otherUserId);
     if (mounted) setState(() => _otherUserLastLogin = lastLogin);
+  }
+
+  /// Nguồn sự thật về khóa: hỏi server (mọi lối vào đều khóa đúng, kể cả khi
+  /// vào từ list chat/thông báo/deep-link không truyền readOnly).
+  Future<void> _checkLockStatus() async {
+    final locked = await _datasource.getChatLockStatus(
+      userId: widget.currentUserId,
+      peerId: widget.otherUserId,
+    );
+    if (mounted && locked) setState(() => _serverLocked = true);
+  }
+
+  /// Server chặn tin (đơn vừa hoàn tất khi đang mở chat) → chuyển sang chỉ đọc.
+  void _handleServerLocked(String message) {
+    if (!mounted) return;
+    setState(() => _serverLocked = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message.isEmpty ? 'Đơn đã hoàn tất, hội thoại đã được khóa.' : message,
+          style: GoogleFonts.inter(fontSize: 13),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -248,7 +279,7 @@ class _UserChatScreenState extends State<UserChatScreen> {
                 ),
             ],
           ),
-          actions: widget.readOnly
+          actions: _readOnly
               ? null
               : [
                   IconButton(
@@ -273,7 +304,7 @@ class _UserChatScreenState extends State<UserChatScreen> {
           children: [
             const Divider(height: 1, color: Color(0xFFEEEEEE)),
             Expanded(child: _buildMessageList()),
-            if (widget.readOnly)
+            if (_readOnly)
               _buildReadOnlyNotice()
             else ...[
               _buildInputBar(),
@@ -414,7 +445,7 @@ class _UserChatScreenState extends State<UserChatScreen> {
         : (video ? Icons.videocam_rounded : Icons.phone_rounded);
 
     return GestureDetector(
-      onTap: widget.readOnly
+      onTap: _readOnly
           ? null
           : () => context.read<CallCubit>().startCall(
               widget.otherUserId, widget.otherUserName,

@@ -2,6 +2,7 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/money_utils.dart';
 import '../../domain/entities/pitch_entity.dart';
 import '../../../favorite/presentation/widgets/favorite_heart_button.dart';
 import '../pages/pitch_detail_screen.dart';
@@ -184,7 +185,7 @@ class _PitchCardState extends State<PitchCard>
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        '${widget.pitch.price.toStringAsFixed(0)}k/h',
+                        '${formatVnd(widget.pitch.price)}/giờ',
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,

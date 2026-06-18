@@ -23,6 +23,8 @@ class AvailableVouchersScreen extends StatefulWidget {
 class _AvailableVouchersScreenState extends State<AvailableVouchersScreen> {
   bool _savedAny = false;
 
+  static final _pointFmt = NumberFormat.decimalPattern('vi_VN');
+
   @override
   void initState() {
     super.initState();
@@ -57,6 +59,61 @@ class _AvailableVouchersScreenState extends State<AvailableVouchersScreen> {
         ),
       );
     }
+  }
+
+  Future<void> _onRedeem(AdminDiscountEntity voucher) async {
+    final cubit = context.read<AvailableVouchersCubit>();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Đổi voucher',
+            style:
+                GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700)),
+        content: Text(
+          'Dùng ${_pointFmt.format(voucher.pointCost)} điểm để đổi mã ${voucher.code}?',
+          style: GoogleFonts.inter(fontSize: 13.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child:
+                Text('Hủy', style: GoogleFonts.inter(color: Colors.grey[600])),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Đổi',
+                style: GoogleFonts.inter(
+                    color: AppColors.primaryRed, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final ok = await cubit.redeem(widget.userId, voucher.id);
+    if (!mounted) return;
+    if (ok) _savedAny = true; // mã đã vào ví → màn ví cần reload
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? 'Đã đổi mã ${voucher.code} — kiểm tra ví voucher'
+              : _friendlyError(cubit.state.errorMessage),
+          style: GoogleFonts.inter(fontSize: 13),
+        ),
+        backgroundColor: ok ? const Color(0xFF15803D) : Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  String _friendlyError(String raw) {
+    if (raw.contains('Không đủ điểm')) return 'Bạn không đủ điểm để đổi mã này';
+    if (raw.contains('đã đổi')) return 'Bạn đã đổi mã này rồi';
+    if (raw.contains('hạng')) return 'Mã này yêu cầu hạng thành viên cao hơn';
+    return 'Đổi mã thất bại, thử lại sau';
   }
 
   @override
@@ -94,7 +151,7 @@ class _AvailableVouchersScreenState extends State<AvailableVouchersScreen> {
                     style: GoogleFonts.inter(color: Colors.grey)),
               );
             }
-            if (state.vouchers.isEmpty) {
+            if (state.vouchers.isEmpty && state.redeemable.isEmpty) {
               return Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -102,7 +159,7 @@ class _AvailableVouchersScreenState extends State<AvailableVouchersScreen> {
                     Icon(Icons.local_offer_outlined,
                         size: 56, color: Colors.grey[300]),
                     const SizedBox(height: 12),
-                    Text('Hiện không có mã nào để lưu',
+                    Text('Hiện không có mã nào để nhận',
                         style: GoogleFonts.inter(color: Colors.grey)),
                   ],
                 ),
@@ -114,22 +171,45 @@ class _AvailableVouchersScreenState extends State<AvailableVouchersScreen> {
               color: AppColors.primaryRed,
               onRefresh: () =>
                   context.read<AvailableVouchersCubit>().load(widget.userId),
-              child: ListView.builder(
+              child: ListView(
                 padding: EdgeInsets.fromLTRB(16, 16, 16, 24 + bottomInset),
-                itemCount: state.vouchers.length,
-                itemBuilder: (_, i) {
-                  final v = state.vouchers[i];
-                  final tierLocked =
-                      !TierInfoEntity.meetsTier(userTier, v.minTier);
-                  return _ClaimableCard(
-                    voucher: v,
-                    saving: state.savingCode == v.code,
-                    disabled: state.savingCode != null &&
-                        state.savingCode != v.code,
-                    tierLocked: tierLocked,
-                    onSave: () => _onSave(v.code),
-                  );
-                },
+                children: [
+                  if (state.redeemable.isNotEmpty) ...[
+                    _SectionHeader(
+                      title: 'Đổi bằng điểm',
+                      subtitle: 'Bạn có ${_pointFmt.format(state.balance)} điểm',
+                    ),
+                    const SizedBox(height: 8),
+                    ...state.redeemable.map(
+                      (v) => _RedeemableCard(
+                        voucher: v,
+                        redeeming: state.redeemingId == v.id,
+                        disabled: state.redeemingId != null &&
+                            state.redeemingId != v.id,
+                        onRedeem: () => _onRedeem(v),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  if (state.vouchers.isNotEmpty) ...[
+                    if (state.redeemable.isNotEmpty) ...[
+                      const _SectionHeader(title: 'Mã có thể lưu'),
+                      const SizedBox(height: 8),
+                    ],
+                    ...state.vouchers.map((v) {
+                      final tierLocked =
+                          !TierInfoEntity.meetsTier(userTier, v.minTier);
+                      return _ClaimableCard(
+                        voucher: v,
+                        saving: state.savingCode == v.code,
+                        disabled: state.savingCode != null &&
+                            state.savingCode != v.code,
+                        tierLocked: tierLocked,
+                        onSave: () => _onSave(v.code),
+                      );
+                    }),
+                  ],
+                ],
               ),
             );
           },
@@ -363,6 +443,201 @@ class _InfoChip extends StatelessWidget {
               fontSize: 10,
               color: const Color(0xFF6B7280),
               fontWeight: FontWeight.w500)),
+    );
+  }
+}
+
+/// Tiêu đề nhóm trong màn "Mã có thể nhận".
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+
+  const _SectionHeader({required this.title, this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: Colors.black87),
+        ),
+        if (subtitle != null) ...[
+          const Spacer(),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.monetization_on_rounded,
+                  size: 14, color: Color(0xFFD97706)),
+              const SizedBox(width: 4),
+              Text(
+                subtitle!,
+                style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFFD97706)),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Card mã đổi-bằng-điểm mà user đã ĐỦ điểm → bấm đổi ngay tại màn này.
+class _RedeemableCard extends StatelessWidget {
+  final AdminDiscountEntity voucher;
+  final bool redeeming;
+  final bool disabled;
+  final VoidCallback onRedeem;
+
+  const _RedeemableCard({
+    required this.voucher,
+    required this.redeeming,
+    required this.disabled,
+    required this.onRedeem,
+  });
+
+  static final _pointFmt = NumberFormat.decimalPattern('vi_VN');
+
+  @override
+  Widget build(BuildContext context) {
+    final dateFmt = DateFormat('dd/MM/yyyy');
+    final cost = voucher.pointCost ?? 0;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2))
+        ],
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            Container(
+              width: 80,
+              decoration: const BoxDecoration(
+                color: Color(0xFFD97706),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(14),
+                  bottomLeft: Radius.circular(14),
+                ),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      voucher.displayValue,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        height: 1.05,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'GIẢM',
+                      style: GoogleFonts.inter(
+                          fontSize: 10,
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      voucher.code,
+                      style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          letterSpacing: 0.5),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      voucher.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                          fontSize: 12, color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.monetization_on_rounded,
+                            size: 14, color: Color(0xFFD97706)),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${_pointFmt.format(cost)} điểm',
+                          style: GoogleFonts.inter(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFFD97706)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'HSD: ${dateFmt.format(voucher.endDate)}',
+                      style: GoogleFonts.inter(
+                          fontSize: 11, color: Colors.grey[500]),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: SizedBox(
+                height: 34,
+                child: ElevatedButton(
+                  onPressed: (redeeming || disabled) ? null : onRedeem,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD97706),
+                    disabledBackgroundColor:
+                        const Color(0xFFD97706).withValues(alpha: 0.35),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: redeeming
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : Text('Đổi ${_pointFmt.format(cost)} điểm',
+                          style: GoogleFonts.inter(
+                              fontSize: 11.5, fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

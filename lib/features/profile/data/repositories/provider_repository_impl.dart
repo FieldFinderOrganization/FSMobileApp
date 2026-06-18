@@ -57,4 +57,9 @@ class ProviderRepositoryImpl implements ProviderRepository {
   Future<void> deleteAddress(String addressId) async {
     await remoteDatasource.deleteAddress(addressId);
   }
+
+  @override
+  Future<List<String>> getAreas() async {
+    return await remoteDatasource.fetchAreas();
+  }
 }

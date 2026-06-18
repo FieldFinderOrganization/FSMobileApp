@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/money_utils.dart';
 import '../cubit/chat_cubit.dart';
 
 /// Card QR thanh toán trong AI chat (action == 'payment_qr').
@@ -28,10 +28,8 @@ class ChatPaymentQrCard extends StatefulWidget {
 
 class _ChatPaymentQrCardState extends State<ChatPaymentQrCard> {
   Timer? _pollingTimer;
-  final _currencyFormat = NumberFormat('#,###', 'vi_VN');
 
   bool get _isPaid => widget.aiData['paymentStatus'] == 'PAID';
-  bool get _isBooking => widget.aiData['kind'] == 'booking';
 
   @override
   void initState() {
@@ -63,10 +61,7 @@ class _ChatPaymentQrCardState extends State<ChatPaymentQrCard> {
 
   String get _amountLabel {
     final amount = (widget.aiData['amount'] as num?)?.toDouble() ?? 0;
-    // Booking: giá tính theo nghìn đồng (k) — giữ convention của PaymentScreen.
-    return _isBooking
-        ? '${amount.toStringAsFixed(0)}k đ'
-        : '${_currencyFormat.format(amount)}đ';
+    return formatVnd(amount);
   }
 
   @override

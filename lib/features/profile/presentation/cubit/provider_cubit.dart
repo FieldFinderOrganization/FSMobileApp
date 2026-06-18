@@ -124,6 +124,15 @@ class ProviderCubit extends Cubit<ProviderState> {
     }
   }
 
+  /// Danh sách khu vực có sẵn cho dropdown (không đổi state). Lỗi -> trả rỗng.
+  Future<List<String>> fetchAreas() async {
+    try {
+      return await repository.getAreas();
+    } catch (_) {
+      return const [];
+    }
+  }
+
   void clearMessage() {
     final currentState = state;
     if (currentState is ProviderLoaded && currentState.message != null) {

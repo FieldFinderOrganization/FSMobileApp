@@ -47,4 +47,11 @@ class ProviderRemoteDatasource {
   Future<void> deleteAddress(String addressId) async {
     await _dio.delete('${ApiConstants.providerAddresses}/$addressId');
   }
+
+  /// Danh sách khu vực (address) phân biệt — cho dropdown chọn khi thêm địa chỉ.
+  Future<List<String>> fetchAreas() async {
+    final response = await _dio.get('${ApiConstants.providerAddresses}/areas');
+    final list = response.data as List;
+    return list.map((e) => e.toString()).toList();
+  }
 }

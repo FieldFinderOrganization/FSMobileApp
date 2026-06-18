@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/image_url.dart';
+import '../../../../core/utils/money_utils.dart';
 import '../../domain/entities/product_entity.dart';
 import '../../domain/entities/product_variant_entity.dart';
 import '../../domain/repositories/product_repository.dart';
@@ -622,16 +623,7 @@ class _PriceRow extends StatelessWidget {
 
   const _PriceRow({required this.product});
 
-  String _formatPrice(double price) {
-    final p = price.toInt();
-    final s = p.toString();
-    final buf = StringBuffer();
-    for (int i = 0; i < s.length; i++) {
-      if (i > 0 && (s.length - i) % 3 == 0) buf.write('.');
-      buf.write(s[i]);
-    }
-    return '$bufđ';
-  }
+  String _formatPrice(double price) => formatVnd(price);
 
   @override
   Widget build(BuildContext context) {

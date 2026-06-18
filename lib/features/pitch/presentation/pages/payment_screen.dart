@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/money_utils.dart';
 import '../../domain/entities/pitch_entity.dart';
 import '../cubit/booking_cubit.dart';
 import '../cubit/booking_state.dart';
@@ -278,7 +279,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           const Divider(height: 24),
           _buildDetailRow(
             'Số tiền',
-            '${widget.paymentResponse.amount}k đ',
+            formatVnd(num.tryParse(widget.paymentResponse.amount) ?? 0),
             valueColor: AppColors.primaryRed,
             isBold: true,
           ),

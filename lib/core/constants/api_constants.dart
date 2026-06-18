@@ -116,6 +116,7 @@ class ApiConstants {
   static const String chatHistory = '/chat/history';
   static const String chatMarkRead = '/chat/mark-read';
   static const String chatUnreadCount = '/chat/unread-count';
+  static const String chatLockStatus = '/chat/lock-status';
   static const String chatConversations = '/chat/conversations';
   static const String chatUploadImage = '/chat/upload-image';
   static const String chatUploadVideo = '/chat/upload-video';

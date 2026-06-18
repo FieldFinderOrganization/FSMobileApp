@@ -201,6 +201,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                                 ),
                               if (!msg.isUser &&
                                   msg.aiData != null &&
+                                  msg.aiData!['bookings'] != null)
+                                _BookingList(
+                                  bookings:
+                                      (msg.aiData!['bookings'] as List<dynamic>)
+                                          .cast<Map<String, dynamic>>(),
+                                ),
+                              if (!msg.isUser &&
+                                  msg.aiData != null &&
                                   msg.aiData!['showImage'] == true &&
                                   msg.aiData!['product'] != null)
                                 _SingleProductImage(aiData: msg.aiData!),
@@ -315,6 +323,12 @@ class _PitchList extends StatelessWidget {
                     .toList() ??
                 const [],
             address: raw['address'] as String? ?? '',
+            latitude: (raw['latitude'] as num?)?.toDouble(),
+            longitude: (raw['longitude'] as num?)?.toDouble(),
+            // Thiếu 2 field này khiến nút "Chat chủ sân" ở màn chi tiết (mở từ AI) bị ẩn.
+            providerUserId: raw['providerUserId'] as String?,
+            providerName: raw['providerName'] as String?,
+            status: raw['status'] as String?,
           );
 
           return Container(
@@ -323,6 +337,125 @@ class _PitchList extends StatelessWidget {
             child: PitchCard(pitch: pitch),
           );
         },
+      ),
+    );
+  }
+}
+
+class _BookingList extends StatelessWidget {
+  final List<Map<String, dynamic>> bookings;
+  const _BookingList({required this.bookings});
+
+  String _money(num? v) {
+    if (v == null) return '0';
+    final s = v.toInt().toString();
+    final buf = StringBuffer();
+    for (int i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write('.');
+      buf.write(s[i]);
+    }
+    return buf.toString();
+  }
+
+  String _statusLabel(String? s) {
+    switch ((s ?? '').toUpperCase()) {
+      case 'CONFIRMED':
+      case 'PAID':
+        return 'Đã xác nhận';
+      case 'PENDING':
+        return 'Chờ thanh toán';
+      case 'CANCELLED':
+        return 'Đã hủy';
+      case 'COMPLETED':
+        return 'Hoàn thành';
+      default:
+        return s ?? '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (bookings.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, right: 12, top: 8, bottom: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: bookings.map((b) {
+          final slotsName = (b['slotsName'] as List<dynamic>?)
+                  ?.map((e) => e.toString())
+                  .toList() ??
+              const [];
+          final slots = (b['slots'] as List<dynamic>?)
+                  ?.map((e) => e.toString())
+                  .toList() ??
+              const [];
+          final timeStr =
+              slotsName.isNotEmpty ? slotsName.join(', ') : slots.join(', ');
+          final img = b['pitchImageUrl'] as String?;
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: (img != null && img.isNotEmpty)
+                      ? Image.network(img,
+                          width: 56, height: 56, fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => const Icon(
+                              Icons.stadium, size: 56, color: Color(0xFF9CA3AF)))
+                      : const Icon(Icons.stadium,
+                          size: 56, color: Color(0xFF9CA3AF)),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        b['pitchName'] as String? ?? 'Sân',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 14),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text('Ngày ${b['bookingDate'] ?? ''}',
+                          style: const TextStyle(
+                              fontSize: 12, color: Color(0xFF6B7280))),
+                      if (timeStr.isNotEmpty)
+                        Text('Khung giờ: $timeStr',
+                            style: const TextStyle(
+                                fontSize: 12, color: Color(0xFF6B7280))),
+                      const SizedBox(height: 2),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('${_money(b['totalPrice'] as num?)} đ',
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFFEF4444))),
+                          Text(_statusLabel(b['status'] as String?),
+                              style: const TextStyle(
+                                  fontSize: 12, color: Color(0xFF2563EB))),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
       ),
     );
   }

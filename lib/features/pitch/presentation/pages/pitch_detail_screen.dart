@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/location/location_helper.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/money_utils.dart';
 import '../../../auth/login/presentation/bloc/auth_cubit.dart';
 import '../../../chat/presentation/pages/user_chat_screen.dart';
 import '../cubit/pitch_detail_cubit.dart';
@@ -798,7 +799,7 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                   ),
                 ),
                 Text(
-                  '${pitch.price.toStringAsFixed(0)}k/h',
+                  '${formatVnd(pitch.price)}/giờ',
                   style: GoogleFonts.inter(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -1271,42 +1272,48 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                 );
               },
             ),
-            // Price display
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Tổng thanh toán',
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    color: AppColors.textGrey,
+            // Price display — Flexible + FittedBox để giá 7 số tự co, không đẩy tràn nút.
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Tổng thanh toán',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: AppColors.textGrey,
+                    ),
                   ),
-                ),
-                RichText(
-                  text: TextSpan(
-                    children: [
-                      TextSpan(
-                        text: '${widget.pitch.price.toStringAsFixed(0)}k',
-                        style: GoogleFonts.inter(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primaryRed,
-                        ),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: formatVnd(widget.pitch.price),
+                            style: GoogleFonts.inter(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryRed,
+                            ),
+                          ),
+                          TextSpan(
+                            text: '/giờ',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: AppColors.textGrey,
+                            ),
+                          ),
+                        ],
                       ),
-                      TextSpan(
-                        text: '/giờ',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: AppColors.textGrey,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             // Book button
             Expanded(
               child: ScaleTransition(
@@ -1389,7 +1396,7 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                isOwner ? 'Sân của bạn' : 'Đặt lịch ngay',
+                                isOwner ? 'Sân của bạn' : 'Đặt lịch',
                                 style: GoogleFonts.inter(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w700,

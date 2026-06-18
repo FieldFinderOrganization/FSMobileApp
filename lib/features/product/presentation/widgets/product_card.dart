@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/image_url.dart';
+import '../../../../core/utils/money_utils.dart';
 import '../../domain/entities/product_entity.dart';
 import '../../../home/presentation/widgets/tilt_card.dart';
 import '../pages/product_detail_screen.dart';
@@ -183,7 +184,7 @@ class ProductCard extends StatelessWidget {
         children: [
           Flexible(
             child: Text(
-              '${product.salePrice!.toStringAsFixed(0)}k',
+              formatVnd(product.salePrice),
               style: GoogleFonts.inter(
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
@@ -195,7 +196,7 @@ class ProductCard extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Text(
-            '${product.price.toStringAsFixed(0)}k',
+            formatVnd(product.price),
             style: GoogleFonts.inter(
               fontSize: 10,
               color: AppColors.textGrey,
@@ -208,7 +209,7 @@ class ProductCard extends StatelessWidget {
       );
     }
     return Text(
-      '${product.price.toStringAsFixed(0)}k',
+      formatVnd(product.price),
       style: GoogleFonts.inter(
         fontSize: 15,
         fontWeight: FontWeight.w800,
@@ -432,7 +433,7 @@ class ProductCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            '${product.price.toStringAsFixed(0)}k',
+            formatVnd(product.price),
             style: GoogleFonts.inter(
               fontSize: 10,
               color: Colors.white54,
@@ -450,7 +451,7 @@ class ProductCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(5),
             ),
             child: Text(
-              '${product.salePrice!.toStringAsFixed(0)}k',
+              formatVnd(product.salePrice),
               style: GoogleFonts.inter(
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
@@ -464,7 +465,7 @@ class ProductCard extends StatelessWidget {
       );
     }
     return Text(
-      '${product.price.toStringAsFixed(0)}k',
+      formatVnd(product.price),
       style: GoogleFonts.inter(
         fontSize: 13,
         fontWeight: FontWeight.w800,
@@ -534,7 +535,7 @@ class ProductCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            '${product.price.toStringAsFixed(0)}k',
+            formatVnd(product.price),
             style: GoogleFonts.inter(
               fontSize: 11,
               color: AppColors.textGrey,
@@ -544,7 +545,7 @@ class ProductCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
           Text(
-            '${product.salePrice!.toStringAsFixed(0)}k',
+            formatVnd(product.salePrice),
             style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -557,7 +558,7 @@ class ProductCard extends StatelessWidget {
       );
     }
     return Text(
-      '${product.price.toStringAsFixed(0)}k',
+      formatVnd(product.price),
       style: GoogleFonts.inter(
         fontSize: 14,
         fontWeight: FontWeight.w700,
