@@ -82,11 +82,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       _order.paymentTime?.add(const Duration(hours: 24));
 
   Future<void> _handleCancel() async {
+    final isBankPayment = _order.paymentMethod.toUpperCase() == 'BANK';
     final reason = await CancelReasonSheet.show(
       context,
-      title: _willRefund ? 'Lý do hủy & nhận hoàn tiền' : 'Lý do hủy đơn',
+      title: (_willRefund && isBankPayment)
+          ? 'Lý do hủy & nhận hoàn tiền'
+          : 'Lý do hủy đơn',
       options: CancelReasonSheet.orderReasons,
-      willIssueRefund: _willRefund,
+      willIssueRefund: _willRefund && isBankPayment,
+      paymentMethod: _order.paymentMethod,
     );
     if (reason == null || !mounted) return;
 
@@ -226,7 +230,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (_willRefund && _refundDeadline != null) ...[
+          if (_willRefund && _refundDeadline != null &&
+              _order.paymentMethod.toUpperCase() == 'BANK') ...[
             Row(
               children: [
                 const Icon(Icons.savings_rounded,
@@ -267,7 +272,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     )
                   : const Icon(Icons.cancel_rounded, color: Colors.white),
               label: Text(
-                _willRefund ? 'Hủy đơn & nhận mã hoàn tiền' : 'Hủy đơn hàng',
+                (_willRefund && _order.paymentMethod.toUpperCase() == 'BANK')
+                    ? 'Hủy đơn & nhận hoàn tiền'
+                    : 'Hủy đơn hàng',
                 style: GoogleFonts.inter(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,

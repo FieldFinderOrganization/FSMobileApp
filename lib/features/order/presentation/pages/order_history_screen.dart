@@ -787,7 +787,10 @@ class _OrderItemCardState extends State<_OrderItemCard> {
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
                           child: Text(
-                            _willRefund(widget.order) ? 'Hủy & hoàn tiền' : 'Hủy đơn',
+                            _willRefund(widget.order) &&
+                                    widget.order.paymentMethod.toUpperCase() == 'BANK'
+                                ? 'Hủy & hoàn tiền'
+                                : 'Hủy đơn',
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
@@ -822,13 +825,16 @@ class _OrderItemCardState extends State<_OrderItemCard> {
   }
 
   Future<void> _showCancelSheet(BuildContext outerContext) async {
+    final isBankPayment =
+        widget.order.paymentMethod.toUpperCase() == 'BANK';
     final result = await CancelReasonSheet.show(
       outerContext,
-      title: _willRefund(widget.order)
+      title: (_willRefund(widget.order) && isBankPayment)
           ? 'Lý do hủy & nhận hoàn tiền'
           : 'Lý do hủy đơn',
       options: CancelReasonSheet.orderReasons,
-      willIssueRefund: _willRefund(widget.order),
+      willIssueRefund: _willRefund(widget.order) && isBankPayment,
+      paymentMethod: widget.order.paymentMethod,
     );
     if (result == null) return;
     if (!outerContext.mounted) return;

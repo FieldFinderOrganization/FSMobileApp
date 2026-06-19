@@ -573,11 +573,16 @@ class _BookingItemCardState extends State<_BookingItemCard> {
   }
 
   Future<void> _showRefundCancelSheet(BuildContext context) async {
+    final isBankPayment =
+        widget.booking.paymentMethod.toUpperCase() == 'BANK';
     final reason = await CancelReasonSheet.show(
       context,
-      title: 'Lý do hủy & nhận hoàn tiền',
+      title: isBankPayment
+          ? 'Lý do hủy & nhận hoàn tiền'
+          : 'Lý do hủy đặt sân',
       options: CancelReasonSheet.bookingReasons,
-      willIssueRefund: true,
+      willIssueRefund: isBankPayment,
+      paymentMethod: widget.booking.paymentMethod,
     );
     if (reason == null || !mounted) return;
 

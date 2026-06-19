@@ -11,11 +11,15 @@ class BookingDiscountPicker extends StatefulWidget {
   final DiscountRemoteDataSource dataSource;
   final List<String> initiallySelected;
 
+  /// Tạm tính của đơn (trước giảm) — để chặn mã chưa đạt giá trị tối thiểu.
+  final double subtotal;
+
   const BookingDiscountPicker({
     super.key,
     required this.userId,
     required this.dataSource,
     this.initiallySelected = const [],
+    this.subtotal = 0.0,
   });
 
   static Future<List<UserDiscountEntity>?> show(
@@ -23,6 +27,7 @@ class BookingDiscountPicker extends StatefulWidget {
     required String userId,
     required DiscountRemoteDataSource dataSource,
     List<String> initiallySelected = const [],
+    double subtotal = 0.0,
   }) {
     return showModalBottomSheet<List<UserDiscountEntity>>(
       context: context,
@@ -35,6 +40,7 @@ class BookingDiscountPicker extends StatefulWidget {
         userId: userId,
         dataSource: dataSource,
         initiallySelected: initiallySelected,
+        subtotal: subtotal,
       ),
     );
   }
@@ -58,6 +64,13 @@ class _State extends State<BookingDiscountPicker> {
     if (!v.isAvailable) return false;
     if (v.isRefundCredit) return true;
     return v.scope == 'GLOBAL';
+  }
+
+  /// Mã đạt giá trị tối thiểu của đơn chưa? Mã hoàn tiền không bị ràng buộc này.
+  bool _meetsMinOrder(UserDiscountEntity v) {
+    if (v.isRefundCredit) return true;
+    if (v.minOrderValue == null) return true;
+    return widget.subtotal >= v.minOrderValue!;
   }
 
   @override

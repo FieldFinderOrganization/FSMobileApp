@@ -513,6 +513,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       title: 'Lý do hủy & nhận hoàn tiền',
       options: CancelReasonSheet.bookingReasons,
       willIssueRefund: true,
+      paymentMethod: 'BANK',
     );
     if (reason == null) return;
 

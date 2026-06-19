@@ -310,7 +310,8 @@ class _BookingCard extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Xác nhận hủy đơn'),
         content: const Text(
-          'Khách đã thanh toán sẽ được hoàn 100% qua mã hoàn tiền '
+          'Khách đã thanh toán chuyển khoản sẽ được hoàn tiền về tài khoản '
+          'hoặc nhận voucher đền bù '
           '(110% nếu hủy sát giờ <60 phút). Bạn có chắc chắn?',
         ),
         actions: [

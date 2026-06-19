@@ -76,11 +76,15 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       _earliestSlotStart?.subtract(const Duration(minutes: 10));
 
   Future<void> _handleCancel() async {
+    final isBankPayment = _booking.paymentMethod.toUpperCase() == 'BANK';
     final reason = await CancelReasonSheet.show(
       context,
-      title: _willRefund ? 'Lý do hủy & nhận hoàn tiền' : 'Lý do hủy đặt sân',
+      title: (_willRefund && isBankPayment)
+          ? 'Lý do hủy & nhận hoàn tiền'
+          : 'Lý do hủy đặt sân',
       options: CancelReasonSheet.bookingReasons,
-      willIssueRefund: _willRefund,
+      willIssueRefund: _willRefund && isBankPayment,
+      paymentMethod: _booking.paymentMethod,
     );
     if (reason == null || !mounted) return;
 
@@ -219,7 +223,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (_willRefund && _refundDeadline != null) ...[
+          if (_willRefund && _refundDeadline != null &&
+              _booking.paymentMethod.toUpperCase() == 'BANK') ...[
             Row(
               children: [
                 const Icon(Icons.savings_rounded,
@@ -260,7 +265,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                     )
                   : const Icon(Icons.cancel_rounded, color: Colors.white),
               label: Text(
-                _willRefund ? 'Hủy đặt sân & nhận mã hoàn tiền' : 'Hủy đặt sân',
+                (_willRefund && _booking.paymentMethod.toUpperCase() == 'BANK')
+                    ? 'Hủy đặt sân & nhận hoàn tiền'
+                    : 'Hủy đặt sân',
                 style: GoogleFonts.inter(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,

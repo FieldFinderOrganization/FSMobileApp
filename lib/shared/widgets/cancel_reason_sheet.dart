@@ -27,6 +27,7 @@ class CancelReasonSheet extends StatefulWidget {
   final List<CancelReasonOption> options;
   final String confirmLabel;
   final bool willIssueRefund;
+  final String? paymentMethod;
 
   const CancelReasonSheet({
     super.key,
@@ -34,6 +35,7 @@ class CancelReasonSheet extends StatefulWidget {
     required this.options,
     this.confirmLabel = 'Xác nhận hủy',
     this.willIssueRefund = false,
+    this.paymentMethod,
   });
 
   static Future<CancelReasonResult?> show(
@@ -42,6 +44,7 @@ class CancelReasonSheet extends StatefulWidget {
     required List<CancelReasonOption> options,
     String confirmLabel = 'Xác nhận hủy',
     bool willIssueRefund = false,
+    String? paymentMethod,
   }) {
     return showModalBottomSheet<CancelReasonResult>(
       context: context,
@@ -55,6 +58,7 @@ class CancelReasonSheet extends StatefulWidget {
         options: options,
         confirmLabel: confirmLabel,
         willIssueRefund: willIssueRefund,
+        paymentMethod: paymentMethod,
       ),
     );
   }
@@ -145,7 +149,8 @@ class _CancelReasonSheetState extends State<CancelReasonSheet> {
                 ],
               ),
             ),
-            if (widget.willIssueRefund)
+            if (widget.willIssueRefund &&
+                widget.paymentMethod?.toUpperCase() == 'BANK') ...[
               Container(
                 margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 padding:
@@ -155,13 +160,21 @@ class _CancelReasonSheetState extends State<CancelReasonSheet> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.savings_rounded,
-                        color: Color(0xFF16A34A), size: 18),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 2),
+                      child: Icon(Icons.savings_rounded,
+                          color: Color(0xFF16A34A), size: 18),
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Bạn sẽ nhận lại 100% giá trị qua mã hoàn tiền.',
+                        'Bạn sẽ nhận được hoàn 100% tiền về tài khoản trong '
+                        'vòng 24h, sau thời gian đó nếu tài khoản không nhận '
+                        'được thanh toán, bạn sẽ nhận được voucher đền bù, '
+                        'nếu không muốn nhận voucher, vui lòng liên hệ admin '
+                        'để chúng mình hoàn tiền nhé!',
                         style: GoogleFonts.inter(
                           fontSize: 12.5,
                           color: const Color(0xFF166534),
@@ -172,6 +185,39 @@ class _CancelReasonSheetState extends State<CancelReasonSheet> {
                   ],
                 ),
               ),
+              Container(
+                margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF8E1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(top: 2),
+                      child: Icon(Icons.warning_amber_rounded,
+                          color: Color(0xFFF57F17), size: 18),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Nếu bạn chưa thêm tài khoản ngân hàng, bạn sẽ chỉ '
+                        'nhận được mã hoàn tiền và không thể khiếu nại. '
+                        'Vui lòng thêm tài khoản ngân hàng trong phần Cài đặt.',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: const Color(0xFFE65100),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const Divider(height: 1),
             Flexible(
               child: ListView.builder(
