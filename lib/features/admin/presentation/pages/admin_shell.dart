@@ -14,6 +14,7 @@ import 'admin_orders_screen.dart';
 import 'admin_pitches_screen.dart';
 import 'admin_review_moderation_screen.dart';
 import 'admin_users_screen.dart';
+import 'admin_provider_debts_screen.dart';
 import '../../../discount/presentation/cubit/admin_discount_cubit.dart';
 import '../../../discount/presentation/pages/admin_discount_list_screen.dart';
 
@@ -207,6 +208,14 @@ class _AdminShellState extends State<AdminShell> {
                   Icons.reviews_outlined,
                   onTap: () => _pushScreen(
                     AdminReviewModerationScreen(datasource: cubit.datasource),
+                  ),
+                ),
+                _buildDrawerItem(
+                  8,
+                  'Nợ chủ sân',
+                  Icons.account_balance_wallet_outlined,
+                  onTap: () => _pushScreen(
+                    AdminProviderDebtsScreen(datasource: cubit.datasource),
                   ),
                 ),
                 const Spacer(),

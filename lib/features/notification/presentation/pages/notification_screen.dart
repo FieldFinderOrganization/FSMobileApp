@@ -208,6 +208,7 @@ class _NotificationTile extends StatelessWidget {
         'ORDER_SHIPPING' => Icons.local_shipping_outlined,
         'ORDER_DELIVERED' => Icons.inventory_2_outlined,
         'BOOKING_CONFIRMED' => Icons.event_available_rounded,
+        'BOOKING_CANCELED' => Icons.event_busy_rounded,
         'BOOKING_PLAY_REMINDER' => Icons.sports_soccer_rounded,
         'PROVIDER_BOOKING_NEW' => Icons.event_available_rounded,
         'PROVIDER_BOOKING_CANCELED' => Icons.event_busy_rounded,

@@ -14,6 +14,9 @@ class PitchModel extends PitchEntity {
     super.longitude,
     super.providerUserId,
     super.providerName,
+    super.providerPhone,
+    super.providerRating,
+    super.providerReviewCount,
     super.status,
   });
 
@@ -34,6 +37,9 @@ class PitchModel extends PitchEntity {
       longitude: (json['longitude'] as num?)?.toDouble(),
       providerUserId: json['providerUserId'] as String?,
       providerName: json['providerName'] as String?,
+      providerPhone: json['providerPhone'] as String?,
+      providerRating: (json['providerRating'] as num?)?.toDouble(),
+      providerReviewCount: (json['providerReviewCount'] as num?)?.toInt(),
       status: json['status'] as String?,
     );
   }

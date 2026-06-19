@@ -11,6 +11,12 @@ class RefundRequestModel {
   final DateTime? createdAt;
   final DateTime? processedAt;
 
+  // Hoàn tiền mặt (PayOS payout)
+  final String? refundMethod; // VOUCHER | CASH
+  final String? maskedAccount;
+  final String? payosTxnState;
+  final DateTime? deadlineAt;
+
   const RefundRequestModel({
     required this.refundId,
     required this.sourceType,
@@ -23,7 +29,13 @@ class RefundRequestModel {
     this.remainingValue,
     this.createdAt,
     this.processedAt,
+    this.refundMethod,
+    this.maskedAccount,
+    this.payosTxnState,
+    this.deadlineAt,
   });
+
+  bool get isCash => refundMethod == 'CASH';
 
   factory RefundRequestModel.fromJson(Map<String, dynamic> json) {
     return RefundRequestModel(
@@ -43,6 +55,12 @@ class RefundRequestModel {
           : null,
       processedAt: json['processedAt'] != null
           ? DateTime.tryParse(json['processedAt'].toString())
+          : null,
+      refundMethod: json['refundMethod'] as String?,
+      maskedAccount: json['maskedAccount'] as String?,
+      payosTxnState: json['payosTxnState'] as String?,
+      deadlineAt: json['deadlineAt'] != null
+          ? DateTime.tryParse(json['deadlineAt'].toString())
           : null,
     );
   }

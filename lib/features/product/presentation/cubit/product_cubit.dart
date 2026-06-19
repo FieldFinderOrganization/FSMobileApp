@@ -60,6 +60,10 @@ class ProductCubit extends Cubit<ProductState> {
       status: LoadStatus.loading,
       currentPage: 0,
       hasMore: true,
+      // Clear any stuck "load more" spinner: a prefetch/loadNextPage in flight from a
+      // previous generation returns early on stale session WITHOUT resetting this flag,
+      // which then deadlocks loadNextPage's guard forever (infinite spinner on every category).
+      isLoadingMore: false,
       products: [],
       priceRange: keepPrice ? state.priceRange : const RangeValues(0, 1000),
       priceTouched: keepPrice ? state.priceTouched : false,
@@ -110,7 +114,10 @@ class ProductCubit extends Cubit<ProductState> {
       final nextPage = state.currentPage + 1;
       final categoryId = _activeCategoryIdForListing();
       final result = await _repository.getAllProducts(page: nextPage, size: 10, categoryId: categoryId, brand: _brandParam, sort: _sortParam());
-      if (session != _catalogLoadGeneration) return;
+      if (session != _catalogLoadGeneration) {
+        emit(state.copyWith(isLoadingMore: false));
+        return;
+      }
 
       final List<ProductEntity> newProducts = result['products'] as List<ProductEntity>;
       final bool last = result['last'] as bool;
@@ -122,7 +129,6 @@ class ProductCubit extends Cubit<ProductState> {
         hasMore: !last,
       ));
     } catch (e) {
-      if (session != _catalogLoadGeneration) return;
       emit(state.copyWith(isLoadingMore: false));
     }
   }

@@ -25,4 +25,13 @@ class RefundRemoteDataSource {
       rethrow;
     }
   }
+
+  /// Lịch sử hoàn tiền của user hiện tại (voucher + tiền mặt).
+  Future<List<RefundRequestModel>> getMine() async {
+    final res = await dioClient.dio.get('/refunds/mine');
+    final data = res.data as List<dynamic>;
+    return data
+        .map((e) => RefundRequestModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
 }

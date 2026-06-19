@@ -103,7 +103,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
           'accept-language': 'vi',
         },
         options: Options(
-          headers: {'User-Agent': 'FSMobileApp/1.0 (fieldfinder)'},
+          headers: {'User-Agent': 'FSMobileApp/1.0 (sportshub)'},
           sendTimeout: const Duration(seconds: 8),
           receiveTimeout: const Duration(seconds: 8),
         ),
@@ -150,7 +150,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
           'accept-language': 'vi',
         },
         options: Options(
-          headers: {'User-Agent': 'FSMobileApp/1.0 (fieldfinder)'},
+          headers: {'User-Agent': 'FSMobileApp/1.0 (sportshub)'},
           sendTimeout: const Duration(seconds: 8),
           receiveTimeout: const Duration(seconds: 8),
         ),

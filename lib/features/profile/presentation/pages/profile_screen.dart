@@ -22,6 +22,14 @@ import '../../../favorite/presentation/pages/favorite_pitches_screen.dart';
 import '../../../support/presentation/pages/support_screen.dart';
 import '../../../support/presentation/pages/contact_screen.dart';
 import '../widgets/tier_membership_card.dart';
+import '../../../../core/network/dio_client.dart';
+import '../../../bank_account/data/datasources/bank_account_remote_datasource.dart';
+import '../../../bank_account/data/repositories/bank_account_repository_impl.dart';
+import '../../../bank_account/presentation/cubit/bank_account_cubit.dart';
+import '../../../bank_account/presentation/pages/bank_account_screen.dart';
+import '../../../refund/data/datasources/refund_remote_data_source.dart';
+import '../../../refund/presentation/cubit/refund_cubit.dart';
+import '../../../refund/presentation/pages/refund_history_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final UserEntity user;
@@ -638,6 +646,45 @@ class _ProfileBody extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (_) => PointsScreen(userId: user.userId),
+                ),
+              );
+            },
+          ),
+          _ActionRow(
+            icon: Icons.account_balance_outlined,
+            label: 'Tài khoản ngân hàng',
+            onTap: () {
+              final dio = context.read<DioClient>();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BlocProvider(
+                    create: (_) => BankAccountCubit(
+                      repository: BankAccountRepositoryImpl(
+                        remoteDataSource:
+                            BankAccountRemoteDataSource(dioClient: dio),
+                      ),
+                    ),
+                    child: const BankAccountScreen(),
+                  ),
+                ),
+              );
+            },
+          ),
+          _ActionRow(
+            icon: Icons.receipt_long_outlined,
+            label: 'Lịch sử hoàn tiền',
+            onTap: () {
+              final dio = context.read<DioClient>();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BlocProvider(
+                    create: (_) => RefundCubit(
+                      dataSource: RefundRemoteDataSource(dioClient: dio),
+                    ),
+                    child: const RefundHistoryScreen(),
+                  ),
                 ),
               );
             },

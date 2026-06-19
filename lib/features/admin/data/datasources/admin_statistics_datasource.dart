@@ -13,6 +13,7 @@ import '../models/pitch_type_model.dart';
 import '../models/product_statistics_model.dart';
 import '../models/recent_booking_model.dart';
 import '../models/revenue_point_model.dart';
+import '../models/provider_debt_model.dart';
 import '../../../order/data/models/order_model.dart';
 import '../../../pitch/data/models/review_model.dart';
 import '../../../product_review/data/models/item_review_model.dart';
@@ -34,6 +35,22 @@ class AdminStatisticsDatasource {
       queryParameters: {'status': status},
     );
     return OrderModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Khoản nợ chủ sân chưa trả (hệ thống ứng hoàn khi chủ sân hủy).
+  Future<List<ProviderDebtModel>> getProviderDebts() async {
+    final res = await dioClient.dio.get('/admin/provider-debts');
+    return (res.data as List<dynamic>)
+        .map((e) => ProviderDebtModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> settleProviderDebt(String id) async {
+    await dioClient.dio.post('/admin/provider-debts/$id/settle');
+  }
+
+  Future<void> waiveProviderDebt(String id) async {
+    await dioClient.dio.post('/admin/provider-debts/$id/waive');
   }
 
   Future<AdminOverviewModel> getOverview() async {

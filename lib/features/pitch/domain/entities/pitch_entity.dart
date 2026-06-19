@@ -11,6 +11,9 @@ class PitchEntity {
   final double? longitude;
   final String? providerUserId;
   final String? providerName;
+  final String? providerPhone;
+  final double? providerRating; // điểm TB mọi sân của chủ; null = chưa có
+  final int? providerReviewCount;
   final String? status; // 'ACTIVE' | 'INACTIVE'
 
   const PitchEntity({
@@ -26,6 +29,9 @@ class PitchEntity {
     this.longitude,
     this.providerUserId,
     this.providerName,
+    this.providerPhone,
+    this.providerRating,
+    this.providerReviewCount,
     this.status,
   });
 
@@ -47,6 +53,21 @@ class PitchEntity {
         return 'Sân 11';
       default:
         return type;
+    }
+  }
+
+  /// Chuyển nhãn hiển thị ("Sân 7") sang mã enum BE ("SEVEN_A_SIDE").
+  /// BE lọc bằng `PitchType.valueOf(type)`, gửi nhãn sẽ throw → bỏ lọc → lẫn loại.
+  static String typeCodeFromDisplay(String label) {
+    switch (label.trim()) {
+      case 'Sân 5':
+        return 'FIVE_A_SIDE';
+      case 'Sân 7':
+        return 'SEVEN_A_SIDE';
+      case 'Sân 11':
+        return 'ELEVEN_A_SIDE';
+      default:
+        return label; // đã là mã enum hoặc rỗng
     }
   }
 

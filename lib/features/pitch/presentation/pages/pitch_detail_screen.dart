@@ -6,6 +6,7 @@ import '../../../../core/location/location_helper.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/money_utils.dart';
+import '../../../../core/utils/launch_helper.dart';
 import '../../../auth/login/presentation/bloc/auth_cubit.dart';
 import '../../../chat/presentation/pages/user_chat_screen.dart';
 import '../cubit/pitch_detail_cubit.dart';
@@ -140,6 +141,11 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
 
                           // ── Pitch Price Info ───────────────────────────────────
                           _buildPitchPriceInfo(pitch),
+
+                          const _SectionDivider(),
+
+                          // ── Owner Info ─────────────────────────────────────────
+                          _buildOwnerInfo(pitch),
 
                           const _SectionDivider(),
 
@@ -812,6 +818,187 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
         ],
       ),
     );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Owner Info (Thông tin chủ sân)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Widget _buildOwnerInfo(PitchEntity pitch) {
+    final name = (pitch.providerName?.trim().isNotEmpty ?? false)
+        ? pitch.providerName!.trim()
+        : 'Chủ sân';
+    final phone = pitch.providerPhone?.trim() ?? '';
+    final hasRating =
+        pitch.providerRating != null && (pitch.providerReviewCount ?? 0) > 0;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.storefront_rounded,
+                size: 18,
+                color: AppColors.primaryRed,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Thông tin chủ sân',
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textDark,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9F9F9),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFEEEEEE)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Name + rating
+                Row(
+                  children: [
+                    _buildLetterAvatar(name),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: GoogleFonts.inter(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textDark,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          if (hasRating)
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.star_rounded,
+                                  size: 14,
+                                  color: Color(0xFFFFB300),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  pitch.providerRating!.toStringAsFixed(1),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFFE65100),
+                                  ),
+                                ),
+                                Text(
+                                  ' (${pitch.providerReviewCount} đánh giá)',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    color: AppColors.textGrey,
+                                  ),
+                                ),
+                              ],
+                            )
+                          else
+                            Text(
+                              'Chưa có đánh giá',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                color: AppColors.textGrey,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                // Phone → Zalo
+                if (phone.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: () => _openZalo(phone),
+                    behavior: HitTestBehavior.opaque,
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0068FF).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.phone_rounded,
+                            size: 18,
+                            color: Color(0xFF0068FF),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                phone,
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textDark,
+                                ),
+                              ),
+                              Text(
+                                'Nhắn Zalo cho chủ sân',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  color: AppColors.textGrey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          size: 20,
+                          color: AppColors.textGrey,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openZalo(String phone) async {
+    final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    final ok = await LaunchHelper.openUrl('https://zalo.me/$digits');
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Không mở được Zalo',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────

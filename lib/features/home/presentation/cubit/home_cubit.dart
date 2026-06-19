@@ -72,7 +72,9 @@ class HomeCubit extends Cubit<HomeState> {
         page: 0,
         size: 10,
         district: state.selectedDistrict,
-        type: state.selectedPitchType,
+        type: state.selectedPitchType.isEmpty
+            ? null
+            : PitchEntity.typeCodeFromDisplay(state.selectedPitchType),
         sort: sortStr,
         name: state.searchQuery.isNotEmpty ? state.searchQuery : null,
       );
@@ -113,7 +115,9 @@ class HomeCubit extends Cubit<HomeState> {
         page: nextPage,
         size: 10,
         district: state.selectedDistrict,
-        type: state.selectedPitchType,
+        type: state.selectedPitchType.isEmpty
+            ? null
+            : PitchEntity.typeCodeFromDisplay(state.selectedPitchType),
         sort: sortStr,
         name: state.searchQuery.isNotEmpty ? state.searchQuery : null,
       );
