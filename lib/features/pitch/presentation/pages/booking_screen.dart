@@ -287,7 +287,7 @@ class _BookingViewState extends State<_BookingView> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Lưu ý: Bạn cần đặt trước ít nhất 30 phút so với giờ bắt đầu.',
+                  'Lưu ý: Bạn cần đặt trước ít nhất 2 tiếng (120 phút) so với giờ bắt đầu.',
                   style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,

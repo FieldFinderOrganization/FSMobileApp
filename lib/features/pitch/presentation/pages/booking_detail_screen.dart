@@ -6,7 +6,6 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/utils/money_utils.dart';
 import '../../../../shared/widgets/cancel_reason_sheet.dart';
-import '../../../../shared/widgets/cancel_window_countdown.dart';
 import '../../../../shared/widgets/no_bank_warning_dialog.dart';
 import '../../../../shared/widgets/refund_code_dialog.dart';
 import '../../../auth/login/presentation/bloc/auth_cubit.dart';
@@ -71,10 +70,6 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   }
 
   bool get _canCancel => (_isPending && !_isCanceled) || _willRefund;
-
-  /// Hết cửa sổ hủy = earliestSlotStart - 10 phút.
-  DateTime? get _refundDeadline =>
-      _earliestSlotStart?.subtract(const Duration(minutes: 10));
 
   Future<void> _handleCancel() async {
     final isBankPayment = _booking.paymentMethod.toUpperCase() == 'BANK';
@@ -213,10 +208,111 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             const SizedBox(height: 20),
             _buildTimeTracking(context),
             const SizedBox(height: 20),
+            if (_isCanceled) ...[
+              _buildCancelInfoCard(),
+              const SizedBox(height: 20),
+            ],
             if (_canCancel) _buildCancelSection(),
             const SizedBox(height: 30),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildCancelInfoCard() {
+    final who = switch (_booking.cancelledBy?.toUpperCase()) {
+      'USER' => 'Bạn (khách hàng)',
+      'PROVIDER' => 'Chủ sân',
+      'SYSTEM' => 'Hệ thống',
+      _ => 'Không xác định',
+    };
+    final reason = (_booking.cancelReason?.trim().isNotEmpty ?? false)
+        ? _booking.cancelReason!.trim()
+        : 'Không có lý do';
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFDECEA),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFF5C6CB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.cancel_rounded,
+                  size: 18, color: Color(0xFFC0392B)),
+              const SizedBox(width: 8),
+              Text('Thông tin hủy',
+                  style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                      color: const Color(0xFFC0392B))),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildInfoRow(Icons.person_outline_rounded, 'Người hủy', who),
+          if (_booking.cancelledAt != null) ...[
+            const SizedBox(height: 10),
+            _buildInfoRow(Icons.schedule_rounded, 'Thời gian hủy',
+                _formatDateTime(_booking.cancelledAt!)),
+          ],
+          const SizedBox(height: 10),
+          _buildInfoRow(Icons.notes_rounded, 'Lý do', reason),
+        ],
+      ),
+    );
+  }
+
+  /// Hủy sát giờ = còn <60 phút trước giờ đá (mốc phạt lũy tiến).
+  bool get _isLateCancel {
+    final start = _earliestSlotStart;
+    return start != null &&
+        start.difference(DateTime.now()).inMinutes < 60;
+  }
+
+  /// Thông báo kết quả hoàn tiền theo thời điểm hủy (rõ ràng, không jargon).
+  Widget _buildRefundNotice() {
+    final start = _earliestSlotStart;
+    final late = _isLateCancel;
+    final cutoff = start?.subtract(const Duration(minutes: 60));
+    final cutoffStr = cutoff != null
+        ? '${cutoff.hour.toString().padLeft(2, '0')}:${cutoff.minute.toString().padLeft(2, '0')}'
+        : null;
+
+    final color = late ? const Color(0xFFC0392B) : const Color(0xFF166534);
+    final bg = late ? const Color(0xFFFDECEA) : const Color(0xFFE8F5E9);
+    final icon = late ? Icons.warning_amber_rounded : Icons.verified_rounded;
+    final text = late
+        ? 'Hủy sát giờ: chỉ hoàn 70–0% số tiền và mất voucher khuyến mãi đã dùng.'
+        : (cutoffStr != null
+            ? 'Hủy trước $cutoffStr (60 phút trước giờ đá) để được hoàn 100%.'
+            : 'Hủy trước 60 phút so với giờ đá để được hoàn 100%.');
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.inter(
+                  fontSize: 12.5,
+                  height: 1.4,
+                  fontWeight: FontWeight.w600,
+                  color: color),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -232,30 +328,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (_willRefund && _refundDeadline != null &&
-              _booking.paymentMethod.toUpperCase() == 'BANK') ...[
-            Row(
-              children: [
-                const Icon(Icons.savings_rounded,
-                    color: Color(0xFF16A34A), size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Còn cửa sổ hủy & hoàn tiền (T-10 phút)',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF166534),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            CancelWindowCountdown(
-              deadline: _refundDeadline!,
-              tickInterval: const Duration(seconds: 1),
-            ),
+          if (_willRefund && _booking.paymentMethod.toUpperCase() == 'BANK') ...[
+            _buildRefundNotice(),
             const SizedBox(height: 12),
           ],
           SizedBox(
@@ -274,8 +348,10 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                     )
                   : const Icon(Icons.cancel_rounded, color: Colors.white),
               label: Text(
-                (_willRefund && _booking.paymentMethod.toUpperCase() == 'BANK')
-                    ? 'Hủy đặt sân & nhận hoàn tiền'
+                (_willRefund &&
+                        _booking.paymentMethod.toUpperCase() == 'BANK' &&
+                        _isLateCancel)
+                    ? 'Vẫn hủy đặt sân'
                     : 'Hủy đặt sân',
                 style: GoogleFonts.inter(
                   color: Colors.white,
@@ -426,13 +502,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             _booking.bookingDate,
           ),
           const SizedBox(height: 12),
-          _buildInfoRow(
-            Icons.access_time_rounded,
-            'Slots',
-            _booking.slotsName.isNotEmpty
-                ? _booking.slotsName.join(', ')
-                : _booking.slots.join(', '),
-          ),
+          _buildSlotsRow(),
           const SizedBox(height: 12),
           _buildInfoRow(
             Icons.payment_rounded,
@@ -445,6 +515,134 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   }
 
   Widget _buildInfoRow(IconData icon, String label, String value) {
+    return _buildInfoRowWidget(
+      icon,
+      label,
+      Text(
+        value,
+        textAlign: TextAlign.end,
+        style: GoogleFonts.inter(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textDark,
+        ),
+      ),
+    );
+  }
+
+  /// Hàng Slots: gộp slot liên tiếp thành 1 khoảng (16:00 - 19:00). Nếu có nhiều
+  /// khoảng rời nhau → hiện khoảng đầu + "…" + badge, nhấn xem popup tất cả.
+  Widget _buildSlotsRow() {
+    final ranges = _slotRanges();
+    if (ranges.isEmpty) {
+      final fallback = _booking.slotsName.isNotEmpty
+          ? _booking.slotsName.join(', ')
+          : _booking.slots.join(', ');
+      return _buildInfoRow(Icons.access_time_rounded, 'Slots', fallback);
+    }
+    if (ranges.length == 1) {
+      return _buildInfoRow(Icons.access_time_rounded, 'Slots', ranges.first);
+    }
+    return _buildInfoRowWidget(
+      Icons.access_time_rounded,
+      'Slots',
+      GestureDetector(
+        onTap: () => _showAllSlots(ranges),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                ranges.first,
+                textAlign: TextAlign.end,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textDark,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.primaryRed.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text('+${ranges.length - 1} …',
+                  style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primaryRed)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Gộp slot id liên tiếp thành khoảng "HH:00 - HH:00" (slot N → bắt đầu (5+N):00).
+  List<String> _slotRanges() {
+    final ids = [..._booking.slots]..sort();
+    if (ids.isEmpty) return [];
+    String label(int s, int e) =>
+        '${(5 + s).toString().padLeft(2, '0')}:00 - ${(6 + e).toString().padLeft(2, '0')}:00';
+    final ranges = <String>[];
+    int start = ids.first, prev = ids.first;
+    for (int k = 1; k < ids.length; k++) {
+      if (ids[k] == prev + 1) {
+        prev = ids[k];
+      } else {
+        ranges.add(label(start, prev));
+        start = ids[k];
+        prev = ids[k];
+      }
+    }
+    ranges.add(label(start, prev));
+    return ranges;
+  }
+
+  void _showAllSlots(List<String> ranges) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Khung giờ đã đặt',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: ranges
+              .map((r) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.access_time_rounded,
+                            size: 15, color: AppColors.primaryRed),
+                        const SizedBox(width: 8),
+                        Text(r,
+                            style: GoogleFonts.inter(
+                                fontSize: 14, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ))
+              .toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Đóng',
+                style: TextStyle(color: AppColors.primaryRed)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Hàng thông tin: nhãn trái, giá trị căn phải chiếm hết phần còn lại
+  /// (giá trị nằm 1 hàng, chỉ xuống dòng khi quá dài).
+  Widget _buildInfoRowWidget(IconData icon, String label, Widget valueWidget) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -454,18 +652,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           '$label:',
           style: GoogleFonts.inter(fontSize: 13, color: AppColors.textGrey),
         ),
-        const Spacer(),
-        Flexible(
-          child: Text(
-            value,
-            textAlign: TextAlign.end,
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textDark,
-            ),
-          ),
-        ),
+        const SizedBox(width: 12),
+        Expanded(child: Align(alignment: Alignment.centerRight, child: valueWidget)),
       ],
     );
   }
@@ -500,7 +688,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           const SizedBox(height: 16),
           _invoiceRow(
               'Tiền sân', formatVnd(_booking.totalPrice)),
-          _invoiceRow('Phí dịch vụ', '0k'),
+          _invoiceRow('Phí dịch vụ', formatVnd(0)),
           const Divider(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

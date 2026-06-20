@@ -1413,7 +1413,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
 
     return Column(
       children: [
-        Padding(
+        InkWell(
+          onTap: () => _showEditUserSheet(user),
+          child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
           child: Row(
             children: [
@@ -1531,6 +1533,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 ),
             ],
           ),
+          ),
         ),
         if (!isLast)
           Divider(
@@ -1540,6 +1543,161 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             color: Colors.grey.shade100,
           ),
       ],
+    );
+  }
+
+  /// Admin sửa nhanh thông tin người dùng: tên, SĐT, trạng thái (khóa/mở).
+  void _showEditUserSheet(AdminUserItem user) {
+    final nameCtrl = TextEditingController(text: user.name);
+    final phoneCtrl = TextEditingController(text: user.phone);
+    String status = user.status == 'ACTIVE' ? 'ACTIVE' : 'BLOCKED';
+    bool saving = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) => Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom +
+                MediaQuery.of(ctx).viewPadding.bottom +
+                20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE0E0E0),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text('Sửa thông tin: ${user.email}',
+                  style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w800, fontSize: 16)),
+              const SizedBox(height: 16),
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Tên',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: phoneCtrl,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'Số điện thoại',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _statusOption('Hoạt động', 'ACTIVE', status, _kTeal,
+                        () => setSheet(() => status = 'ACTIVE')),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _statusOption('Khóa', 'BLOCKED', status, _kRed,
+                        () => setSheet(() => status = 'BLOCKED')),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: saving
+                      ? null
+                      : () async {
+                          setSheet(() => saving = true);
+                          try {
+                            await widget.datasource.updateUser(
+                              user.userId,
+                              name: nameCtrl.text.trim(),
+                              phone: phoneCtrl.text.trim(),
+                              status: status,
+                            );
+                            if (!ctx.mounted) return;
+                            Navigator.of(ctx).pop();
+                            _load();
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Đã cập nhật người dùng'),
+                                    backgroundColor: Color(0xFF2E7D32)),
+                              );
+                            }
+                          } catch (e) {
+                            setSheet(() => saving = false);
+                            if (ctx.mounted) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                SnackBar(
+                                    content: Text('Lỗi: $e'),
+                                    backgroundColor: _kRed),
+                              );
+                            }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _kPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: saving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : Text('Lưu thay đổi',
+                          style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w700, color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _statusOption(String label, String value, String current, Color color,
+      VoidCallback onTap) {
+    final selected = current == value;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? color.withOpacity(0.12) : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+              color: selected ? color : const Color(0xFFDDDDDD)),
+        ),
+        child: Text(label,
+            style: GoogleFonts.inter(
+                fontWeight: FontWeight.w700,
+                color: selected ? color : Colors.grey.shade600)),
+      ),
     );
   }
 

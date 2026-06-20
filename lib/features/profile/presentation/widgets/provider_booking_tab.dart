@@ -38,12 +38,13 @@ class _ProviderBookingBody extends StatelessWidget {
   final String providerUserId;
   const _ProviderBookingBody({required this.providerUserId});
 
-  static const _statuses = ['Tất cả', 'PENDING', 'CONFIRMED', 'CANCELED'];
+  static const _statuses = ['Tất cả', 'PENDING', 'CONFIRMED', 'CANCELED', 'BLOCK'];
   static const _statusLabels = {
     'Tất cả': 'Tất cả',
     'PENDING': 'Chờ TT',
     'CONFIRMED': 'Đã xác nhận',
     'CANCELED': 'Đã hủy',
+    'BLOCK': 'Khóa lịch / Ngoài app',
   };
 
   @override

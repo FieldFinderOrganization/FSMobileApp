@@ -295,9 +295,11 @@ class ProviderRevenueCubit extends Cubit<ProviderRevenueState> {
     List<BookingResponseModel> all,
     RevenueTimeRange range,
   ) {
-    if (range == RevenueTimeRange.allTime) return all;
+    // Loại đơn khóa lịch / đặt ngoài app khỏi thống kê doanh thu (không tính tiền).
+    final base = all.where((b) => b.blockType == null).toList();
+    if (range == RevenueTimeRange.allTime) return base;
     final now = DateTime.now();
-    return all.where((b) {
+    return base.where((b) {
       final date = DateTime.tryParse(b.bookingDate);
       if (date == null) return false;
       if (range == RevenueTimeRange.thisWeek) {

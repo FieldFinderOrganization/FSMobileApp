@@ -94,6 +94,31 @@ class _ProviderRevenueBody extends StatelessWidget {
                     children: [
                       _buildSummaryHeader(state),
                       const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.blueGrey.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.info_outline_rounded,
+                                size: 16, color: Colors.blueGrey),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Đơn khóa lịch / đặt ngoài app không tính vào doanh thu & số đơn.',
+                                style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    color: Colors.blueGrey,
+                                    height: 1.4),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       GestureDetector(
                         onTap: () => Navigator.push(
                           context,

@@ -202,6 +202,20 @@ class AdminStatisticsDatasource {
     );
   }
 
+  /// Admin cập nhật thông tin người dùng (PUT /users/{userId} — cho phép ADMIN).
+  Future<void> updateUser(
+    String userId, {
+    String? name,
+    String? phone,
+    String? status, // ACTIVE | BLOCKED
+  }) async {
+    final body = <String, dynamic>{};
+    if (name != null) body['name'] = name;
+    if (phone != null) body['phone'] = phone;
+    if (status != null) body['status'] = status;
+    await dioClient.dio.put('${ApiConstants.users}/$userId', data: body);
+  }
+
   Future<BookingStatsModel> getBookingStats() async {
     final response = await dioClient.dio.get(ApiConstants.adminBookingStats);
     return BookingStatsModel.fromJson(response.data as Map<String, dynamic>);

@@ -55,7 +55,6 @@ class BookingCubit extends Cubit<BookingState> {
       final slotStatuses = await repository.getSlotStatuses(pitch.pitchId, dateStr);
 
       final now = DateTime.now();
-      final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
 
       final allSlots = _defaultSlots.map((s) {
         final id = int.parse(s['id']!);
@@ -82,7 +81,8 @@ class BookingCubit extends Cubit<BookingState> {
           status = SlotStatus.booked; // BOOKED (khách khác đặt)
         } else if (slotStartTime.isBefore(now)) {
           status = SlotStatus.past;
-        } else if (isToday && slotStartTime.isBefore(now.add(const Duration(minutes: 30)))) {
+        } else if (slotStartTime.isBefore(now.add(const Duration(minutes: 120)))) {
+          // Phải đặt trước giờ bắt đầu ít nhất 120 phút (khớp ràng buộc cứng BE).
           status = SlotStatus.tooLate;
         } else if (initialSlotList != null && initialSlotList!.contains(id)) {
           status = SlotStatus.selected;

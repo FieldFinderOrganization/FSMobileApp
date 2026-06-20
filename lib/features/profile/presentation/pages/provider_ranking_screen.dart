@@ -138,16 +138,18 @@ class _MostBookedTab extends StatelessWidget {
       ..sort((a, b) => b.bookingCount.compareTo(a.bookingCount));
     if (list.isEmpty) return const _EmptyRanking(text: 'Chưa có lượt đặt nào');
 
-    final maxVal = list.first.bookingCount;
+    // % = tỷ trọng đóng góp trên TỔNG lượt đặt (mọi sân cộng lại ~100%).
+    final total = list.fold<int>(0, (s, p) => s + p.bookingCount);
     return _RankingList(
       itemCount: list.length,
+      footer: _RankingTotal(label: 'Tổng lượt đặt', value: '$total lượt'),
       builder: (i) {
         final p = list[i];
         return RankedProgressBar(
           rank: i + 1,
           label: p.pitchName,
           count: '${p.bookingCount} lượt',
-          ratio: maxVal == 0 ? 0 : p.bookingCount / maxVal,
+          ratio: total == 0 ? 0 : p.bookingCount / total,
           color: kRankPalette[i % kRankPalette.length],
           isLast: i == list.length - 1,
         );
@@ -201,16 +203,18 @@ class _TopRevenueTab extends StatelessWidget {
       ..sort((a, b) => b.totalRevenue.compareTo(a.totalRevenue));
     if (list.isEmpty) return const _EmptyRanking(text: 'Chưa có doanh thu');
 
-    final maxVal = list.first.totalRevenue;
+    // % = tỷ trọng doanh thu trên TỔNG doanh thu (mọi sân cộng lại ~100%).
+    final total = list.fold<double>(0, (s, p) => s + p.totalRevenue);
     return _RankingList(
       itemCount: list.length,
+      footer: _RankingTotal(label: 'Tổng doanh thu', value: fmt.format(total)),
       builder: (i) {
         final p = list[i];
         return RankedProgressBar(
           rank: i + 1,
           label: p.pitchName,
           count: fmt.format(p.totalRevenue),
-          ratio: maxVal == 0 ? 0 : p.totalRevenue / maxVal,
+          ratio: total == 0 ? 0 : p.totalRevenue / total,
           color: kRankPalette[i % kRankPalette.length],
           isLast: i == list.length - 1,
         );
@@ -223,7 +227,9 @@ class _TopRevenueTab extends StatelessWidget {
 class _RankingList extends StatelessWidget {
   final int itemCount;
   final Widget Function(int index) builder;
-  const _RankingList({required this.itemCount, required this.builder});
+  final Widget? footer;
+  const _RankingList(
+      {required this.itemCount, required this.builder, this.footer});
 
   @override
   Widget build(BuildContext context) {
@@ -244,9 +250,41 @@ class _RankingList extends StatelessWidget {
           ],
         ),
         child: Column(
-          children: List.generate(itemCount, builder),
+          children: [
+            ...List.generate(itemCount, builder),
+            if (footer != null) ...[
+              const Divider(height: 24, color: Color(0xFFEEEEEE)),
+              footer!,
+            ],
+          ],
         ),
       ),
+    );
+  }
+}
+
+/// Dòng tổng dưới bảng xếp hạng (mẫu số dùng tính %).
+class _RankingTotal extends StatelessWidget {
+  final String label;
+  final String value;
+  const _RankingTotal({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label,
+            style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textGrey)),
+        Text(value,
+            style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textDark)),
+      ],
     );
   }
 }

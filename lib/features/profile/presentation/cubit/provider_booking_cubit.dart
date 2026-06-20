@@ -69,7 +69,8 @@ class ProviderBookingCubit extends Cubit<ProviderBookingState> {
       });
       emit(ProviderBookingLoaded(
         allBookings: bookings,
-        filteredBookings: bookings,
+        // Mặc định "Tất cả" = đơn của khách (loại khóa lịch / đặt ngoài app).
+        filteredBookings: bookings.where((b) => b.blockType == null).toList(),
       ));
     } on DioException catch (e) {
       emit(ProviderBookingError(e.response?.data?['message'] ?? e.message ?? 'Lỗi tải dữ liệu'));
@@ -95,9 +96,20 @@ class ProviderBookingCubit extends Cubit<ProviderBookingState> {
   void filterByStatus(String? status) {
     if (state is! ProviderBookingLoaded) return;
     final s = state as ProviderBookingLoaded;
-    final filtered = (status == null || status == 'Tất cả')
-        ? s.allBookings
-        : s.allBookings.where((b) => b.status.toUpperCase() == status.toUpperCase()).toList();
+    final List<BookingResponseModel> filtered;
+    if (status == 'BLOCK') {
+      // Chỉ đơn khóa lịch / đặt ngoài app
+      filtered = s.allBookings.where((b) => b.blockType != null).toList();
+    } else if (status == null || status == 'Tất cả') {
+      // Đơn của khách (loại khóa lịch)
+      filtered = s.allBookings.where((b) => b.blockType == null).toList();
+    } else {
+      filtered = s.allBookings
+          .where((b) =>
+              b.blockType == null &&
+              b.status.toUpperCase() == status.toUpperCase())
+          .toList();
+    }
     emit(s.copyWith(
       filteredBookings: filtered,
       selectedStatus: status,

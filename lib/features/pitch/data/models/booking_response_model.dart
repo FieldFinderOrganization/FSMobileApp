@@ -24,6 +24,7 @@ class BookingResponseModel {
   /// USER / PROVIDER / SYSTEM — null nếu đơn chưa hủy.
   final String? cancelledBy;
   final String? cancelReason;
+  final String? cancelledAt;
 
   /// Khóa lịch thủ công: 'MAINTENANCE' | 'OFFLINE_BOOKING'. Null = đơn đặt thường.
   final String? blockType;
@@ -53,6 +54,7 @@ class BookingResponseModel {
     this.paymentDeadline,
     this.cancelledBy,
     this.cancelReason,
+    this.cancelledAt,
     this.blockType,
     this.providerNotes,
   });
@@ -83,6 +85,7 @@ class BookingResponseModel {
       paymentDeadline: json['paymentDeadline'],
       cancelledBy: json['cancelledBy'],
       cancelReason: json['cancelReason'],
+      cancelledAt: json['cancelledAt'],
       blockType: json['blockType'],
       providerNotes: json['providerNotes'],
     );
@@ -111,6 +114,7 @@ class BookingResponseModel {
       'paymentDeadline': paymentDeadline,
       'cancelledBy': cancelledBy,
       'cancelReason': cancelReason,
+      'cancelledAt': cancelledAt,
       'blockType': blockType,
       'providerNotes': providerNotes,
     };
