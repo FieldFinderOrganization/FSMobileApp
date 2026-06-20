@@ -141,6 +141,8 @@ class _ProviderRevenueBody extends StatelessWidget {
                           subtitle: 'Bấm để xem chi tiết',
                         ),
                       ),
+                      if (state.stats.totalRevenue > 0)
+                        _buildNetBreakdown(state.stats),
                       const SizedBox(height: 10),
                       GestureDetector(
                         onTap: () => Navigator.push(
@@ -256,6 +258,69 @@ class _ProviderRevenueBody extends StatelessWidget {
         }
         return const SizedBox.shrink();
       },
+    );
+  }
+
+  /// Breakdown thực nhận: doanh thu (gross) − phí nền tảng = tiền thật về TK.
+  Widget _buildNetBreakdown(RevenueStats stats) {
+    final fmt =
+        NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
+    final pctVal = stats.commissionRate * 100;
+    final pct = pctVal.toStringAsFixed(pctVal % 1 == 0 ? 0 : 1);
+    return Container(
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.green.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        children: [
+          _breakdownRow('Phí nền tảng ($pct%)',
+              '− ${fmt.format(stats.platformFee)}', Colors.orange.shade800),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Divider(height: 1),
+          ),
+          _breakdownRow('Thực nhận về TK', fmt.format(stats.netRevenue),
+              Colors.green.shade700,
+              bold: true),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Icon(Icons.info_outline, size: 13, color: Colors.grey.shade500),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Tiền chuyển về TK sau khi trận đá kết thúc, đã trừ phí nền tảng.',
+                  style: GoogleFonts.inter(
+                      fontSize: 11.5, color: Colors.grey.shade600, height: 1.3),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _breakdownRow(String label, String value, Color valueColor,
+      {bool bold = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label,
+            style: GoogleFonts.inter(
+                fontSize: 13.5,
+                color: AppColors.textGrey,
+                fontWeight: bold ? FontWeight.w600 : FontWeight.w500)),
+        Text(value,
+            style: GoogleFonts.inter(
+                fontSize: bold ? 16 : 14,
+                fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+                color: valueColor)),
+      ],
     );
   }
 

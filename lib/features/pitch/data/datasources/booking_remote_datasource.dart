@@ -20,6 +20,18 @@ class BookingRemoteDataSource {
     }
   }
 
+  /// Tỷ lệ hoa hồng nền tảng trừ khi giải ngân doanh thu (để tính "thực nhận"). Lỗi → 0.05 mặc định.
+  Future<double> getPayoutCommissionRate() async {
+    try {
+      final response =
+          await dioClient.dio.get('${ApiConstants.bookings}/commission-rate');
+      final rate = (response.data as Map<String, dynamic>)['rate'];
+      return (rate as num).toDouble();
+    } catch (_) {
+      return 0.05;
+    }
+  }
+
   /// Chủ sân khóa lịch thủ công (bảo trì / đặt ngoài app). Không tạo doanh thu.
   /// [blockType] = 'MAINTENANCE' | 'OFFLINE_BOOKING'.
   Future<void> blockSlots({

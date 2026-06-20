@@ -24,4 +24,21 @@ class RefundCubit extends Cubit<RefundState> {
       ));
     }
   }
+
+  /// Lịch sử nhận tiền của chủ sân (doanh thu booking + bồi thường).
+  Future<void> loadProviderEarnings() async {
+    emit(state.copyWith(status: RefundListStatus.loading, errorMessage: ''));
+    try {
+      final earnings = await _dataSource.getProviderEarnings();
+      emit(state.copyWith(
+        status: RefundListStatus.success,
+        refunds: earnings,
+      ));
+    } catch (e) {
+      emit(state.copyWith(
+        status: RefundListStatus.failure,
+        errorMessage: 'Không tải được lịch sử nhận tiền.',
+      ));
+    }
+  }
 }

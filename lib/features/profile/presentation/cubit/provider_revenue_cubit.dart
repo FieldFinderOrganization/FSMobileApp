@@ -23,6 +23,7 @@ class RevenueStats extends Equatable {
   final String highestRevenuePitch;
   final double highestRevenuePitchAmount;
   final int totalBookings;
+  final double commissionRate; // hoa hồng nền tảng (0..1), lấy từ API
 
   const RevenueStats({
     required this.totalRevenue,
@@ -33,7 +34,11 @@ class RevenueStats extends Equatable {
     required this.highestRevenuePitch,
     required this.highestRevenuePitchAmount,
     required this.totalBookings,
+    this.commissionRate = 0.05,
   });
+
+  double get platformFee => totalRevenue * commissionRate;
+  double get netRevenue => totalRevenue - platformFee;
 
   @override
   List<Object?> get props => [
@@ -41,6 +46,7 @@ class RevenueStats extends Equatable {
         mostBookedPitch,
         topCustomer,
         highestRevenuePitch,
+        commissionRate,
       ];
 }
 
@@ -104,10 +110,13 @@ class ProviderRevenueCubit extends Cubit<ProviderRevenueState> {
     required this.providerId,
   }) : super(ProviderRevenueInitial());
 
+  double _commissionRate = 0.05; // cập nhật từ API trong loadRevenue
+
   Future<void> loadRevenue() async {
     emit(ProviderRevenueLoading());
     try {
       final bookings = await repository.getBookingsByProvider(providerId);
+      _commissionRate = await repository.getPayoutCommissionRate();
       final filtered = _filterByRange(bookings, RevenueTimeRange.allTime);
       final stats = _computeStats(filtered);
       emit(ProviderRevenueLoaded(
@@ -288,6 +297,7 @@ class ProviderRevenueCubit extends Cubit<ProviderRevenueState> {
       highestRevenuePitch: topRevenuePitch.key,
       highestRevenuePitchAmount: topRevenuePitch.value,
       totalBookings: bookings.length,
+      commissionRate: _commissionRate,
     );
   }
 

@@ -23,6 +23,7 @@ import '../../../product/presentation/pages/product_list_screen.dart';
 import '../../../profile/presentation/pages/profile_screen.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../shared/notifications/navigation_notification.dart';
+import '../../../../shared/widgets/no_bank_warning_dialog.dart';
 
 /// Shell cố định bao toàn bộ màn hình chính (sau khi đăng nhập).
 /// Dùng [IndexedStack] để giữ state của từng tab khi chuyển qua lại.
@@ -77,6 +78,11 @@ class _MainShellState extends State<MainShell>
       context.read<NotificationCubit>().start(widget.user.userId);
       // Socket signaling cuộc gọi — đổ chuông ở mọi màn suốt phiên đăng nhập
       context.read<CallCubit>().start(widget.user.userId, widget.user.name);
+      // Chủ sân chưa có TK ngân hàng nhận tiền ⇒ nhắc thêm (không có TK = không nhận booking).
+      final role = widget.user.role.toUpperCase();
+      if (role == 'PROVIDER' || role == 'OWNER') {
+        promptProviderBankIfMissing(context);
+      }
     });
   }
 

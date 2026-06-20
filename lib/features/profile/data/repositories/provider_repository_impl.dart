@@ -20,14 +20,6 @@ class ProviderRepositoryImpl implements ProviderRepository {
   }
 
   @override
-  Future<ProviderEntity> updateProvider(String providerId, String cardNumber, String bank) async {
-    return await remoteDatasource.updateProvider(providerId, {
-      'cardNumber': cardNumber,
-      'bank': bank,
-    });
-  }
-
-  @override
   Future<List<ProviderAddressEntity>> getAddressesByProvider(String providerId) async {
     return await remoteDatasource.fetchAddressesByProvider(providerId);
   }

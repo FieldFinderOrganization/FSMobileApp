@@ -34,4 +34,13 @@ class RefundRemoteDataSource {
         .map((e) => RefundRequestModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
+
+  /// Lịch sử NHẬN TIỀN của chủ sân: doanh thu booking + bồi thường khách hủy.
+  Future<List<RefundRequestModel>> getProviderEarnings() async {
+    final res = await dioClient.dio.get('/refunds/provider-earnings');
+    final data = res.data as List<dynamic>;
+    return data
+        .map((e) => RefundRequestModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
 }

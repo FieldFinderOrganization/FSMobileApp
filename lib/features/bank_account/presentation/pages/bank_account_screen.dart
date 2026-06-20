@@ -10,7 +10,9 @@ import '../cubit/bank_account_cubit.dart';
 import '../cubit/bank_account_state.dart';
 
 class BankAccountScreen extends StatefulWidget {
-  const BankAccountScreen({super.key});
+  /// Khi nhúng vào tab khác (vd "Quản lý Đối tác") thì bỏ Scaffold/AppBar riêng.
+  final bool embedded;
+  const BankAccountScreen({super.key, this.embedded = false});
 
   @override
   State<BankAccountScreen> createState() => _BankAccountScreenState();
@@ -25,14 +27,7 @@ class _BankAccountScreenState extends State<BankAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tài khoản ngân hàng'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0.5,
-      ),
-      body: BlocConsumer<BankAccountCubit, BankAccountState>(
+    final body = BlocConsumer<BankAccountCubit, BankAccountState>(
         listenWhen: (p, c) =>
             c.errorMessage.isNotEmpty && p.errorMessage != c.errorMessage,
         listener: (ctx, state) {
@@ -71,7 +66,17 @@ class _BankAccountScreenState extends State<BankAccountScreen> {
             ),
           );
         },
+    );
+
+    if (widget.embedded) return body;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Tài khoản ngân hàng'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0.5,
       ),
+      body: body,
     );
   }
 

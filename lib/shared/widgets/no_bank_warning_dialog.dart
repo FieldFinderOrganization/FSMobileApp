@@ -33,6 +33,101 @@ Future<bool> confirmCancelWithBankCheck(BuildContext context) async {
   return proceed == true;
 }
 
+/// Chủ sân mở app mà CHƯA có TK ngân hàng nhận tiền ⇒ ÉP thêm TK: không có TK thì
+/// khách không thanh toán đặt sân được (createPaymentQRCode chặn) ⇒ không nhận booking.
+///
+/// Vòng lặp chặn: dialog không cho bỏ qua (không "Để sau", chặn back) → buộc mở màn
+/// thêm TK → quay lại check; còn thiếu thì lặp tiếp. Chỉ thoát khi đã có TK.
+/// Lỗi mạng ⇒ thoát (không khóa cứng user khi không gọi được API).
+Future<void> promptProviderBankIfMissing(BuildContext context) async {
+  final repo = BankAccountRepositoryImpl(
+    remoteDataSource: BankAccountRemoteDataSource(
+      dioClient: context.read<DioClient>(),
+    ),
+  );
+  while (true) {
+    Object? defaultBank;
+    try {
+      defaultBank = await repo.getDefault();
+    } catch (_) {
+      return;
+    }
+    if (!context.mounted || defaultBank != null) return;
+
+    await _showProviderNoBankDialog(context);
+    if (!context.mounted) return;
+    await _openBankAccountScreen(context);
+    if (!context.mounted) return;
+  }
+}
+
+/// Dialog bắt buộc — không đóng được bằng back/nhấn ngoài, chỉ có nút mở màn thêm TK.
+Future<void> _showProviderNoBankDialog(BuildContext context) {
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (ctx) => PopScope(
+      canPop: false, // chặn nút back hệ thống
+      child: AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.account_balance_wallet_outlined,
+                color: Color(0xFFF59E0B), size: 22),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text('Bắt buộc: thêm tài khoản nhận tiền',
+                  style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w800, fontSize: 16)),
+            ),
+          ],
+        ),
+        content: Text(
+          'Bạn chưa có tài khoản ngân hàng nhận tiền. Khi chưa có tài khoản, '
+          'khách KHÔNG thể thanh toán đặt sân của bạn — bạn sẽ không nhận được '
+          'booking. Vui lòng thêm tài khoản để tiếp tục dùng app.',
+          style: GoogleFonts.inter(fontSize: 14, height: 1.5),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryRed,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              child: Text('Thêm tài khoản ngay',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Future<void> _openBankAccountScreen(BuildContext context) async {
+  final dio = context.read<DioClient>();
+  await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => BlocProvider(
+        create: (_) => BankAccountCubit(
+          repository: BankAccountRepositoryImpl(
+            remoteDataSource: BankAccountRemoteDataSource(dioClient: dio),
+          ),
+        ),
+        child: const BankAccountScreen(),
+      ),
+    ),
+  );
+}
+
 Future<bool?> _showNoBankWarning(BuildContext context) {
   return showDialog<bool>(
     context: context,

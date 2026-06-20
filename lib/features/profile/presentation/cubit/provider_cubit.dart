@@ -53,22 +53,6 @@ class ProviderCubit extends Cubit<ProviderState> {
     }
   }
 
-  Future<void> updateProviderInfo(String providerId, String cardNumber, String bank) async {
-    final currentState = state;
-    if (currentState is ProviderLoaded) {
-      try {
-        final updatedProvider = await repository.updateProvider(providerId, cardNumber, bank);
-        emit(ProviderLoaded(
-          provider: updatedProvider,
-          addresses: currentState.addresses,
-          message: 'Cập nhật thông tin ngân hàng thành công!',
-        ));
-      } catch (e) {
-        emit(ProviderError(e.toString()));
-      }
-    }
-  }
-
   Future<void> addAddress(String providerId, String address,
       {double? latitude, double? longitude}) async {
     final currentState = state;

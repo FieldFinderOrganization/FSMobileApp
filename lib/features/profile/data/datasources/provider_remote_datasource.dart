@@ -23,11 +23,6 @@ class ProviderRemoteDatasource {
         .toList();
   }
 
-  Future<ProviderModel> updateProvider(String providerId, Map<String, dynamic> data) async {
-    final response = await _dio.put('${ApiConstants.providers}/$providerId', data: data);
-    return ProviderModel.fromJson(response.data as Map<String, dynamic>);
-  }
-
   Future<List<ProviderAddressModel>> fetchAddressesByProvider(String providerId) async {
     final response = await _dio.get('${ApiConstants.providerAddresses}/provider/$providerId');
     final list = response.data as List;

@@ -10,6 +10,7 @@ abstract class BookingRepository {
   Future<void> cancelBooking(String bookingId, {String? reason});
   Future<void> providerCancelBooking(String bookingId, {required String reason});
   Future<List<BookingResponseModel>> getBookingsByProvider(String providerId);
+  Future<double> getPayoutCommissionRate();
 }
 
 class BookingRepositoryImpl implements BookingRepository {
@@ -50,5 +51,10 @@ class BookingRepositoryImpl implements BookingRepository {
   @override
   Future<List<BookingResponseModel>> getBookingsByProvider(String providerId) {
     return remoteDataSource.getBookingsByProvider(providerId);
+  }
+
+  @override
+  Future<double> getPayoutCommissionRate() {
+    return remoteDataSource.getPayoutCommissionRate();
   }
 }

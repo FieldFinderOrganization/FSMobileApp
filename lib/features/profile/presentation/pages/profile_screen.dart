@@ -650,6 +650,8 @@ class _ProfileBody extends StatelessWidget {
               );
             },
           ),
+          // Chủ sân quản lý TK nhận tiền trong "Quản lý Đối tác" → ẩn lối tắt trùng tại đây.
+          if (user.role != 'PROVIDER' && user.role != 'OWNER')
           _ActionRow(
             icon: Icons.account_balance_outlined,
             label: 'Tài khoản ngân hàng',

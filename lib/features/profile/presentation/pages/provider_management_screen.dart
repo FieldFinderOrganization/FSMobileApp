@@ -10,6 +10,10 @@ import '../widgets/provider_revenue_tab.dart';
 import '../cubit/provider_cubit.dart';
 import '../../domain/repositories/provider_repository.dart';
 import '../../../../shared/widgets/keep_alive_wrapper.dart';
+import '../../../../core/network/dio_client.dart';
+import '../../../refund/data/datasources/refund_remote_data_source.dart';
+import '../../../refund/presentation/cubit/refund_cubit.dart';
+import '../../../refund/presentation/pages/provider_earnings_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ProviderManagementScreen extends StatefulWidget {
@@ -59,6 +63,27 @@ class _ProviderManagementScreenState extends State<ProviderManagementScreen>
             icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textDark, size: 20),
             onPressed: () => Navigator.pop(context),
           ),
+          actions: [
+            IconButton(
+              tooltip: 'Lịch sử nhận tiền',
+              icon: const Icon(Icons.receipt_long_outlined,
+                  color: AppColors.textDark, size: 22),
+              onPressed: () {
+                final dio = context.read<DioClient>();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => BlocProvider(
+                      create: (_) => RefundCubit(
+                        dataSource: RefundRemoteDataSource(dioClient: dio),
+                      ),
+                      child: const ProviderEarningsScreen(),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
           bottom: TabBar(
             controller: _tabController,
             isScrollable: true,
