@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/network/dio_client.dart';
 import '../models/bank_account_model.dart';
 import '../models/bank_info_model.dart';
+import '../models/bank_lookup_result.dart';
 
 class BankAccountRemoteDataSource {
   final DioClient dioClient;
@@ -39,6 +40,18 @@ class BankAccountRemoteDataSource {
       'accountName': accountName,
     });
     return BankAccountModel.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  /// Tra cứu tên chủ TK (preview) trước khi lưu — xác thực số TK là thật.
+  Future<BankLookupResult> lookup({
+    required String bankBin,
+    required String accountNumber,
+  }) async {
+    final res = await dioClient.dio.post('/bank-accounts/lookup', data: {
+      'bankBin': bankBin,
+      'accountNumber': accountNumber,
+    });
+    return BankLookupResult.fromJson(res.data as Map<String, dynamic>);
   }
 
   Future<BankAccountModel> setDefault(String bankAccountId) async {

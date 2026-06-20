@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -240,18 +242,141 @@ class _BankAccountFormState extends State<_BankAccountForm> {
   final _nameController = TextEditingController();
   BankInfoModel? _selectedBank;
 
+  Timer? _debounce;
+  bool _checking = false;
+  String? _lookupName; // tên chủ TK tra cứu được
+  String? _lookupError; // thông báo khi không tra cứu được
+  bool _nameLocked = false; // khóa ô tên khi đã lấy từ ngân hàng
+
+  @override
+  void initState() {
+    super.initState();
+    _accountController.addListener(_scheduleLookup);
+  }
+
   @override
   void dispose() {
+    _debounce?.cancel();
     _accountController.dispose();
     _nameController.dispose();
     super.dispose();
   }
 
+  /// Số TK/ngân hàng đổi ⇒ reset xác thực rồi tra cứu lại sau 600ms.
+  void _scheduleLookup() {
+    _debounce?.cancel();
+    if (_lookupName != null || _lookupError != null || _nameLocked) {
+      setState(() {
+        _lookupName = null;
+        _lookupError = null;
+        _nameLocked = false;
+      });
+    }
+    final acc = _accountController.text.trim();
+    if (_selectedBank == null || acc.length < 6) return;
+    _debounce = Timer(const Duration(milliseconds: 600), _runLookup);
+  }
+
+  Future<void> _runLookup() async {
+    final bank = _selectedBank;
+    final acc = _accountController.text.trim();
+    if (bank == null || acc.length < 6) return;
+    setState(() {
+      _checking = true;
+      _lookupError = null;
+    });
+    final res = await context
+        .read<BankAccountCubit>()
+        .lookup(bankBin: bank.bin, accountNumber: acc);
+    if (!mounted) return;
+    setState(() {
+      _checking = false;
+      if (res.found && (res.accountName?.isNotEmpty ?? false)) {
+        _lookupName = res.accountName;
+        _nameController.text = res.accountName!;
+        _nameLocked = true;
+        _lookupError = null;
+      } else {
+        _lookupName = null;
+        _nameLocked = false;
+        _lookupError = (res.message?.isNotEmpty ?? false)
+            ? res.message
+            : 'Không tra cứu được chủ tài khoản. Kiểm tra lại số TK.';
+      }
+    });
+  }
+
+  Widget _lookupStatus() {
+    if (_checking) {
+      return const Padding(
+        padding: EdgeInsets.only(top: 8),
+        child: Row(children: [
+          SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2)),
+          SizedBox(width: 8),
+          Text('Đang kiểm tra số tài khoản...',
+              style: TextStyle(fontSize: 12.5, color: Colors.grey)),
+        ]),
+      );
+    }
+    if (_lookupName != null) {
+      return Container(
+        margin: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.green.shade50,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(children: [
+          Icon(Icons.check_circle, color: Colors.green.shade600, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text('Chủ TK: ${_lookupName!}',
+                style: TextStyle(
+                    color: Colors.green.shade800,
+                    fontWeight: FontWeight.w600)),
+          ),
+        ]),
+      );
+    }
+    if (_lookupError != null) {
+      return Container(
+        margin: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.orange.shade50,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(children: [
+          Icon(Icons.error_outline, color: Colors.orange.shade700, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(_lookupError!,
+                style:
+                    TextStyle(color: Colors.orange.shade800, fontSize: 12.5)),
+          ),
+        ]),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
+  /// Bật nút lưu chỉ khi đủ 3 trường: ngân hàng, số TK, tên chủ TK (từ API).
+  bool get _canSave =>
+      _selectedBank != null &&
+      _accountController.text.trim().isNotEmpty &&
+      _nameLocked &&
+      _nameController.text.trim().isNotEmpty;
+
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final keyboard = MediaQuery.of(context).viewInsets.bottom;
+    final safeBottom = MediaQuery.of(context).padding.bottom;
     return Padding(
-      padding: EdgeInsets.fromLTRB(16, 16, 16, bottom + 16),
+      // chừa thêm safe-area dưới để thanh điều hướng hệ thống không che nút lưu
+      padding: EdgeInsets.fromLTRB(16, 16, 16, keyboard + safeBottom + 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,25 +395,38 @@ class _BankAccountFormState extends State<_BankAccountForm> {
               border: OutlineInputBorder(),
             ),
           ),
+          _lookupStatus(),
           const SizedBox(height: 12),
           TextField(
             controller: _nameController,
-            textCapitalization: TextCapitalization.characters,
-            decoration: const InputDecoration(
+            readOnly: true, // tên chỉ lấy tự động từ API, không cho tự điền
+            decoration: InputDecoration(
               labelText: 'Tên chủ tài khoản (không dấu)',
               hintText: 'NGUYEN VAN A',
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
+              filled: !_nameLocked,
+              fillColor: Colors.grey.shade100,
+              suffixIcon: _nameLocked
+                  ? const Icon(Icons.verified, color: Colors.green)
+                  : null,
+              helperText: _nameLocked
+                  ? 'Tên lấy tự động từ ngân hàng'
+                  : 'Chọn ngân hàng và nhập số TK để tự tra cứu tên',
             ),
           ),
           const SizedBox(height: 16),
           BlocBuilder<BankAccountCubit, BankAccountState>(
             builder: (ctx, state) {
+              final canSave = _canSave;
               return ElevatedButton(
-                onPressed: state.saving ? null : () => _submit(ctx),
+                onPressed:
+                    (state.saving || !canSave) ? null : () => _submit(ctx),
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
-                  backgroundColor: Colors.red,
+                  backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
+                  disabledBackgroundColor: Colors.grey.shade300,
+                  disabledForegroundColor: Colors.white,
                 ),
                 child: state.saving
                     ? const SizedBox(
@@ -344,7 +482,10 @@ class _BankAccountFormState extends State<_BankAccountForm> {
       isScrollControlled: true,
       builder: (_) => _BankPickerSheet(
         banks: widget.banks,
-        onSelect: (b) => setState(() => _selectedBank = b),
+        onSelect: (b) {
+          setState(() => _selectedBank = b);
+          _scheduleLookup(); // đổi ngân hàng ⇒ tra cứu lại
+        },
       ),
     );
   }

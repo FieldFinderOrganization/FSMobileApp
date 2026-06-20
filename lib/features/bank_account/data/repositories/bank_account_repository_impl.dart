@@ -2,6 +2,7 @@ import '../../domain/repositories/bank_account_repository.dart';
 import '../datasources/bank_account_remote_datasource.dart';
 import '../models/bank_account_model.dart';
 import '../models/bank_info_model.dart';
+import '../models/bank_lookup_result.dart';
 
 class BankAccountRepositoryImpl implements BankAccountRepository {
   final BankAccountRemoteDataSource remoteDataSource;
@@ -26,6 +27,16 @@ class BankAccountRepositoryImpl implements BankAccountRepository {
         bankName: bankName,
         accountNumber: accountNumber,
         accountName: accountName,
+      );
+
+  @override
+  Future<BankLookupResult> lookup({
+    required String bankBin,
+    required String accountNumber,
+  }) =>
+      remoteDataSource.lookup(
+        bankBin: bankBin,
+        accountNumber: accountNumber,
       );
 
   @override

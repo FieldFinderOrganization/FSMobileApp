@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../data/models/bank_lookup_result.dart';
 import '../../domain/repositories/bank_account_repository.dart';
 import 'bank_account_state.dart';
 
@@ -32,6 +33,21 @@ class BankAccountCubit extends Cubit<BankAccountState> {
         status: BankAccountStatus.failure,
         errorMessage: _msg(e),
       ));
+    }
+  }
+
+  /// Tra cứu tên chủ TK (preview). Lỗi ⇒ found=false + message để form hiển thị.
+  Future<BankLookupResult> lookup({
+    required String bankBin,
+    required String accountNumber,
+  }) async {
+    try {
+      return await _repository.lookup(
+        bankBin: bankBin,
+        accountNumber: accountNumber,
+      );
+    } catch (e) {
+      return BankLookupResult(found: false, message: _msg(e));
     }
   }
 
