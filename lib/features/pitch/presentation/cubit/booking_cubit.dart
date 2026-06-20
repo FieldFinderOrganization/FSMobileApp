@@ -6,6 +6,7 @@ import '../../data/repositories/booking_repository_impl.dart';
 import '../../data/repositories/payment_repository_impl.dart';
 import '../../domain/entities/booking_slot_entity.dart';
 import '../../domain/entities/pitch_entity.dart';
+import '../../domain/hold_policy.dart';
 import 'booking_state.dart';
 
 class BookingCubit extends Cubit<BookingState> {
@@ -198,7 +199,9 @@ class BookingCubit extends Cubit<BookingState> {
     emit(BookingLoading());
     try {
       final minSlot = currentState.selectedSlotIds.reduce((a, b) => a < b ? a : b);
-      paymentDeadline = DateTime(date.year, date.month, date.day, 5 + minSlot, 0).subtract(const Duration(minutes: 5));
+      final slotStart = DateTime(date.year, date.month, date.day, 5 + minSlot, 0);
+      // Dynamic Hold: khớp BookingHoldPolicy ở BE (createdAt ≈ now lúc tạo đơn)
+      paymentDeadline = holdPaymentDeadline(DateTime.now(), slotStart);
       final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
       
       final bookingRequest = BookingRequestModel(

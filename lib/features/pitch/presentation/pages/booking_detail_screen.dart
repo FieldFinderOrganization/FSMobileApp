@@ -7,6 +7,7 @@ import '../../../../core/network/dio_client.dart';
 import '../../../../core/utils/money_utils.dart';
 import '../../../../shared/widgets/cancel_reason_sheet.dart';
 import '../../../../shared/widgets/cancel_window_countdown.dart';
+import '../../../../shared/widgets/no_bank_warning_dialog.dart';
 import '../../../../shared/widgets/refund_code_dialog.dart';
 import '../../../auth/login/presentation/bloc/auth_cubit.dart';
 import '../../../discount/presentation/pages/my_wallet_screen.dart';
@@ -77,6 +78,18 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
   Future<void> _handleCancel() async {
     final isBankPayment = _booking.paymentMethod.toUpperCase() == 'BANK';
+
+    // Hủy có hoàn tiền BANK nhưng chưa có TK ngân hàng → nhắc: chỉ nhận mã đền bù.
+    // Chỉ cảnh báo khi hủy ≥60p (lúc có bank mới ra tiền mặt); <60p luôn là mã đền bù.
+    if (_willRefund && isBankPayment) {
+      final start = _earliestSlotStart;
+      final cashEligible = start != null &&
+          start.difference(DateTime.now()).inMinutes >= 60;
+      final ok = await confirmCancelWithBankCheck(context,
+          cashRefundEligible: cashEligible);
+      if (!ok || !mounted) return;
+    }
+
     final reason = await CancelReasonSheet.show(
       context,
       title: (_willRefund && isBankPayment)

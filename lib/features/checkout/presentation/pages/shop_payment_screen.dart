@@ -35,6 +35,7 @@ class ShopPaymentScreen extends StatefulWidget {
 class _ShopPaymentScreenState extends State<ShopPaymentScreen> {
   Timer? _pollingTimer;
   bool _showAll = false;
+  bool _successShown = false;
   static const int _initialItemCount = 3;
 
   late final PaymentRemoteDataSource _paymentDataSource;
@@ -448,6 +449,8 @@ class _ShopPaymentScreenState extends State<ShopPaymentScreen> {
   }
 
   void _showSuccessDialog() {
+    if (_successShown) return; // chống double-show khi 2 lần poll cùng trả paid (race)
+    _successShown = true;
     showDialog(
       context: context,
       barrierDismissible: false,

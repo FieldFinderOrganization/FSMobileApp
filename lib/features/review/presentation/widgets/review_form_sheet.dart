@@ -89,7 +89,8 @@ class _ReviewFormSheetState extends State<ReviewFormSheet> {
           _messenger.showSnackBar(
             SnackBar(
               content: Text(state.message),
-              backgroundColor: Colors.green,
+              backgroundColor:
+                  state.isRejected ? const Color(0xFFEF4444) : Colors.green,
             ),
           );
         } else if (state is MyReviewsActionError) {

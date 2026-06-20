@@ -61,8 +61,17 @@ class BookingScreen extends StatelessWidget {
   }
 }
 
-class _BookingView extends StatelessWidget {
+class _BookingView extends StatefulWidget {
   const _BookingView();
+
+  @override
+  State<_BookingView> createState() => _BookingViewState();
+}
+
+class _BookingViewState extends State<_BookingView> {
+  /// Đã điều hướng sang PaymentScreen (luồng BANK). PaymentScreen tự hiển thị
+  /// thành công khi thanh toán xong → bỏ qua ở đây để tránh popup thứ 2.
+  bool _routedToPayment = false;
 
   @override
   Widget build(BuildContext context) {
@@ -73,8 +82,10 @@ class _BookingView extends StatelessWidget {
             SnackBar(content: Text(state.message), backgroundColor: Colors.red),
           );
         } else if (state is BookingConfirmed) {
+          if (_routedToPayment) return;
           _showSuccessDialog(context, bookingId: state.bookingId);
         } else if (state is BookingPaymentRequired) {
+          _routedToPayment = true;
           final authState = context.read<AuthCubit>().state;
           final userId = authState.currentUser?.userId ?? '';
 

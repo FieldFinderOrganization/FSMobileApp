@@ -18,6 +18,9 @@ class BookingResponseModel {
   final String? createdAt;
   final String? paidAt;
 
+  /// Hạn thanh toán đơn PENDING (Dynamic Hold) — nguồn chuẩn từ BE. Null nếu hết chờ.
+  final String? paymentDeadline;
+
   /// USER / PROVIDER / SYSTEM — null nếu đơn chưa hủy.
   final String? cancelledBy;
   final String? cancelReason;
@@ -41,6 +44,7 @@ class BookingResponseModel {
     this.slotsName = const [],
     this.createdAt,
     this.paidAt,
+    this.paymentDeadline,
     this.cancelledBy,
     this.cancelReason,
   });
@@ -68,6 +72,7 @@ class BookingResponseModel {
           const [],
       createdAt: json['createdAt'],
       paidAt: json['paidAt'],
+      paymentDeadline: json['paymentDeadline'],
       cancelledBy: json['cancelledBy'],
       cancelReason: json['cancelReason'],
     );
@@ -93,6 +98,7 @@ class BookingResponseModel {
       'slotsName': slotsName,
       'createdAt': createdAt,
       'paidAt': paidAt,
+      'paymentDeadline': paymentDeadline,
       'cancelledBy': cancelledBy,
       'cancelReason': cancelReason,
     };

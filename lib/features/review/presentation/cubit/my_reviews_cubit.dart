@@ -64,7 +64,8 @@ class MyReviewsCubit extends Cubit<MyReviewsState> {
       emit(MyReviewsActionError(e.toString()));
       return;
     }
-    emit(MyReviewsActionSuccess(_submitMessage(created)));
+    emit(MyReviewsActionSuccess(_submitMessage(created),
+        isRejected: created.isRejected));
     await load();
   }
 
@@ -114,7 +115,8 @@ class MyReviewsCubit extends Cubit<MyReviewsState> {
       emit(MyReviewsActionError(e.toString()));
       return;
     }
-    emit(MyReviewsActionSuccess(_submitMessage(updated)));
+    emit(MyReviewsActionSuccess(_submitMessage(updated),
+        isRejected: updated.isRejected));
     await load();
   }
 }

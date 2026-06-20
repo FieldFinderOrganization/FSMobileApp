@@ -40,6 +40,10 @@ class _MainShellState extends State<MainShell>
   int _currentIndex = 0;
   late AnimationController _indicatorController;
 
+  /// Các loại notify xác nhận thanh toán của chính user — đã có success dialog ở
+  /// màn thanh toán nên không hiện banner (tránh popup thứ 2). Vẫn lưu vào list + badge.
+  static const _suppressedBannerTypes = {'BOOKING_CONFIRMED', 'ORDER_CONFIRMED'};
+
   // Định nghĩa các tab
   static const _tabs = [
     _TabItem(icon: Icons.home_outlined, label: 'Trang chủ'),
@@ -125,6 +129,11 @@ class _MainShellState extends State<MainShell>
                 context.read<NotificationCubit>().consumeRealtimeEvent();
                 // Đang ở tab Chat thì không banner tin nhắn (màn chat tự hiện)
                 if (event.type == 'CHAT_MESSAGE' && _currentIndex == 3) {
+                  return;
+                }
+                // Xác nhận thanh toán của chính user đã có success dialog ở màn
+                // thanh toán → bỏ banner để tránh popup thứ 2 (vẫn lưu vào list + badge).
+                if (_suppressedBannerTypes.contains(event.type)) {
                   return;
                 }
                 _showNotificationBanner(context, event, currentUser);

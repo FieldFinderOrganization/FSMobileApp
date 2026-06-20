@@ -49,12 +49,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Timer? _countdownTimer;
   Duration _remaining = Duration.zero;
   bool _isSuccessTriggered = false;
+  bool _successShown = false;
+  Duration? _initialRemaining;
 
   @override
   void initState() {
     super.initState();
     if (widget.deadline != null) {
       _updateRemaining();
+      _initialRemaining = _remaining;
       _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (mounted) _updateRemaining();
       });
@@ -366,7 +369,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Widget _buildCountdownTimer() {
-    final isUrgent = _remaining.inMinutes < 10;
+    // Khẩn cấp khi còn dưới 1/3 thời gian giữ slot (hoặc < 2 phút) — co giãn theo
+    // Dynamic Hold (30/15/5p) thay vì mốc cứng 10 phút.
+    final total = _initialRemaining ?? _remaining;
+    final isUrgent = _remaining.inSeconds <= (total.inSeconds * 0.34) ||
+        _remaining.inMinutes < 2;
     
     String formatDuration(Duration d) {
       if (d == Duration.zero) return 'Hết hạn thanh toán';
@@ -441,6 +448,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   void _showSuccessAndClose() {
+    if (_successShown) return; // chống hiển thị 2 lần (poll + BlocListener / race)
+    _successShown = true;
     final outerContext = context;
     showDialog(
       context: context,

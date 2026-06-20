@@ -26,7 +26,11 @@ class MyProductReviewsSubmitting extends MyProductReviewsState {}
 
 class MyProductReviewsActionSuccess extends MyProductReviewsState {
   final String message;
-  MyProductReviewsActionSuccess(this.message);
+
+  /// True khi đánh giá bị kiểm duyệt từ chối → UI báo cảnh báo (không phải xanh).
+  final bool isRejected;
+
+  MyProductReviewsActionSuccess(this.message, {this.isRejected = false});
 }
 
 class MyProductReviewsActionError extends MyProductReviewsState {

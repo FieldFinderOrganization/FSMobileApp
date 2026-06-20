@@ -15,6 +15,8 @@ import '../../data/datasources/payment_remote_datasource.dart';
 import '../../data/repositories/booking_repository_impl.dart';
 import '../../data/repositories/payment_repository_impl.dart';
 import '../../domain/entities/pitch_entity.dart';
+import '../../domain/hold_policy.dart';
+import '../../../../shared/widgets/no_bank_warning_dialog.dart';
 import '../../../refund/data/datasources/refund_remote_data_source.dart';
 import '../../../../shared/widgets/cancel_reason_sheet.dart';
 import '../../../../shared/widgets/refund_code_dialog.dart';
@@ -488,12 +490,20 @@ class _BookingItemCardState extends State<_BookingItemCard> {
         .isBefore(start);
   }
 
-  /// Deadline = ngày đặt sân + giờ bắt đầu slot nhỏ nhất - 5 phút
+  /// Hạn thanh toán (Dynamic Hold). Ưu tiên giá trị BE trả về (nguồn chuẩn);
+  /// nếu thiếu thì tự tính lại đúng công thức: min(createdAt + holdTimeout, slotStart − 90p).
   DateTime? _calcDeadline() {
     final booking = widget.booking;
+
+    // 1) Nguồn chuẩn từ BE
+    if (booking.paymentDeadline != null) {
+      final d = DateTime.tryParse(booking.paymentDeadline!);
+      if (d != null) return d;
+    }
+
+    // 2) Fallback: tự tính từ createdAt + giờ bắt đầu slot
     if (booking.slots.isEmpty) return null;
     try {
-      // Parse date parts directly to avoid UTC→local timezone drift
       final parts = booking.bookingDate.split('-');
       if (parts.length != 3) return null;
       final year = int.parse(parts[0]);
@@ -501,8 +511,11 @@ class _BookingItemCardState extends State<_BookingItemCard> {
       final day = int.parse(parts[2].substring(0, 2)); // handle possible trailing T
       final minSlot = booking.slots.reduce((a, b) => a < b ? a : b);
       final startHour = 5 + minSlot; // slot 1 → 06:00
-      return DateTime(year, month, day, startHour, 0)
-          .subtract(const Duration(minutes: 5));
+      final slotStart = DateTime(year, month, day, startHour, 0);
+
+      final createdAt =
+          booking.createdAt != null ? DateTime.tryParse(booking.createdAt!) : null;
+      return holdPaymentDeadline(createdAt ?? DateTime.now(), slotStart);
     } catch (_) {
       return null;
     }
@@ -572,9 +585,37 @@ class _BookingItemCardState extends State<_BookingItemCard> {
     );
   }
 
+  /// Hủy đủ sớm (≥60p trước giờ đá) để BE hoàn tiền mặt khi có TK ngân hàng.
+  /// Slot đầu = 5 + minSlot giờ (slot 1 → 06:00), khớp công thức BE.
+  bool _cashRefundEligible() {
+    final b = widget.booking;
+    if (b.slots.isEmpty) return false;
+    try {
+      final parts = b.bookingDate.split('-');
+      final year = int.parse(parts[0]);
+      final month = int.parse(parts[1]);
+      final day = int.parse(parts[2].substring(0, 2));
+      final minSlot = b.slots.reduce((a, c) => a < c ? a : c);
+      final slotStart = DateTime(year, month, day, 5 + minSlot, 0);
+      return slotStart.difference(DateTime.now()).inMinutes >= 60;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> _showRefundCancelSheet(BuildContext context) async {
     final isBankPayment =
         widget.booking.paymentMethod.toUpperCase() == 'BANK';
+
+    // Bank booking nhưng user chưa có TK ngân hàng → nhắc trước: hủy thì chỉ nhận
+    // mã đền bù thay vì hoàn tiền mặt. Chỉ cảnh báo khi hủy ≥60p (lúc có bank mới
+    // ra tiền mặt); hủy <60p luôn là mã đền bù dù có bank hay không.
+    if (isBankPayment) {
+      final ok = await confirmCancelWithBankCheck(context,
+          cashRefundEligible: _cashRefundEligible());
+      if (!ok || !mounted) return; // user đi cập nhật ngân hàng hoặc đóng
+    }
+
     final reason = await CancelReasonSheet.show(
       context,
       title: isBankPayment
@@ -591,6 +632,7 @@ class _BookingItemCardState extends State<_BookingItemCard> {
         .read<BookingHistoryCubit>()
         .cancelBooking(widget.booking.bookingId, reason: reason.encode());
   }
+
 
   Future<void> _navigateToPayment(BuildContext context) async {
     setState(() => _isLoadingPayment = true);
