@@ -15,6 +15,7 @@ class PitchEntity {
   final double? providerRating; // điểm TB mọi sân của chủ; null = chưa có
   final int? providerReviewCount;
   final String? status; // 'ACTIVE' | 'INACTIVE'
+  final DateTime? deactivationDate; // ngày ngưng theo lịch; từ ngày này không đặt được
 
   const PitchEntity({
     required this.pitchId,
@@ -33,6 +34,7 @@ class PitchEntity {
     this.providerRating,
     this.providerReviewCount,
     this.status,
+    this.deactivationDate,
   });
 
   /// Có toạ độ để dẫn đường không.
@@ -40,6 +42,15 @@ class PitchEntity {
 
   /// Sân đang hoạt động.
   bool get isActive => status == null || status == 'ACTIVE';
+
+  /// Ngày [d] có nằm trong khoảng đã ngưng (>= ngày ngưng) không → không đặt được.
+  bool isDateDeactivated(DateTime d) {
+    if (deactivationDate == null) return false;
+    final dd = DateTime(
+        deactivationDate!.year, deactivationDate!.month, deactivationDate!.day);
+    final day = DateTime(d.year, d.month, d.day);
+    return !day.isBefore(dd);
+  }
 
   String get primaryImage => imageUrls.isNotEmpty ? imageUrls.first : '';
 

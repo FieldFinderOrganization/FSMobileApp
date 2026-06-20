@@ -18,6 +18,7 @@ class PitchModel extends PitchEntity {
     super.providerRating,
     super.providerReviewCount,
     super.status,
+    super.deactivationDate,
   });
 
   factory PitchModel.fromJson(Map<String, dynamic> json) {
@@ -41,6 +42,9 @@ class PitchModel extends PitchEntity {
       providerRating: (json['providerRating'] as num?)?.toDouble(),
       providerReviewCount: (json['providerReviewCount'] as num?)?.toInt(),
       status: json['status'] as String?,
+      deactivationDate: json['deactivationDate'] != null
+          ? DateTime.tryParse(json['deactivationDate'].toString())
+          : null,
     );
   }
 }

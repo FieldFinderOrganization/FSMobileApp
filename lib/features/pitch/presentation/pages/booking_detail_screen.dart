@@ -79,14 +79,10 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   Future<void> _handleCancel() async {
     final isBankPayment = _booking.paymentMethod.toUpperCase() == 'BANK';
 
-    // Hủy có hoàn tiền BANK nhưng chưa có TK ngân hàng → nhắc: chỉ nhận mã đền bù.
-    // Chỉ cảnh báo khi hủy ≥60p (lúc có bank mới ra tiền mặt); <60p luôn là mã đền bù.
+    // Hủy có hoàn tiền BANK nhưng chưa có TK ngân hàng → nhắc: chỉ nhận mã đền bù
+    // (BE hoàn tiền mặt nếu có TK, áp dụng mọi mốc hủy).
     if (_willRefund && isBankPayment) {
-      final start = _earliestSlotStart;
-      final cashEligible = start != null &&
-          start.difference(DateTime.now()).inMinutes >= 60;
-      final ok = await confirmCancelWithBankCheck(context,
-          cashRefundEligible: cashEligible);
+      final ok = await confirmCancelWithBankCheck(context);
       if (!ok || !mounted) return;
     }
 

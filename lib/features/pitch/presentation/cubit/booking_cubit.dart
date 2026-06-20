@@ -52,7 +52,7 @@ class BookingCubit extends Cubit<BookingState> {
     emit(BookingLoading());
     try {
       final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-      final bookedIds = await repository.getBookedSlots(pitch.pitchId, dateStr);
+      final slotStatuses = await repository.getSlotStatuses(pitch.pitchId, dateStr);
 
       final now = DateTime.now();
       final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
@@ -62,7 +62,7 @@ class BookingCubit extends Cubit<BookingState> {
         final startParts = s['start']!.split(':');
         final startHour = int.parse(startParts[0]);
         final startMinute = int.parse(startParts[1]);
-        
+
         // Construct full DateTime for the slot
         final slotStartTime = DateTime(
           date.year,
@@ -72,9 +72,14 @@ class BookingCubit extends Cubit<BookingState> {
           startMinute,
         );
 
+        final occupiedType = slotStatuses[id];
         SlotStatus status = SlotStatus.available;
-        if (bookedIds.contains(id)) {
-          status = SlotStatus.booked;
+        if (occupiedType == 'MAINTENANCE') {
+          status = SlotStatus.maintenance;
+        } else if (occupiedType == 'OFFLINE') {
+          status = SlotStatus.offlineBooking;
+        } else if (occupiedType != null) {
+          status = SlotStatus.booked; // BOOKED (khách khác đặt)
         } else if (slotStartTime.isBefore(now)) {
           status = SlotStatus.past;
         } else if (isToday && slotStartTime.isBefore(now.add(const Duration(minutes: 30)))) {

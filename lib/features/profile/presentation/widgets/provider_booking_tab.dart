@@ -173,6 +173,7 @@ class _BookingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final currencyFmt = NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
     final slots = booking.slots.map(_slotToTime).join(', ');
+    final isBlock = booking.blockType != null;
 
     return Container(
       decoration: BoxDecoration(
@@ -221,64 +222,93 @@ class _BookingCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    _StatusBadge(status: booking.status, cancelledBy: booking.cancelledBy),
+                    isBlock
+                        ? _BlockBadge(blockType: booking.blockType!)
+                        : _StatusBadge(status: booking.status, cancelledBy: booking.cancelledBy),
                   ],
                 ),
                 const SizedBox(height: 6),
-                _InfoRow(icon: Icons.person_outline, text: booking.userName),
+                // Đơn thường: tên khách. Khóa lịch: bỏ (user = chính chủ sân).
+                if (!isBlock) _InfoRow(icon: Icons.person_outline, text: booking.userName),
                 _InfoRow(icon: Icons.calendar_today_outlined, text: booking.bookingDate),
                 if (slots.isNotEmpty) _InfoRow(icon: Icons.access_time_outlined, text: slots),
-                _InfoRow(
-                  icon: Icons.payments_outlined,
-                  text: currencyFmt.format(booking.totalPrice),
-                  bold: true,
-                ),
+                if (!isBlock)
+                  _InfoRow(
+                    icon: Icons.payments_outlined,
+                    text: currencyFmt.format(booking.totalPrice),
+                    bold: true,
+                  ),
+                if (isBlock && (booking.providerNotes?.trim().isNotEmpty ?? false))
+                  _InfoRow(
+                      icon: Icons.sticky_note_2_outlined,
+                      text: booking.providerNotes!),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    if (_canCancel) ...[
-                      TextButton.icon(
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.textGrey,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            side: const BorderSide(color: AppColors.textGrey),
-                          ),
-                        ),
-                        icon: const Icon(Icons.cancel_outlined, size: 16),
-                        label: Text('Hủy đặt',
-                            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600)),
-                        onPressed: () => _onCancelPressed(context),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    TextButton.icon(
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColors.primaryRed,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: const BorderSide(color: AppColors.primaryRed),
-                        ),
-                      ),
-                      icon: const Icon(Icons.chat_bubble_outline, size: 16),
-                      label: Text('Chat', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600)),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => UserChatScreen(
-                              currentUserId: providerUserId,
-                              otherUserId: booking.userId,
-                              otherUserName: booking.userName,
+                  children: isBlock
+                      ? [
+                          if (_canCancel)
+                            TextButton.icon(
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.primaryRed,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  side:
+                                      const BorderSide(color: AppColors.primaryRed),
+                                ),
+                              ),
+                              icon: const Icon(Icons.lock_open_rounded, size: 16),
+                              label: Text('Gỡ khóa',
+                                  style: GoogleFonts.inter(
+                                      fontSize: 13, fontWeight: FontWeight.w600)),
+                              onPressed: () => _onUnblockPressed(context),
                             ),
+                        ]
+                      : [
+                          if (_canCancel) ...[
+                            TextButton.icon(
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.textGrey,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  side: const BorderSide(color: AppColors.textGrey),
+                                ),
+                              ),
+                              icon: const Icon(Icons.cancel_outlined, size: 16),
+                              label: Text('Hủy đặt',
+                                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600)),
+                              onPressed: () => _onCancelPressed(context),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          TextButton.icon(
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.primaryRed,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                side: const BorderSide(color: AppColors.primaryRed),
+                              ),
+                            ),
+                            icon: const Icon(Icons.chat_bubble_outline, size: 16),
+                            label: Text('Chat', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600)),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => UserChatScreen(
+                                    currentUserId: providerUserId,
+                                    otherUserId: booking.userId,
+                                    otherUserName: booking.userName,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
-                  ],
+                        ],
                 ),
               ],
             ),
@@ -338,12 +368,76 @@ class _BookingCard extends StatelessWidget {
     );
   }
 
+  Future<void> _onUnblockPressed(BuildContext context) async {
+    final cubit = context.read<ProviderBookingCubit>();
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Gỡ khóa lịch'),
+        content: const Text('Mở lại khung giờ này cho khách đặt online?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Không'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.primaryRed),
+            child: const Text('Gỡ khóa'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final error = await cubit.cancelBooking(booking.bookingId, 'Gỡ khóa lịch');
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(error ?? 'Đã gỡ khóa, khung giờ mở lại cho khách.'),
+        backgroundColor: error == null ? Colors.green : Colors.red,
+      ),
+    );
+  }
+
   String _slotToTime(int slot) {
     final start = 6 + (slot - 1);
     final end = start + 1;
     final startStr = start.toString().padLeft(2, '0');
     final endStr = end.toString().padLeft(2, '0');
     return '$startStr:00–$endStr:00';
+  }
+}
+
+/// Nhãn loại khóa lịch cho card đơn của chủ sân.
+class _BlockBadge extends StatelessWidget {
+  final String blockType;
+  const _BlockBadge({required this.blockType});
+
+  @override
+  Widget build(BuildContext context) {
+    final isMaintenance = blockType == 'MAINTENANCE';
+    final color = isMaintenance ? Colors.blueGrey : Colors.deepOrange;
+    final label = isMaintenance ? 'Bảo trì' : 'Đặt ngoài app';
+    final icon = isMaintenance
+        ? Icons.build_rounded
+        : Icons.phone_in_talk_rounded;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(label,
+              style: GoogleFonts.inter(
+                  color: color, fontWeight: FontWeight.w600, fontSize: 11)),
+        ],
+      ),
+    );
   }
 }
 

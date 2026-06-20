@@ -11,19 +11,12 @@ import '../../features/bank_account/presentation/pages/bank_account_screen.dart'
 
 /// Kiểm tra user có TK ngân hàng mặc định chưa, trước khi hủy đơn BANK.
 ///
-/// [cashRefundEligible] = hủy đủ sớm (≥60p trước giờ đá) để BE hoàn TIỀN MẶT khi
-/// có TK ngân hàng. Hủy sát giờ (<60p) thì BE luôn phát mã đền bù dù có bank hay
-/// không → không cần cảnh báo (trả về true ngay).
+/// BE hoàn TIỀN MẶT về TK khi có liên kết ngân hàng (cả hủy hợp lệ lẫn sát giờ);
+/// chưa có TK → chỉ nhận mã đền bù. Vì vậy luôn cảnh báo khi chưa có TK ngân hàng.
 ///
 /// Trả về true nếu có TK ngân hàng (hoàn tiền mặt) hoặc user chọn "Tiếp tục"
 /// (chấp nhận chỉ nhận mã đền bù). false khi user đóng / đi cập nhật ngân hàng.
-Future<bool> confirmCancelWithBankCheck(
-  BuildContext context, {
-  required bool cashRefundEligible,
-}) async {
-  // Hủy sát giờ: mã đền bù bất kể bank → bỏ qua cảnh báo, hủy như thường.
-  if (!cashRefundEligible) return true;
-
+Future<bool> confirmCancelWithBankCheck(BuildContext context) async {
   final dio = context.read<DioClient>();
   Object? defaultBank;
   try {

@@ -339,6 +339,8 @@ class _BookingViewState extends State<_BookingView> {
     switch (slot.status) {
       case SlotStatus.booked:
       case SlotStatus.past:
+      case SlotStatus.maintenance:
+      case SlotStatus.offlineBooking:
         bgColor = const Color(0xFFEEEEEE);
         textColor = const Color(0xFFBDBDBD);
         break;
@@ -377,15 +379,34 @@ class _BookingViewState extends State<_BookingView> {
           border: border,
         ),
         child: Center(
-          child: Text(
-            slot.timeRange,
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: slot.status == SlotStatus.selected
-                  ? FontWeight.w800
-                  : FontWeight.w600,
-              color: textColor,
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                slot.timeRange,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: slot.status == SlotStatus.selected
+                      ? FontWeight.w800
+                      : FontWeight.w600,
+                  color: textColor,
+                ),
+              ),
+              if (slot.status == SlotStatus.maintenance ||
+                  slot.status == SlotStatus.offlineBooking) ...[
+                const SizedBox(height: 2),
+                Text(
+                  slot.status == SlotStatus.maintenance
+                      ? 'Sân bảo trì'
+                      : 'Sân bận',
+                  style: GoogleFonts.inter(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF9E9E9E),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),

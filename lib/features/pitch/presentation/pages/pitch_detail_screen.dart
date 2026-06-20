@@ -629,16 +629,26 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                 final date = DateTime.now().add(Duration(days: i));
                 final isSelected = _isSameDay(date, _selectedDate);
                 final isToday = _isSameDay(date, DateTime.now());
+                // Sân ngưng theo lịch: ngày >= ngày ngưng không chọn được.
+                final blocked = widget.pitch.isDateDeactivated(date);
                 return GestureDetector(
-                  onTap: () => setState(() => _selectedDate = date),
+                  onTap: blocked
+                      ? () => ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content:
+                                    Text('Sân ngưng hoạt động từ ngày này')),
+                          )
+                      : () => setState(() => _selectedDate = date),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     width: 52,
                     margin: EdgeInsets.only(right: 10, left: i == 0 ? 0 : 0),
                     decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.primaryRed
-                          : const Color(0xFFF8F8F8),
+                      color: blocked
+                          ? const Color(0xFFF0F0F0)
+                          : isSelected
+                              ? AppColors.primaryRed
+                              : const Color(0xFFF8F8F8),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isSelected
@@ -679,9 +689,13 @@ class _PitchDetailScreenState extends State<PitchDetailScreen>
                           style: GoogleFonts.inter(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
-                            color: isSelected
-                                ? Colors.white
-                                : AppColors.textDark,
+                            color: blocked
+                                ? const Color(0xFFBBBBBB)
+                                : isSelected
+                                    ? Colors.white
+                                    : AppColors.textDark,
+                            decoration:
+                                blocked ? TextDecoration.lineThrough : null,
                           ),
                         ),
                         const SizedBox(height: 2),

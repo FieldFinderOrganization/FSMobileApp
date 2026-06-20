@@ -585,34 +585,14 @@ class _BookingItemCardState extends State<_BookingItemCard> {
     );
   }
 
-  /// Hủy đủ sớm (≥60p trước giờ đá) để BE hoàn tiền mặt khi có TK ngân hàng.
-  /// Slot đầu = 5 + minSlot giờ (slot 1 → 06:00), khớp công thức BE.
-  bool _cashRefundEligible() {
-    final b = widget.booking;
-    if (b.slots.isEmpty) return false;
-    try {
-      final parts = b.bookingDate.split('-');
-      final year = int.parse(parts[0]);
-      final month = int.parse(parts[1]);
-      final day = int.parse(parts[2].substring(0, 2));
-      final minSlot = b.slots.reduce((a, c) => a < c ? a : c);
-      final slotStart = DateTime(year, month, day, 5 + minSlot, 0);
-      return slotStart.difference(DateTime.now()).inMinutes >= 60;
-    } catch (_) {
-      return false;
-    }
-  }
-
   Future<void> _showRefundCancelSheet(BuildContext context) async {
     final isBankPayment =
         widget.booking.paymentMethod.toUpperCase() == 'BANK';
 
     // Bank booking nhưng user chưa có TK ngân hàng → nhắc trước: hủy thì chỉ nhận
-    // mã đền bù thay vì hoàn tiền mặt. Chỉ cảnh báo khi hủy ≥60p (lúc có bank mới
-    // ra tiền mặt); hủy <60p luôn là mã đền bù dù có bank hay không.
+    // mã đền bù thay vì hoàn tiền mặt (BE hoàn tiền mặt nếu có TK, mọi mốc hủy).
     if (isBankPayment) {
-      final ok = await confirmCancelWithBankCheck(context,
-          cashRefundEligible: _cashRefundEligible());
+      final ok = await confirmCancelWithBankCheck(context);
       if (!ok || !mounted) return; // user đi cập nhật ngân hàng hoặc đóng
     }
 

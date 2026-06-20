@@ -13,6 +13,7 @@ import '../cubit/provider_cubit.dart';
 import '../cubit/pitch_management_cubit.dart';
 import '../../domain/entities/provider_address_entity.dart';
 import 'pitch_reviews_sheet.dart';
+import 'block_slot_sheet.dart';
 
 class ProviderPitchTab extends StatefulWidget {
   final UserEntity user;
@@ -235,6 +236,19 @@ class _ProviderPitchTabState extends State<ProviderPitchTab> {
                 icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.textGrey),
                 onPressed: () => _showPitchDialog(context, _selectedAddress!.providerAddressId, pitch: pitch),
               ),
+              // Khóa lịch thủ công (bảo trì / đặt ngoài app) — chỉ chủ sân, sân ACTIVE.
+              // Admin không sở hữu sân nên API sẽ từ chối → ẩn nút với admin.
+              if (pitch.isActive && widget.user.role != 'ADMIN')
+                IconButton(
+                  tooltip: 'Khóa lịch',
+                  icon: const Icon(Icons.event_busy_rounded,
+                      size: 20, color: AppColors.textGrey),
+                  onPressed: () => BlockSlotSheet.show(
+                    context,
+                    pitchId: pitch.pitchId,
+                    pitchName: pitch.name,
+                  ),
+                ),
               // Nút Ngưng / Kích hoạt — cả Admin và Provider
               IconButton(
                 tooltip: pitch.isActive ? 'Ngưng hoạt động' : 'Kích hoạt lại',

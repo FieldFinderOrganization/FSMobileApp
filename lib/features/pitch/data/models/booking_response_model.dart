@@ -25,6 +25,12 @@ class BookingResponseModel {
   final String? cancelledBy;
   final String? cancelReason;
 
+  /// Khóa lịch thủ công: 'MAINTENANCE' | 'OFFLINE_BOOKING'. Null = đơn đặt thường.
+  final String? blockType;
+
+  /// Ghi chú chủ sân khi khóa (tên/SĐT/cọc khách đặt ngoài app).
+  final String? providerNotes;
+
   BookingResponseModel({
     required this.userId,
     required this.userName,
@@ -47,6 +53,8 @@ class BookingResponseModel {
     this.paymentDeadline,
     this.cancelledBy,
     this.cancelReason,
+    this.blockType,
+    this.providerNotes,
   });
 
   factory BookingResponseModel.fromJson(Map<String, dynamic> json) {
@@ -75,6 +83,8 @@ class BookingResponseModel {
       paymentDeadline: json['paymentDeadline'],
       cancelledBy: json['cancelledBy'],
       cancelReason: json['cancelReason'],
+      blockType: json['blockType'],
+      providerNotes: json['providerNotes'],
     );
   }
 
@@ -101,6 +111,8 @@ class BookingResponseModel {
       'paymentDeadline': paymentDeadline,
       'cancelledBy': cancelledBy,
       'cancelReason': cancelReason,
+      'blockType': blockType,
+      'providerNotes': providerNotes,
     };
   }
 }

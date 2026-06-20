@@ -20,6 +20,49 @@ class BookingRemoteDataSource {
     }
   }
 
+  /// Chủ sân khóa lịch thủ công (bảo trì / đặt ngoài app). Không tạo doanh thu.
+  /// [blockType] = 'MAINTENANCE' | 'OFFLINE_BOOKING'.
+  Future<void> blockSlots({
+    required String pitchId,
+    required String bookingDate,
+    required List<int> slots,
+    required String blockType,
+    String? providerNotes,
+  }) async {
+    try {
+      await dioClient.dio.post(
+        '${ApiConstants.bookings}/block',
+        data: {
+          'pitchId': pitchId,
+          'bookingDate': bookingDate,
+          'slots': slots,
+          'blockType': blockType,
+          if (providerNotes != null && providerNotes.trim().isNotEmpty)
+            'providerNotes': providerNotes.trim(),
+        },
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Trạng thái slot kèm loại: slot → 'BOOKED' | 'MAINTENANCE' | 'OFFLINE'.
+  Future<Map<int, String>> getSlotStatuses(String pitchId, String date) async {
+    try {
+      final response = await dioClient.dio.get(
+        '${ApiConstants.bookingSlots}/$pitchId/status',
+        queryParameters: {'date': date},
+      );
+      final map = <int, String>{};
+      for (final e in (response.data as List)) {
+        map[e['slot'] as int] = e['type'] as String;
+      }
+      return map;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<String> createBooking(BookingRequestModel bookingRequest) async {
     try {
       final response = await dioClient.dio.post(

@@ -9,6 +9,7 @@ import '../widgets/provider_booking_tab.dart';
 import '../widgets/provider_revenue_tab.dart';
 import '../cubit/provider_cubit.dart';
 import '../../domain/repositories/provider_repository.dart';
+import '../../../../shared/widgets/keep_alive_wrapper.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ProviderManagementScreen extends StatefulWidget {
@@ -79,11 +80,12 @@ class _ProviderManagementScreenState extends State<ProviderManagementScreen>
           child: TabBarView(
             controller: _tabController,
             children: [
-              ProviderInfoTab(user: widget.user),
-              ProviderAddressTab(user: widget.user),
-              ProviderPitchTab(user: widget.user),
-              ProviderBookingTab(user: widget.user),
-              ProviderRevenueTab(user: widget.user),
+              // Giữ state từng tab khi chuyển qua lại (tránh mất nội dung/cubit/scroll).
+              KeepAliveWrapper(child: ProviderInfoTab(user: widget.user)),
+              KeepAliveWrapper(child: ProviderAddressTab(user: widget.user)),
+              KeepAliveWrapper(child: ProviderPitchTab(user: widget.user)),
+              KeepAliveWrapper(child: ProviderBookingTab(user: widget.user)),
+              KeepAliveWrapper(child: ProviderRevenueTab(user: widget.user)),
             ],
           ),
         ),
