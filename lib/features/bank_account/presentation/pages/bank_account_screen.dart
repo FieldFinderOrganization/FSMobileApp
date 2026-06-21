@@ -8,6 +8,7 @@ import '../../data/models/bank_account_model.dart';
 import '../../data/models/bank_info_model.dart';
 import '../cubit/bank_account_cubit.dart';
 import '../cubit/bank_account_state.dart';
+import '../../../payment_pin/presentation/payment_pin.dart';
 
 class BankAccountScreen extends StatefulWidget {
   /// Khi nhúng vào tab khác (vd "Quản lý Đối tác") thì bỏ Scaffold/AppBar riêng.
@@ -148,7 +149,13 @@ class _BankAccountScreenState extends State<BankAccountScreen> {
                   ),
                 ),
                 if (a.isDefault) _chip('Mặc định', Colors.red),
-                if (a.verified) ...[
+                if (a.isPending) ...[
+                  const SizedBox(width: 6),
+                  _chip('Chờ duyệt', Colors.orange),
+                ] else if (a.isRejected) ...[
+                  const SizedBox(width: 6),
+                  _chip('Bị từ chối', Colors.grey),
+                ] else if (a.verified) ...[
                   const SizedBox(width: 6),
                   _chip('Đã xác thực', Colors.green),
                 ],
@@ -160,13 +167,23 @@ class _BankAccountScreenState extends State<BankAccountScreen> {
             const SizedBox(height: 2),
             Text(a.accountName,
                 style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
+            if (a.isPending) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Đang chờ duyệt (tên không khớp hồ sơ) — tạm chưa nhận được tiền về TK này.',
+                style: TextStyle(color: Colors.orange.shade800, fontSize: 11.5, height: 1.3),
+              ),
+            ],
             const SizedBox(height: 8),
             Row(
               children: [
                 if (!a.isDefault)
                   TextButton(
-                    onPressed: () =>
-                        ctx.read<BankAccountCubit>().setDefault(a.bankAccountId),
+                    onPressed: () async {
+                      final pin = await ensurePaymentPin(ctx);
+                      if (pin == null || !ctx.mounted) return;
+                      ctx.read<BankAccountCubit>().setDefault(a.bankAccountId, pin: pin);
+                    },
                     child: const Text('Đặt mặc định'),
                   ),
                 const Spacer(),
@@ -510,11 +527,15 @@ class _BankAccountFormState extends State<_BankAccountForm> {
       );
       return;
     }
+    // Gác bằng PIN thanh toán: chưa có ⇒ luồng đặt PIN; có ⇒ nhập + xác thực.
+    final pin = await ensurePaymentPin(ctx);
+    if (pin == null || !ctx.mounted) return; // hủy nhập PIN ⇒ không lưu
     final ok = await ctx.read<BankAccountCubit>().save(
           bankBin: _selectedBank!.bin,
           bankName: _selectedBank!.shortName,
           accountNumber: acc,
           accountName: name,
+          pin: pin,
         );
     if (ok && ctx.mounted) {
       Navigator.pop(ctx);

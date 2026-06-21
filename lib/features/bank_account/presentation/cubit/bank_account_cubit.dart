@@ -57,6 +57,7 @@ class BankAccountCubit extends Cubit<BankAccountState> {
     String? bankName,
     required String accountNumber,
     required String accountName,
+    String? pin,
   }) async {
     emit(state.copyWith(saving: true, errorMessage: ''));
     try {
@@ -65,6 +66,7 @@ class BankAccountCubit extends Cubit<BankAccountState> {
         bankName: bankName,
         accountNumber: accountNumber,
         accountName: accountName,
+        pin: pin,
       );
       final accounts = await _repository.list();
       emit(state.copyWith(saving: false, accounts: accounts));
@@ -75,9 +77,9 @@ class BankAccountCubit extends Cubit<BankAccountState> {
     }
   }
 
-  Future<void> setDefault(String bankAccountId) async {
+  Future<void> setDefault(String bankAccountId, {String? pin}) async {
     try {
-      await _repository.setDefault(bankAccountId);
+      await _repository.setDefault(bankAccountId, pin: pin);
       final accounts = await _repository.list();
       emit(state.copyWith(accounts: accounts));
     } catch (e) {

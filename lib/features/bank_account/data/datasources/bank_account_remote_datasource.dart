@@ -32,13 +32,16 @@ class BankAccountRemoteDataSource {
     String? bankName,
     required String accountNumber,
     required String accountName,
+    String? pin,
   }) async {
-    final res = await dioClient.dio.post('/bank-accounts', data: {
-      'bankBin': bankBin,
-      'bankName': bankName,
-      'accountNumber': accountNumber,
-      'accountName': accountName,
-    });
+    final res = await dioClient.dio.post('/bank-accounts',
+        data: {
+          'bankBin': bankBin,
+          'bankName': bankName,
+          'accountNumber': accountNumber,
+          'accountName': accountName,
+        },
+        options: pin != null ? Options(headers: {'X-Payment-Pin': pin}) : null);
     return BankAccountModel.fromJson(res.data as Map<String, dynamic>);
   }
 
@@ -54,9 +57,9 @@ class BankAccountRemoteDataSource {
     return BankLookupResult.fromJson(res.data as Map<String, dynamic>);
   }
 
-  Future<BankAccountModel> setDefault(String bankAccountId) async {
-    final res =
-        await dioClient.dio.put('/bank-accounts/$bankAccountId/default');
+  Future<BankAccountModel> setDefault(String bankAccountId, {String? pin}) async {
+    final res = await dioClient.dio.put('/bank-accounts/$bankAccountId/default',
+        options: pin != null ? Options(headers: {'X-Payment-Pin': pin}) : null);
     return BankAccountModel.fromJson(res.data as Map<String, dynamic>);
   }
 

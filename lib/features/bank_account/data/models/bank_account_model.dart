@@ -7,6 +7,7 @@ class BankAccountModel {
   final String accountName;
   final bool isDefault;
   final bool verified;
+  final String reviewStatus; // APPROVED | PENDING_REVIEW | REJECTED
 
   const BankAccountModel({
     required this.bankAccountId,
@@ -17,7 +18,11 @@ class BankAccountModel {
     required this.accountName,
     this.isDefault = false,
     this.verified = false,
+    this.reviewStatus = 'APPROVED',
   });
+
+  bool get isPending => reviewStatus == 'PENDING_REVIEW';
+  bool get isRejected => reviewStatus == 'REJECTED';
 
   factory BankAccountModel.fromJson(Map<String, dynamic> json) {
     return BankAccountModel(
@@ -29,6 +34,7 @@ class BankAccountModel {
       accountName: json['accountName'] as String? ?? '',
       isDefault: json['isDefault'] as bool? ?? false,
       verified: json['verified'] as bool? ?? false,
+      reviewStatus: json['reviewStatus'] as String? ?? 'APPROVED',
     );
   }
 }

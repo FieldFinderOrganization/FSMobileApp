@@ -21,12 +21,14 @@ class BankAccountRepositoryImpl implements BankAccountRepository {
     String? bankName,
     required String accountNumber,
     required String accountName,
+    String? pin,
   }) =>
       remoteDataSource.save(
         bankBin: bankBin,
         bankName: bankName,
         accountNumber: accountNumber,
         accountName: accountName,
+        pin: pin,
       );
 
   @override
@@ -40,8 +42,8 @@ class BankAccountRepositoryImpl implements BankAccountRepository {
       );
 
   @override
-  Future<BankAccountModel> setDefault(String bankAccountId) =>
-      remoteDataSource.setDefault(bankAccountId);
+  Future<BankAccountModel> setDefault(String bankAccountId, {String? pin}) =>
+      remoteDataSource.setDefault(bankAccountId, pin: pin);
 
   @override
   Future<void> delete(String bankAccountId) =>
