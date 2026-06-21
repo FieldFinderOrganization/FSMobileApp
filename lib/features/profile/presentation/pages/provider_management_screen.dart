@@ -11,9 +11,9 @@ import '../cubit/provider_cubit.dart';
 import '../../domain/repositories/provider_repository.dart';
 import '../../../../shared/widgets/keep_alive_wrapper.dart';
 import '../../../../core/network/dio_client.dart';
-import '../../../refund/data/datasources/refund_remote_data_source.dart';
-import '../../../refund/presentation/cubit/refund_cubit.dart';
-import '../../../refund/presentation/pages/provider_earnings_screen.dart';
+import '../../../wallet/data/datasources/wallet_remote_data_source.dart';
+import '../../../wallet/presentation/cubit/wallet_cubit.dart';
+import '../../../wallet/presentation/pages/provider_wallet_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ProviderManagementScreen extends StatefulWidget {
@@ -65,8 +65,8 @@ class _ProviderManagementScreenState extends State<ProviderManagementScreen>
           ),
           actions: [
             IconButton(
-              tooltip: 'Lịch sử nhận tiền',
-              icon: const Icon(Icons.receipt_long_outlined,
+              tooltip: 'Ví của tôi',
+              icon: const Icon(Icons.account_balance_wallet_outlined,
                   color: AppColors.textDark, size: 22),
               onPressed: () {
                 final dio = context.read<DioClient>();
@@ -74,10 +74,10 @@ class _ProviderManagementScreenState extends State<ProviderManagementScreen>
                   context,
                   MaterialPageRoute(
                     builder: (_) => BlocProvider(
-                      create: (_) => RefundCubit(
-                        dataSource: RefundRemoteDataSource(dioClient: dio),
+                      create: (_) => WalletCubit(
+                        dataSource: WalletRemoteDataSource(dioClient: dio),
                       ),
-                      child: const ProviderEarningsScreen(),
+                      child: const ProviderWalletScreen(),
                     ),
                   ),
                 );
