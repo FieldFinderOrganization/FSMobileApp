@@ -89,6 +89,29 @@ class CancelReasonSheet extends StatefulWidget {
     CancelReasonOption('OTHER', 'Lý do khác'),
   ];
 
+  /// Bảng tra KEY → nhãn tiếng Việt, gộp từ mọi nhóm lý do (1 nguồn, không lệch).
+  static final Map<String, String> _reasonLabels = {
+    for (final o in [...orderReasons, ...providerBookingReasons, ...bookingReasons])
+      o.key: o.label,
+  };
+
+  /// Đổi chuỗi `reason` của BE (dạng "KEY" hoặc "KEY:freeText") sang tiếng Việt
+  /// để hiển thị. Dùng ở mọi nơi show lý do hủy.
+  /// - KEY đã biết  → nhãn tiếng Việt.
+  /// - "OTHER:text" → chính nội dung người dùng nhập.
+  /// - Không khớp KEY (vd lý do hệ thống tự sinh "Sân tạm ngưng...") → giữ nguyên.
+  static String decodeReason(String? raw, {String fallback = 'Không có lý do'}) {
+    final value = raw?.trim() ?? '';
+    if (value.isEmpty) return fallback;
+    final idx = value.indexOf(':');
+    final key = idx >= 0 ? value.substring(0, idx) : value;
+    final rest = idx >= 0 ? value.substring(idx + 1).trim() : '';
+    final label = _reasonLabels[key];
+    if (label == null) return value; // text tiếng Việt sẵn / không xác định
+    if (key == 'OTHER') return rest.isNotEmpty ? rest : label;
+    return rest.isNotEmpty ? '$label ($rest)' : label;
+  }
+
   @override
   State<CancelReasonSheet> createState() => _CancelReasonSheetState();
 }

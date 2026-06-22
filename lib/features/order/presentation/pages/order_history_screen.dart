@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../../core/utils/money_utils.dart';
 import '../../data/datasources/order_remote_data_source.dart';
 import '../../data/models/order_item_model.dart';
@@ -890,7 +891,7 @@ class _OrderItemCardState extends State<_OrderItemCard> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Không thể tải thông tin thanh toán: $e'),
+            content: Text('Không thể tải thông tin thanh toán: ${messageFromError(e)}'),
             backgroundColor: Colors.red,
           ),
         );

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../order/data/models/order_model.dart';
@@ -55,7 +56,7 @@ class _ShipperEarningsScreenState extends State<ShipperEarningsScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = messageFromError(e);
         _loading = false;
       });
     }

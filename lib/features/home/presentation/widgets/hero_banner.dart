@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../auth/login/presentation/bloc/auth_cubit.dart';
 import '../../../discount/domain/repositories/discount_repository.dart';
+import '../../../discount/presentation/cubit/available_vouchers_cubit.dart';
+import '../../../discount/presentation/pages/available_vouchers_screen.dart';
 import '../cubit/home_state.dart';
 import 'shimmer_card.dart';
 
@@ -95,7 +97,7 @@ class _HeroBannerState extends State<HeroBanner> {
             itemBuilder: (_, index) => RepaintBoundary(
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: () => _showClaimSheet(context, discounts[index]),
+                onTap: () => _openVouchers(context),
                 child: _buildBannerCard(context, discounts[index]),
               ),
             ),
@@ -124,127 +126,27 @@ class _HeroBannerState extends State<HeroBanner> {
   }
 
   /// Bấm vào banner -> sheet xác nhận lưu mã vào ví.
-  Future<void> _showClaimSheet(BuildContext context, dynamic discount) async {
-    final messenger = ScaffoldMessenger.of(context);
+  /// Bấm mã ở banner → mở KHO VOUCHER (list mã + khóa theo hạng/điều kiện) để tự lấy,
+  /// thay vì lưu trực tiếp — vì hầu hết mã có điều kiện (hạng thành viên, đổi điểm...).
+  Future<void> _openVouchers(BuildContext context) async {
     final user = context.read<AuthCubit>().state.currentUser;
     if (user == null) {
-      messenger.showSnackBar(SnackBar(
-        content: Text('Vui lòng đăng nhập để lưu mã',
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Vui lòng đăng nhập để lấy mã',
             style: GoogleFonts.inter(fontSize: 13)),
         behavior: SnackBarBehavior.floating,
       ));
       return;
     }
-    final repo = context.read<DiscountRepository>();
-    final valueText = discount.isPercentage
-        ? 'Giảm ${discount.value.toInt()}%'
-        : 'Giảm ${discount.value.toStringAsFixed(0)}K';
-
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (sheetCtx) {
-        bool saving = false;
-        return StatefulBuilder(
-          builder: (sheetCtx, setSheet) {
-            return Container(
-              padding: EdgeInsets.fromLTRB(
-                  24, 24, 24, 24 + MediaQuery.of(sheetCtx).padding.bottom),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE0E0E0),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(valueText,
-                      style: GoogleFonts.inter(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textDark)),
-                  const SizedBox(height: 4),
-                  Text(discount.code,
-                      style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 2,
-                          color: AppColors.primaryRed)),
-                  const SizedBox(height: 8),
-                  Text(discount.description,
-                      style: GoogleFonts.inter(
-                          fontSize: 13, color: Colors.grey[600], height: 1.4)),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: saving
-                          ? null
-                          : () async {
-                              setSheet(() => saving = true);
-                              try {
-                                await repo.saveToWallet(
-                                    user.userId, discount.code);
-                                if (sheetCtx.mounted) Navigator.pop(sheetCtx);
-                                messenger.showSnackBar(SnackBar(
-                                  content: Text(
-                                      'Đã lưu mã ${discount.code} vào ví',
-                                      style: GoogleFonts.inter(fontSize: 13)),
-                                  backgroundColor: const Color(0xFF15803D),
-                                  behavior: SnackBarBehavior.floating,
-                                ));
-                              } catch (e) {
-                                setSheet(() => saving = false);
-                                final already =
-                                    e.toString().contains('already');
-                                messenger.showSnackBar(SnackBar(
-                                  content: Text(
-                                      already
-                                          ? 'Bạn đã lưu mã này rồi'
-                                          : 'Lưu mã thất bại',
-                                      style: GoogleFonts.inter(fontSize: 13)),
-                                  backgroundColor: Colors.redAccent,
-                                  behavior: SnackBarBehavior.floating,
-                                ));
-                              }
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryRed,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                      ),
-                      child: saving
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white))
-                          : Text('Lưu vào ví',
-                              style: GoogleFonts.inter(
-                                  fontSize: 15, fontWeight: FontWeight.w700)),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BlocProvider(
+          create: (ctx) =>
+              AvailableVouchersCubit(repository: ctx.read<DiscountRepository>()),
+          child: AvailableVouchersScreen(userId: user.userId),
+        ),
+      ),
     );
   }
 

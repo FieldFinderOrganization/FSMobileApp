@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../data/datasources/admin_statistics_datasource.dart';
 import '../../data/models/admin_order_list_model.dart';
 import '../../../order/data/models/order_model.dart';
@@ -1185,7 +1186,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
     try {
       full = await widget.datasource.getOrderById(item.orderId);
     } catch (e) {
-      err = e.toString();
+      err = messageFromError(e);
     }
     if (!mounted) return;
     if (full == null) {
@@ -1221,7 +1222,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                 setSheet(() => busy = false);
                 if (sheetCtx.mounted) {
                   ScaffoldMessenger.of(sheetCtx).showSnackBar(
-                    SnackBar(content: Text('Lỗi đổi trạng thái: $e')),
+                    SnackBar(content: Text('Lỗi đổi trạng thái: ${messageFromError(e)}')),
                   );
                 }
               }

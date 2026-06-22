@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../../core/utils/money_utils.dart';
 import '../../../auth/login/presentation/bloc/auth_cubit.dart';
 import '../../../auth/login/presentation/bloc/auth_state.dart';
@@ -974,7 +975,7 @@ class _BookingViewState extends State<_BookingView> {
       if (!outerContext.mounted) return;
       ScaffoldMessenger.of(outerContext).showSnackBar(
         SnackBar(
-          content: Text('Hủy thất bại: $e',
+          content: Text('Hủy thất bại: ${messageFromError(e)}',
               style: GoogleFonts.inter(color: Colors.white)),
           backgroundColor: Colors.red,
         ),

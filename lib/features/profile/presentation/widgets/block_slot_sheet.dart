@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../../core/utils/error_utils.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../pitch/data/datasources/booking_remote_datasource.dart';
 
@@ -155,7 +156,7 @@ class _BlockSlotSheetState extends State<BlockSlotSheet> {
       setState(() => _submitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Không thể khóa lịch: $e'),
+          content: Text('Không thể khóa lịch: ${messageFromError(e)}'),
           backgroundColor: Colors.red,
         ),
       );

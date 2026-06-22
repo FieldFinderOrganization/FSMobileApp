@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/datasources/wallet_remote_data_source.dart';
 import 'wallet_state.dart';
@@ -24,6 +25,21 @@ class WalletCubit extends Cubit<WalletState> {
         status: WalletStatus.failure,
         errorMessage: 'Không tải được ví.',
       ));
+    }
+  }
+
+  /// Rút tiền. Trả về null nếu thành công, hoặc thông báo lỗi.
+  Future<String?> withdraw(double amount, String pin) async {
+    try {
+      await _dataSource.withdraw(amount, pin);
+      await load();
+      return null;
+    } catch (e) {
+      if (e is DioException) {
+        final data = e.response?.data;
+        if (data is Map && data['message'] is String) return data['message'] as String;
+      }
+      return 'Rút tiền thất bại.';
     }
   }
 }

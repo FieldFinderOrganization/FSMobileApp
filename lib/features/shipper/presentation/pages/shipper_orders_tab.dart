@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../call/presentation/cubit/call_cubit.dart';
 import '../../../chat/presentation/pages/user_chat_screen.dart';
@@ -67,7 +68,7 @@ class _ShipperOrdersTabState extends State<ShipperOrdersTab> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = messageFromError(e);
         _loading = false;
       });
     }
@@ -85,7 +86,7 @@ class _ShipperOrdersTabState extends State<ShipperOrdersTab> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Nhận đơn thất bại: $e')),
+          SnackBar(content: Text('Nhận đơn thất bại: ${messageFromError(e)}')),
         );
       }
     }

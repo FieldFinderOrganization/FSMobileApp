@@ -14,6 +14,7 @@ import '../models/product_statistics_model.dart';
 import '../models/recent_booking_model.dart';
 import '../models/revenue_point_model.dart';
 import '../models/provider_debt_model.dart';
+import '../../../wallet/data/models/wallet_transaction_model.dart';
 import '../../../order/data/models/order_model.dart';
 import '../../../pitch/data/models/review_model.dart';
 import '../../../product_review/data/models/item_review_model.dart';
@@ -51,6 +52,42 @@ class AdminStatisticsDatasource {
 
   Future<void> waiveProviderDebt(String id) async {
     await dioClient.dio.post('/admin/provider-debts/$id/waive');
+  }
+
+  // ----- Duyệt TK ngân hàng (tên lệch hồ sơ) -----
+  Future<List<Map<String, dynamic>>> getPendingBankReviews() async {
+    final res = await dioClient.dio.get('/bank-accounts/admin/pending');
+    return (res.data as List<dynamic>)
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+  }
+
+  Future<void> reviewBankAccount(String id, bool approve, {String? note}) async {
+    await dioClient.dio.post('/bank-accounts/admin/$id/review', queryParameters: {
+      'approve': approve,
+      if (note != null) 'note': note,
+    });
+  }
+
+  // ----- Ví âm chủ sân (nợ) -----
+  Future<List<Map<String, dynamic>>> getNegativeWallets() async {
+    final res = await dioClient.dio.get('/providers/wallet/admin/negative');
+    return (res.data as List<dynamic>)
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+  }
+
+  Future<void> waiveWalletDebt(String providerId, {String? note}) async {
+    await dioClient.dio.post('/providers/wallet/admin/$providerId/waive',
+        queryParameters: {if (note != null) 'note': note});
+  }
+
+  /// Sao kê ví của 1 chủ sân (admin audit).
+  Future<List<WalletTransactionModel>> getProviderWalletTransactions(String providerId) async {
+    final res = await dioClient.dio.get('/providers/wallet/admin/$providerId/transactions');
+    return (res.data as List<dynamic>)
+        .map((e) => WalletTransactionModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<AdminOverviewModel> getOverview() async {

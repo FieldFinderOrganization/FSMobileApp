@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../../core/utils/money_utils.dart';
 import '../../../../shared/widgets/cancel_reason_sheet.dart';
 import '../../../../shared/widgets/cancel_window_countdown.dart';
@@ -165,11 +166,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
-  String _extractErrorMessage(Object error) {
-    final msg = error.toString();
-    if (msg.length > 200) return '${msg.substring(0, 200)}...';
-    return msg;
-  }
+  String _extractErrorMessage(Object error) => messageFromError(error);
 
   @override
   Widget build(BuildContext context) {

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/utils/money_utils.dart';
+import '../../../../shared/widgets/cancel_reason_sheet.dart';
 import '../../data/models/refund_request_model.dart';
 import '../cubit/refund_cubit.dart';
 import '../cubit/refund_state.dart';
@@ -137,7 +138,7 @@ class _RefundHistoryScreenState extends State<RefundHistoryScreen> {
             if (!r.isCash && r.refundCode != null)
               _voucherCode(ctx, r),
             if (r.reason != null && r.reason!.isNotEmpty)
-              _line(Icons.info_outline, r.reason!),
+              _line(Icons.info_outline, CancelReasonSheet.decodeReason(r.reason)),
             if (r.status == 'PAYOUT_PENDING' && r.deadlineAt != null)
               _line(Icons.schedule,
                   'Sẽ hoàn trước ${_fmtDate(r.deadlineAt!)}'),

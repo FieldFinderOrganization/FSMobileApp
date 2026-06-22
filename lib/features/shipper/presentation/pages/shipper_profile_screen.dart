@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../auth/login/presentation/bloc/auth_cubit.dart';
 import '../../../profile/presentation/pages/change_password_screen.dart';
@@ -60,7 +61,7 @@ class _ShipperProfileScreenState extends State<ShipperProfileScreen> {
       if (!mounted) return;
       setState(() => _savingOnline = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Đổi trạng thái thất bại: $e')),
+        SnackBar(content: Text('Đổi trạng thái thất bại: ${messageFromError(e)}')),
       );
     }
   }
@@ -126,7 +127,7 @@ class _ShipperProfileScreenState extends State<ShipperProfileScreen> {
                                 setSheet(() => saving = false);
                                 if (ctx.mounted) {
                                   ScaffoldMessenger.of(ctx).showSnackBar(
-                                    SnackBar(content: Text('Lưu thất bại: $e')),
+                                    SnackBar(content: Text('Lưu thất bại: ${messageFromError(e)}')),
                                   );
                                 }
                               }

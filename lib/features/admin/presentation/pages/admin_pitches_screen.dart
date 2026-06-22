@@ -10,6 +10,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../data/datasources/admin_statistics_datasource.dart';
 import '../../data/models/admin_pitch_list_model.dart';
 import '../../data/models/pitch_type_model.dart';
@@ -1265,7 +1266,7 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
       } catch (_) {}
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red));
+            SnackBar(content: Text('Lỗi: ${messageFromError(e)}'), backgroundColor: Colors.red));
       }
     }
   }

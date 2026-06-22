@@ -10,6 +10,7 @@ import '../widgets/home_footer.dart';
 import '../widgets/home_header.dart';
 import '../widgets/quick_actions_bar.dart';
 import '../../../product/presentation/widgets/top_products_section.dart';
+import '../../../product/presentation/widgets/for_you_section.dart';
 import 'search_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -103,6 +104,8 @@ class _HomeBodyState extends State<_HomeBody> {
                       SliverToBoxAdapter(
                         child: FeaturedPitchesSection(state: state),
                       ),
+                      const SliverToBoxAdapter(child: _SectionDivider()),
+                      const SliverToBoxAdapter(child: ForYouSection()),
                       const SliverToBoxAdapter(child: _SectionDivider()),
                       SliverToBoxAdapter(
                         child: TopProductsSection(state: state),

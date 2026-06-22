@@ -76,6 +76,13 @@ class _BankAccountScreenState extends State<BankAccountScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0.5,
+        actions: [
+          IconButton(
+            tooltip: 'Đổi mã PIN',
+            icon: const Icon(Icons.lock_outline, size: 20),
+            onPressed: () => changePaymentPin(context),
+          ),
+        ],
       ),
       body: body,
     );

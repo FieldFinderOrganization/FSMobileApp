@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../../core/location/map_picker_screen.dart';
 import '../../../../features/auth/domain/entities/user_entity.dart';
 import '../../../../features/auth/domain/repositories/auth_repository.dart';
@@ -466,7 +467,7 @@ class _ProviderPitchTabState extends State<ProviderPitchTab> {
                 } catch (e) {
                   setDialogState(() => isUploading = false);
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.redAccent));
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: ${messageFromError(e)}'), backgroundColor: Colors.redAccent));
                   }
                 }
               },

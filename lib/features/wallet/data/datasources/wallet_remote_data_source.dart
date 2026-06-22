@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import '../../../../core/network/dio_client.dart';
 import '../models/wallet_transaction_model.dart';
 import '../models/wallet_view_model.dart';
@@ -18,5 +19,12 @@ class WalletRemoteDataSource {
     return data
         .map((e) => WalletTransactionModel.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  /// Chủ sân tự rút tiền về TK (gác bằng PIN).
+  Future<void> withdraw(double amount, String pin) async {
+    await dioClient.dio.post('/providers/wallet/withdraw',
+        data: {'amount': amount},
+        options: Options(headers: {'X-Payment-Pin': pin}));
   }
 }

@@ -10,6 +10,7 @@ import '../cubit/booking_history_cubit.dart';
 import '../cubit/booking_history_state.dart';
 
 import '../../../../core/network/dio_client.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../data/datasources/booking_remote_datasource.dart';
 import '../../data/datasources/payment_remote_datasource.dart';
 import '../../data/repositories/booking_repository_impl.dart';
@@ -653,7 +654,7 @@ class _BookingItemCardState extends State<_BookingItemCard> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Không thể tải thông tin thanh toán: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Không thể tải thông tin thanh toán: ${messageFromError(e)}'), backgroundColor: Colors.red),
         );
       }
     } finally {

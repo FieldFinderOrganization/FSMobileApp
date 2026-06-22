@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/location/location_helper.dart' as loc;
 import '../../../../core/network/dio_client.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../../core/storage/token_storage.dart';
 import '../../../../core/tracking/route_path.dart';
 import '../../../../core/tracking/tracking_websocket_service.dart';
@@ -268,7 +269,7 @@ class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen>
     } catch (e) {
       if (!mounted) return;
       setState(() => _finishing = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: ${messageFromError(e)}')));
     }
   }
 
@@ -334,7 +335,7 @@ class _ShipperDeliveryScreenState extends State<ShipperDeliveryScreen>
       if (!mounted) return;
       setState(() => _finishing = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi: $e')),
+        SnackBar(content: Text('Lỗi: ${messageFromError(e)}')),
       );
     }
   }

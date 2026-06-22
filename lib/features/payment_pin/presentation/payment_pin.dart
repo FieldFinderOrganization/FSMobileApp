@@ -22,6 +22,101 @@ Future<String?> ensurePaymentPin(BuildContext context) async {
   return _showEnterPin(context, ds);
 }
 
+/// Mở luồng ĐỔI mã PIN. Chưa có PIN ⇒ chuyển sang đặt PIN mới.
+Future<void> changePaymentPin(BuildContext context) async {
+  final ds = PinRemoteDataSource(dioClient: context.read<DioClient>());
+  Map<String, dynamic> st;
+  try {
+    st = await ds.status();
+  } catch (_) {
+    return;
+  }
+  if (!context.mounted) return;
+  if (st['hasPin'] != true) {
+    await _showSetPin(context, ds); // chưa có PIN ⇒ đặt mới
+    return;
+  }
+  await _showChangePin(context, ds);
+}
+
+Future<void> _showChangePin(BuildContext context, PinRemoteDataSource ds) {
+  final cur = TextEditingController();
+  final nw = TextEditingController();
+  final confirm = TextEditingController();
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (ctx) {
+      String? error;
+      bool busy = false;
+      return StatefulBuilder(builder: (ctx, setState) {
+        return AlertDialog(
+          title: const Text('Đổi mã PIN'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _pinField(cur, 'PIN hiện tại'),
+                const SizedBox(height: 10),
+                _pinField(nw, 'PIN mới 6 số'),
+                const SizedBox(height: 10),
+                _pinField(confirm, 'Nhập lại PIN mới'),
+                if (error != null) ...[
+                  const SizedBox(height: 8),
+                  Text(error!, style: const TextStyle(color: Colors.red, fontSize: 12.5)),
+                ],
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                    onPressed: busy
+                        ? null
+                        : () async {
+                            final ok = await _showForgotReset(ctx, ds);
+                            if (ok != null && ctx.mounted) Navigator.pop(ctx);
+                          },
+                    child: const Text('Quên PIN hiện tại?'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Hủy')),
+            ElevatedButton(
+              onPressed: busy
+                  ? null
+                  : () async {
+                      if (nw.text.length != 6) {
+                        setState(() => error = 'PIN mới phải 6 số.');
+                        return;
+                      }
+                      if (nw.text != confirm.text) {
+                        setState(() => error = 'PIN mới nhập lại không khớp.');
+                        return;
+                      }
+                      setState(() { busy = true; error = null; });
+                      try {
+                        await ds.changePin(cur.text, nw.text);
+                        if (ctx.mounted) {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(ctx).showSnackBar(
+                            const SnackBar(content: Text('Đã đổi mã PIN.')),
+                          );
+                        }
+                      } catch (e) {
+                        setState(() { busy = false; error = _errMsg(e, 'Không đổi được PIN.'); });
+                      }
+                    },
+              child: const Text('Đổi PIN'),
+            ),
+          ],
+        );
+      });
+    },
+  );
+}
+
 String _errMsg(Object e, String fallback) {
   if (e is DioException) {
     final data = e.response?.data;

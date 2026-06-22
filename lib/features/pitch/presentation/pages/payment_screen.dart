@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../../core/utils/money_utils.dart';
 import '../../domain/entities/pitch_entity.dart';
 import '../cubit/booking_cubit.dart';
@@ -274,11 +275,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildDetailRow('Tên chủ sân', widget.paymentResponse.ownerName ?? 'Chưa cập nhật'),
+          // TK nhận tiền DUY NHẤT của hệ thống (khớp TK liên kết PayOS quét từ QR),
+          // không còn dùng TK riêng từng chủ sân — đồng bộ với màn thanh toán shop.
+          _buildDetailRow('Tên người nhận', 'Huynh Minh Triet'),
           const Divider(height: 24),
-          _buildDetailRow('Số tài khoản', widget.paymentResponse.ownerCardNumber ?? 'Chưa cập nhật', isCopyable: true),
+          _buildDetailRow('Số tài khoản', '0888696869', isCopyable: true),
           const Divider(height: 24),
-          _buildDetailRow('Ngân hàng', widget.paymentResponse.ownerBank ?? 'Chưa cập nhật'),
+          _buildDetailRow('Ngân hàng', 'MB'),
           const Divider(height: 24),
           _buildDetailRow(
             'Số tiền',
@@ -567,7 +570,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       if (!outerContext.mounted) return;
       ScaffoldMessenger.of(outerContext).showSnackBar(
         SnackBar(
-          content: Text('Hủy thất bại: $e',
+          content: Text('Hủy thất bại: ${messageFromError(e)}',
               style: GoogleFonts.inter(color: Colors.white)),
           backgroundColor: Colors.red,
         ),

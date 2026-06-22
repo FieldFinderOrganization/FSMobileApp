@@ -1,5 +1,5 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../data/datasources/order_remote_data_source.dart';
 import '../../data/models/order_model.dart';
 import '../../../refund/data/datasources/refund_remote_data_source.dart';
@@ -40,11 +40,8 @@ class OrderHistoryCubit extends Cubit<OrderHistoryState> {
         allOrders: orders,
         filteredOrders: filtered,
       ));
-    } on DioException catch (e) {
-      final message = e.response?.data?['message'] ?? e.message ?? e.toString();
-      emit(OrderHistoryError(message));
     } catch (e) {
-      emit(OrderHistoryError(e.toString()));
+      emit(OrderHistoryError(messageFromError(e)));
     }
   }
 
@@ -125,11 +122,8 @@ class OrderHistoryCubit extends Cubit<OrderHistoryState> {
             ? 'Hủy đơn thành công · Mã hoàn tiền ${lastRefund!.refundCode}'
             : 'Hủy đơn hàng thành công!',
       ));
-    } on DioException catch (e) {
-      final message = e.response?.data?['message'] ?? e.message ?? e.toString();
-      emit(OrderHistoryError(message));
     } catch (e) {
-      emit(OrderHistoryError(e.toString()));
+      emit(OrderHistoryError(messageFromError(e)));
     }
   }
 

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/utils/money_utils.dart';
+import '../../../payment_pin/presentation/payment_pin.dart';
 import '../../data/models/wallet_transaction_model.dart';
 import '../../data/models/wallet_view_model.dart';
 import '../cubit/wallet_cubit.dart';
@@ -30,6 +32,13 @@ class _ProviderWalletScreenState extends State<ProviderWalletScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0.5,
+        actions: [
+          IconButton(
+            tooltip: 'Đổi mã PIN',
+            icon: const Icon(Icons.lock_outline, size: 20),
+            onPressed: () => changePaymentPin(context),
+          ),
+        ],
       ),
       body: BlocBuilder<WalletCubit, WalletState>(
         builder: (ctx, state) {
@@ -47,6 +56,8 @@ class _ProviderWalletScreenState extends State<ProviderWalletScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 _balanceCard(w),
+                const SizedBox(height: 10),
+                _withdrawSection(ctx, w),
                 const SizedBox(height: 12),
                 if (w.isNegative || w.blocked) _warningBanner(w),
                 _infoNote(),
@@ -101,6 +112,101 @@ class _ProviderWalletScreenState extends State<ProviderWalletScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _withdrawSection(BuildContext ctx, WalletViewModel w) {
+    final minStr = formatVnd(w.minWithdraw);
+    final canWithdraw = w.withdrawable >= w.minWithdraw;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: canWithdraw ? () => _onWithdraw(ctx, w) : null,
+            icon: const Icon(Icons.account_balance_wallet_outlined, size: 18),
+            label: Text(canWithdraw
+                ? 'Rút về TK (tối đa ${formatVnd(w.withdrawable)})'
+                : 'Rút về TK'),
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size.fromHeight(46),
+              backgroundColor: Colors.green.shade600,
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: Colors.grey.shade300,
+              disabledForegroundColor: Colors.white,
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          canWithdraw
+              ? 'Rút tối thiểu $minStr / lệnh.'
+              : 'Cần rút được ≥ $minStr mới rút được (hiện ${formatVnd(w.withdrawable)}). '
+                  'Tiền cũng tự chuyển khi đủ điều kiện.',
+          style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600, height: 1.3),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _onWithdraw(BuildContext ctx, WalletViewModel w) async {
+    final amount = await _askAmount(ctx, w.withdrawable, w.minWithdraw);
+    if (amount == null || !ctx.mounted) return;
+    final pin = await ensurePaymentPin(ctx); // gác bằng PIN
+    if (pin == null || !ctx.mounted) return;
+    final err = await ctx.read<WalletCubit>().withdraw(amount, pin);
+    if (!ctx.mounted) return;
+    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+      content: Text(err ?? 'Đã gửi lệnh rút — tiền sẽ về TK trong ít phút.'),
+      backgroundColor: err == null ? Colors.green : Colors.red,
+    ));
+  }
+
+  Future<double?> _askAmount(BuildContext ctx, double max, double min) {
+    final minStr = formatVnd(min);
+    final c = TextEditingController(text: max.toStringAsFixed(0));
+    return showDialog<double>(
+      context: ctx,
+      builder: (d) {
+        String? error;
+        return StatefulBuilder(
+          builder: (d, setState) => AlertDialog(
+            title: const Text('Rút tiền'),
+            content: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text('Rút tối thiểu $minStr — tối đa ${formatVnd(max)}'),
+              const SizedBox(height: 10),
+              TextField(
+                controller: c,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: const InputDecoration(
+                    labelText: 'Số tiền', border: OutlineInputBorder()),
+              ),
+              if (error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(error!,
+                      style: const TextStyle(color: Colors.red, fontSize: 12.5)),
+                ),
+            ]),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(d), child: const Text('Hủy')),
+              ElevatedButton(
+                onPressed: () {
+                  final v = double.tryParse(c.text) ?? 0;
+                  if (v < min || v > max) {
+                    setState(() => error = 'Số tiền phải từ $minStr đến ${formatVnd(max)}.');
+                    return;
+                  }
+                  Navigator.pop(d, v);
+                },
+                child: const Text('Rút'),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

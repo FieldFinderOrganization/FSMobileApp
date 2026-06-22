@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../../core/utils/money_utils.dart';
 import '../../../../shared/widgets/cancel_reason_sheet.dart';
 import '../../../../shared/widgets/no_bank_warning_dialog.dart';
@@ -160,7 +161,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Hủy thất bại: $e',
+          content: Text('Hủy thất bại: ${messageFromError(e)}',
               style: GoogleFonts.inter(color: Colors.white)),
           backgroundColor: Colors.red,
         ),
@@ -227,9 +228,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       'SYSTEM' => 'Hệ thống',
       _ => 'Không xác định',
     };
-    final reason = (_booking.cancelReason?.trim().isNotEmpty ?? false)
-        ? _booking.cancelReason!.trim()
-        : 'Không có lý do';
+    final reason = CancelReasonSheet.decodeReason(_booking.cancelReason);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -507,7 +506,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           _buildInfoRow(
             Icons.payment_rounded,
             'Phương thức',
-            _booking.paymentMethod,
+            _booking.paymentMethod.toUpperCase() == 'BANK'
+                ? 'Chuyển khoản'
+                : 'Tiền mặt',
           ),
         ],
       ),

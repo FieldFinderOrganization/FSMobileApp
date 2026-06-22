@@ -1,5 +1,5 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../data/repositories/booking_repository_impl.dart';
 import '../../../refund/data/datasources/refund_remote_data_source.dart';
 import '../../../refund/data/models/refund_request_model.dart';
@@ -40,11 +40,8 @@ class BookingHistoryCubit extends Cubit<BookingHistoryState> {
         allBookings: bookings,
         filteredBookings: filtered,
       ));
-    } on DioException catch (e) {
-      final message = e.response?.data?['message'] ?? e.message ?? e.toString();
-      emit(BookingHistoryError(message));
     } catch (e) {
-      emit(BookingHistoryError(e.toString()));
+      emit(BookingHistoryError(messageFromError(e)));
     }
   }
 
@@ -163,11 +160,8 @@ class BookingHistoryCubit extends Cubit<BookingHistoryState> {
             ? 'Hủy đặt sân thành công · Mã hoàn tiền ${lastRefund!.refundCode}'
             : 'Hủy đặt sân thành công!',
       ));
-    } on DioException catch (e) {
-      final message = e.response?.data?['message'] ?? e.message ?? e.toString();
-      emit(BookingHistoryError(message));
     } catch (e) {
-      emit(BookingHistoryError(e.toString()));
+      emit(BookingHistoryError(messageFromError(e)));
     }
   }
 

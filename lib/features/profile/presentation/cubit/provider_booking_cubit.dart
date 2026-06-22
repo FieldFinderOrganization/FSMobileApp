@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../pitch/data/models/booking_response_model.dart';
 import '../../../pitch/data/repositories/booking_repository_impl.dart';
 
@@ -86,10 +87,8 @@ class ProviderBookingCubit extends Cubit<ProviderBookingState> {
       await repository.providerCancelBooking(bookingId, reason: reason);
       await loadBookings();
       return null;
-    } on DioException catch (e) {
-      return e.response?.data?['message'] ?? e.message ?? 'Hủy đơn thất bại';
     } catch (e) {
-      return e.toString();
+      return messageFromError(e, fallback: 'Hủy đơn thất bại');
     }
   }
 
