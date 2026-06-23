@@ -46,8 +46,8 @@ class BankAccountRepositoryImpl implements BankAccountRepository {
       remoteDataSource.setDefault(bankAccountId, pin: pin);
 
   @override
-  Future<void> delete(String bankAccountId) =>
-      remoteDataSource.delete(bankAccountId);
+  Future<void> delete(String bankAccountId, {String? pin}) =>
+      remoteDataSource.delete(bankAccountId, pin: pin);
 
   @override
   Future<List<BankInfoModel>> fetchBankList() =>

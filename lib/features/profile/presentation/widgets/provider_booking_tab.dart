@@ -63,45 +63,93 @@ class _ProviderBookingBody extends StatelessWidget {
         final selected = state is ProviderBookingLoaded
             ? (state.selectedStatus ?? 'Tất cả')
             : 'Tất cả';
+        final sortMode =
+            state is ProviderBookingLoaded ? state.sortMode : BookingSort.created;
         return Container(
           height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.only(left: 12),
           decoration: const BoxDecoration(
             border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE))),
           ),
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: _statuses.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 8),
-            itemBuilder: (context, i) {
-              final s = _statuses[i];
-              final isSelected = s == selected;
-              return Center(
-                child: FilterChip(
-                  label: Text(
-                    _statusLabels[s] ?? s,
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.white : AppColors.textDark,
-                    ),
-                  ),
-                  selected: isSelected,
-                  selectedColor: AppColors.primaryRed,
-                  backgroundColor: const Color(0xFFF5F5F5),
-                  checkmarkColor: Colors.white,
-                  onSelected: (_) {
-                    context.read<ProviderBookingCubit>().filterByStatus(s == 'Tất cả' ? null : s);
+          child: Row(
+            children: [
+              Expanded(
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _statuses.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 8),
+                  itemBuilder: (context, i) {
+                    final s = _statuses[i];
+                    final isSelected = s == selected;
+                    return Center(
+                      child: FilterChip(
+                        label: Text(
+                          _statusLabels[s] ?? s,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isSelected ? Colors.white : AppColors.textDark,
+                          ),
+                        ),
+                        selected: isSelected,
+                        selectedColor: AppColors.primaryRed,
+                        backgroundColor: const Color(0xFFF5F5F5),
+                        checkmarkColor: Colors.white,
+                        onSelected: (_) {
+                          context
+                              .read<ProviderBookingCubit>()
+                              .filterByStatus(s == 'Tất cả' ? null : s);
+                        },
+                        showCheckmark: false,
+                        side: BorderSide.none,
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                      ),
+                    );
                   },
-                  showCheckmark: false,
-                  side: BorderSide.none,
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
                 ),
-              );
-            },
+              ),
+              _buildSortButton(context, sortMode),
+            ],
           ),
         );
       },
+    );
+  }
+
+  /// Nút đổi cách sắp xếp: theo thời gian tạo hoặc theo lịch đá.
+  Widget _buildSortButton(BuildContext context, BookingSort current) {
+    return PopupMenuButton<BookingSort>(
+      tooltip: 'Sắp xếp',
+      initialValue: current,
+      onSelected: (m) => context.read<ProviderBookingCubit>().setSortMode(m),
+      itemBuilder: (_) => const [
+        PopupMenuItem(
+          value: BookingSort.created,
+          child: Text('Mới tạo trước'),
+        ),
+        PopupMenuItem(
+          value: BookingSort.schedule,
+          child: Text('Theo lịch đá'),
+        ),
+      ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.swap_vert, size: 18, color: AppColors.primaryRed),
+            const SizedBox(width: 2),
+            Text(
+              current == BookingSort.schedule ? 'Lịch đá' : 'Mới tạo',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primaryRed,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

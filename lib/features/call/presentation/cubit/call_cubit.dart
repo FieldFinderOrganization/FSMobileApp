@@ -30,6 +30,10 @@ class CallCubit extends Cubit<CallState> {
 
   WebRtcService? _rtc;
   RTCSessionDescription? _pendingOffer; // offer của cuộc gọi đến, chờ accept
+  // ICE của caller trickle về TRƯỚC khi callee accept (lúc _rtc còn null) — buffer
+  // ở đây, flush sau khi accept dựng peer; nếu drop thì callee mất sạch candidate
+  // của caller và ICE không bao giờ kết nối.
+  final List<Map<String, dynamic>> _pendingRemoteIce = [];
   Timer? _ringTimeout;
   Timer? _durationTimer;
   bool _connectedOnce = false;
@@ -120,6 +124,15 @@ class CallCubit extends Cubit<CallState> {
     await _rtc!.setRemoteDescription(_pendingOffer!);
     final answer = await _rtc!.createAnswer();
     _pendingOffer = null;
+    // Flush ICE của caller đã tới lúc còn đổ chuông (trước khi có _rtc).
+    for (final c in _pendingRemoteIce) {
+      await _rtc!.addRemoteCandidate(RTCIceCandidate(
+        c['candidate'] as String?,
+        c['sdpMid'] as String?,
+        (c['sdpMLineIndex'] as num?)?.toInt(),
+      ));
+    }
+    _pendingRemoteIce.clear();
 
     signaling.send({
       'type': CallSignalType.answer,
@@ -235,7 +248,12 @@ class CallCubit extends Cubit<CallState> {
 
   Future<void> _onRemoteIce(Map<String, dynamic> s) async {
     final c = s['candidate'] as Map<String, dynamic>?;
-    if (c == null || _rtc == null) return;
+    if (c == null) return;
+    // Chưa dựng peer (callee đang đổ chuông) → buffer, flush khi accept.
+    if (_rtc == null) {
+      _pendingRemoteIce.add(c);
+      return;
+    }
     await _rtc!.addRemoteCandidate(RTCIceCandidate(
       c['candidate'] as String?,
       c['sdpMid'] as String?,
@@ -364,6 +382,7 @@ class CallCubit extends Cubit<CallState> {
     final rtc = _rtc;
     _rtc = null;
     _pendingOffer = null;
+    _pendingRemoteIce.clear();
     rtc?.dispose();
     _disposeRenderers();
     emit(state.copyWith(phase: CallPhase.ended, endReason: reason));
@@ -379,6 +398,7 @@ class CallCubit extends Cubit<CallState> {
     _durationTimer?.cancel();
     _rtc?.dispose();
     _rtc = null;
+    _pendingRemoteIce.clear();
     _disposeRenderers();
     emit(const CallState());
   }

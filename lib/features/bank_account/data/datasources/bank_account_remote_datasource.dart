@@ -63,8 +63,9 @@ class BankAccountRemoteDataSource {
     return BankAccountModel.fromJson(res.data as Map<String, dynamic>);
   }
 
-  Future<void> delete(String bankAccountId) async {
-    await dioClient.dio.delete('/bank-accounts/$bankAccountId');
+  Future<void> delete(String bankAccountId, {String? pin}) async {
+    await dioClient.dio.delete('/bank-accounts/$bankAccountId',
+        options: pin != null ? Options(headers: {'X-Payment-Pin': pin}) : null);
   }
 
   /// Danh sách ngân hàng VietQR (public, không cần auth). Dùng Dio riêng.

@@ -261,12 +261,16 @@ class _ProviderRevenueBody extends StatelessWidget {
     );
   }
 
-  /// Breakdown thực nhận: doanh thu (gross) − phí nền tảng = tiền thật về TK.
+  /// Breakdown thực nhận. Tách riêng BANK (hệ thống giữ tiền, chuyển về TK sau khi trừ phí)
+  /// và CASH (chủ sân đã cầm tiền mặt tại sân, phí bị trừ NGƯỢC vào ví — không phải chuyển TK).
   Widget _buildNetBreakdown(RevenueStats stats) {
     final fmt =
         NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
     final pctVal = stats.commissionRate * 100;
     final pct = pctVal.toStringAsFixed(pctVal % 1 == 0 ? 0 : 1);
+    final hasCash = stats.cashRevenue > 0;
+    final hasBank = stats.bankRevenue > 0;
+
     return Container(
       margin: const EdgeInsets.only(top: 10),
       padding: const EdgeInsets.all(14),
@@ -277,15 +281,31 @@ class _ProviderRevenueBody extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _breakdownRow('Phí nền tảng ($pct%)',
-              '− ${fmt.format(stats.platformFee)}', Colors.orange.shade800),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: Divider(height: 1),
-          ),
-          _breakdownRow('Thực nhận về TK', fmt.format(stats.netRevenue),
-              Colors.green.shade700,
-              bold: true),
+          if (hasBank) ...[
+            _breakdownRow('Doanh thu chuyển khoản',
+                fmt.format(stats.bankRevenue), AppColors.textDark),
+            _breakdownRow('Phí nền tảng ($pct%)',
+                '− ${fmt.format(stats.bankRevenue * stats.commissionRate)}',
+                Colors.orange.shade800),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Divider(height: 1),
+            ),
+            _breakdownRow('Thực nhận về TK', fmt.format(stats.bankNetToAccount),
+                Colors.green.shade700,
+                bold: true),
+          ],
+          if (hasCash) ...[
+            if (hasBank) const Padding(
+              padding: EdgeInsets.symmetric(vertical: 10),
+              child: Divider(height: 1),
+            ),
+            _breakdownRow('Doanh thu tiền mặt (đã thu tại sân)',
+                fmt.format(stats.cashRevenue), AppColors.textDark),
+            _breakdownRow('Phí nền tảng ($pct%) — trừ vào ví',
+                '− ${fmt.format(stats.cashCommission)}',
+                Colors.orange.shade800),
+          ],
           const SizedBox(height: 6),
           Row(
             children: [
@@ -293,7 +313,14 @@ class _ProviderRevenueBody extends StatelessWidget {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  'Tiền chuyển về TK sau khi trận đá kết thúc, đã trừ phí nền tảng.',
+                  hasCash && hasBank
+                      ? 'Đơn chuyển khoản: tiền về TK sau khi trận đá kết thúc, đã trừ phí. '
+                          'Đơn tiền mặt: bạn đã thu đủ tại sân, phí nền tảng sẽ bị trừ vào ví '
+                          '(có thể khiến số dư ví âm tạm thời).'
+                      : hasCash
+                          ? 'Bạn đã thu đủ tiền mặt tại sân. Phí nền tảng sẽ bị trừ vào ví '
+                              '(có thể khiến số dư ví âm tạm thời, sẽ tự bù khi có đơn chuyển khoản tiếp theo).'
+                          : 'Tiền chuyển về TK sau khi trận đá kết thúc, đã trừ phí nền tảng.',
                   style: GoogleFonts.inter(
                       fontSize: 11.5, color: Colors.grey.shade600, height: 1.3),
                 ),

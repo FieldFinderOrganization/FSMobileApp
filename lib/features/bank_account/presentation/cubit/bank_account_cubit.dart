@@ -87,9 +87,9 @@ class BankAccountCubit extends Cubit<BankAccountState> {
     }
   }
 
-  Future<void> delete(String bankAccountId) async {
+  Future<void> delete(String bankAccountId, {String? pin}) async {
     try {
-      await _repository.delete(bankAccountId);
+      await _repository.delete(bankAccountId, pin: pin);
       final accounts = await _repository.list();
       emit(state.copyWith(accounts: accounts));
     } catch (e) {

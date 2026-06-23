@@ -17,6 +17,6 @@ abstract class BankAccountRepository {
     String? pin,
   });
   Future<BankAccountModel> setDefault(String bankAccountId, {String? pin});
-  Future<void> delete(String bankAccountId);
+  Future<void> delete(String bankAccountId, {String? pin});
   Future<List<BankInfoModel>> fetchBankList();
 }

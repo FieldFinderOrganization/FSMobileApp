@@ -16,6 +16,8 @@ enum RevenueTimeRange { thisWeek, thisMonth, allTime }
 
 class RevenueStats extends Equatable {
   final double totalRevenue;
+  final double cashRevenue; // phần doanh thu trả tại sân (CASH) — đã ở tay chủ sân, KHÔNG chuyển TK
+  final double bankRevenue; // phần doanh thu qua escrow (BANK) — hệ thống chuyển về TK sau khi trừ phí
   final String mostBookedPitch;
   final int mostBookedPitchCount;
   final String topCustomer;
@@ -27,6 +29,8 @@ class RevenueStats extends Equatable {
 
   const RevenueStats({
     required this.totalRevenue,
+    this.cashRevenue = 0,
+    this.bankRevenue = 0,
     required this.mostBookedPitch,
     required this.mostBookedPitchCount,
     required this.topCustomer,
@@ -37,12 +41,17 @@ class RevenueStats extends Equatable {
     this.commissionRate = 0.05,
   });
 
+  // Hoa hồng tính trên TOÀN BỘ doanh thu (cả CASH lẫn BANK) — CASH bị trừ ngược vào ví, BANK trừ trước khi chuyển.
   double get platformFee => totalRevenue * commissionRate;
-  double get netRevenue => totalRevenue - platformFee;
+  double get cashCommission => cashRevenue * commissionRate; // trừ ngược vào ví, không phải tiền chuyển TK
+  double get bankNetToAccount =>
+      bankRevenue - (bankRevenue * commissionRate); // phần thực chuyển về TK (chỉ tính trên BANK)
 
   @override
   List<Object?> get props => [
         totalRevenue,
+        cashRevenue,
+        bankRevenue,
         mostBookedPitch,
         topCustomer,
         highestRevenuePitch,
@@ -267,6 +276,10 @@ class ProviderRevenueCubit extends Cubit<ProviderRevenueState> {
         b.paymentStatus.toUpperCase() == 'PAID');
 
     final totalRevenue = paid.fold(0.0, (sum, b) => sum + b.totalPrice);
+    final cashRevenue = paid
+        .where((b) => b.paymentMethod.toUpperCase() == 'CASH')
+        .fold(0.0, (sum, b) => sum + b.totalPrice);
+    final bankRevenue = totalRevenue - cashRevenue;
 
     final pitchCount = <String, int>{};
     for (final b in bookings) {
@@ -290,6 +303,8 @@ class ProviderRevenueCubit extends Cubit<ProviderRevenueState> {
 
     return RevenueStats(
       totalRevenue: totalRevenue,
+      cashRevenue: cashRevenue,
+      bankRevenue: bankRevenue,
       mostBookedPitch: topPitchEntry.key,
       mostBookedPitchCount: topPitchEntry.value,
       topCustomer: topCustomerEntry.key,

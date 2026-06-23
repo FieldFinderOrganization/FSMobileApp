@@ -8,6 +8,7 @@ import '../../data/models/wallet_transaction_model.dart';
 import '../../data/models/wallet_view_model.dart';
 import '../cubit/wallet_cubit.dart';
 import '../cubit/wallet_state.dart';
+import 'wallet_topup_screen.dart';
 
 /// Ví chủ sân: số dư, rút được, reserve, cảnh báo khi âm, sao kê giao dịch.
 class ProviderWalletScreen extends StatefulWidget {
@@ -56,6 +57,8 @@ class _ProviderWalletScreenState extends State<ProviderWalletScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 _balanceCard(w),
+                const SizedBox(height: 12),
+                _topupButton(ctx),
                 const SizedBox(height: 10),
                 _withdrawSection(ctx, w),
                 const SizedBox(height: 12),
@@ -112,6 +115,98 @@ class _ProviderWalletScreenState extends State<ProviderWalletScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _topupButton(BuildContext ctx) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => _onTopup(ctx),
+        icon: const Icon(Icons.add_card_outlined, size: 18),
+        label: const Text('Nạp tiền vào ví'),
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(46),
+          foregroundColor: Colors.green.shade700,
+          side: BorderSide(color: Colors.green.shade600),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onTopup(BuildContext ctx) async {
+    final amount = await _askTopupAmount(ctx);
+    if (amount == null || !ctx.mounted) return;
+    final cubit = ctx.read<WalletCubit>();
+    final (topup, err) = await cubit.createTopup(amount);
+    if (!ctx.mounted) return;
+    if (topup == null) {
+      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+        content: Text(err ?? 'Tạo lệnh nạp thất bại.'),
+        backgroundColor: Colors.red,
+      ));
+      return;
+    }
+    Navigator.of(ctx).push(MaterialPageRoute(
+      builder: (_) => WalletTopupScreen(topup: topup, walletCubit: cubit),
+    ));
+  }
+
+  Future<double?> _askTopupAmount(BuildContext ctx) {
+    const minTopup = 10000.0;
+    final c = TextEditingController();
+    return showDialog<double>(
+      context: ctx,
+      builder: (d) {
+        String? error;
+        return StatefulBuilder(
+          builder: (d, setState) => AlertDialog(
+            title: const Text('Nạp tiền vào ví'),
+            content: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text('Nạp tối thiểu ${formatVnd(minTopup)}.'),
+              const SizedBox(height: 10),
+              TextField(
+                controller: c,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: const InputDecoration(
+                    labelText: 'Số tiền', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: [100000, 200000, 500000]
+                    .map((v) => ActionChip(
+                          label: Text(formatVnd(v.toDouble())),
+                          onPressed: () => c.text = v.toString(),
+                        ))
+                    .toList(),
+              ),
+              if (error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(error!,
+                      style: const TextStyle(color: Colors.red, fontSize: 12.5)),
+                ),
+            ]),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(d), child: const Text('Hủy')),
+              ElevatedButton(
+                onPressed: () {
+                  final v = double.tryParse(c.text) ?? 0;
+                  if (v < minTopup) {
+                    setState(() =>
+                        error = 'Số tiền nạp tối thiểu ${formatVnd(minTopup)}.');
+                    return;
+                  }
+                  Navigator.pop(d, v);
+                },
+                child: const Text('Nạp'),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -347,6 +442,8 @@ class _ProviderWalletScreenState extends State<ProviderWalletScreen> {
         return 'Bồi thường khách hủy';
       case 'WITHDRAWAL':
         return 'Rút về tài khoản';
+      case 'TOPUP':
+        return 'Nạp tiền vào ví';
       case 'ADJUSTMENT':
         return 'Điều chỉnh';
       default:
@@ -364,6 +461,8 @@ class _ProviderWalletScreenState extends State<ProviderWalletScreen> {
         return Icons.volunteer_activism_outlined;
       case 'WITHDRAWAL':
         return Icons.account_balance_outlined;
+      case 'TOPUP':
+        return Icons.add_card_outlined;
       default:
         return Icons.tune;
     }

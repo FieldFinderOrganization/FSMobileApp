@@ -231,9 +231,11 @@ class _BankAccountScreenState extends State<BankAccountScreen> {
           TextButton(
               onPressed: () => Navigator.pop(d), child: const Text('Hủy')),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(d);
-              ctx.read<BankAccountCubit>().delete(a.bankAccountId);
+              final pin = await ensurePaymentPin(ctx); // gác bằng PIN
+              if (pin == null || !ctx.mounted) return;
+              ctx.read<BankAccountCubit>().delete(a.bankAccountId, pin: pin);
             },
             child: const Text('Xóa', style: TextStyle(color: Colors.red)),
           ),
