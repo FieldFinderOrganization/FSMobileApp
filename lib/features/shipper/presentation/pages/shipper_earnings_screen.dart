@@ -9,6 +9,7 @@ import '../../../../core/network/dio_client.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../order/data/models/order_model.dart';
 import '../../data/shipper_remote_data_source.dart';
+import 'shipper_wallet_screen.dart';
 
 enum _Period { today, week, month }
 
@@ -99,6 +100,13 @@ class _ShipperEarningsScreenState extends State<ShipperEarningsScreen> {
         title: Text('Thu nhập',
             style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
         actions: [
+          IconButton(
+            tooltip: 'Ví của tôi',
+            icon: const Icon(Icons.account_balance_wallet_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ShipperWalletScreen()),
+            ),
+          ),
           IconButton(
               icon: const Icon(Icons.refresh_rounded), onPressed: _load),
         ],

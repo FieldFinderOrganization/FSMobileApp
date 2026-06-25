@@ -90,6 +90,27 @@ class AdminStatisticsDatasource {
         .toList();
   }
 
+  // ----- Ví âm shipper (công nợ COD) -----
+  Future<List<Map<String, dynamic>>> getNegativeShipperWallets() async {
+    final res = await dioClient.dio.get('/shippers/wallet/admin/negative');
+    return (res.data as List<dynamic>)
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+  }
+
+  Future<void> waiveShipperDebt(String shipperId, {String? note}) async {
+    await dioClient.dio.post('/shippers/wallet/admin/$shipperId/waive',
+        queryParameters: {if (note != null) 'note': note});
+  }
+
+  /// Sao kê ví của 1 shipper (admin audit).
+  Future<List<WalletTransactionModel>> getShipperWalletTransactions(String shipperId) async {
+    final res = await dioClient.dio.get('/shippers/wallet/admin/$shipperId/transactions');
+    return (res.data as List<dynamic>)
+        .map((e) => WalletTransactionModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<AdminOverviewModel> getOverview() async {
     final response = await dioClient.dio.get(
       ApiConstants.adminStatisticsOverview,

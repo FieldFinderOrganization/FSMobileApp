@@ -15,6 +15,7 @@ import 'admin_pitches_screen.dart';
 import 'admin_review_moderation_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_wallet_debts_screen.dart';
+import 'admin_shipper_debts_screen.dart';
 import 'admin_bank_reviews_screen.dart';
 import '../../../discount/presentation/cubit/admin_discount_cubit.dart';
 import '../../../discount/presentation/pages/admin_discount_list_screen.dart';
@@ -221,6 +222,14 @@ class _AdminShellState extends State<AdminShell> {
                 ),
                 _buildDrawerItem(
                   9,
+                  'Nợ shipper (ví âm)',
+                  Icons.local_shipping_outlined,
+                  onTap: () => _pushScreen(
+                    AdminShipperDebtsScreen(datasource: cubit.datasource),
+                  ),
+                ),
+                _buildDrawerItem(
+                  10,
                   'Duyệt TK ngân hàng',
                   Icons.verified_user_outlined,
                   onTap: () => _pushScreen(
