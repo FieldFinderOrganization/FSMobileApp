@@ -5,6 +5,7 @@ import '../models/payment_response_model.dart';
 abstract class PaymentRepository {
   Future<PaymentResponseModel> createPayment(PaymentRequestModel request);
   Future<PaymentResponseModel> getPaymentStatusByBookingId(String bookingId);
+  Future<bool> isBankTransferAvailable(String pitchId);
 }
 
 class PaymentRepositoryImpl implements PaymentRepository {
@@ -20,5 +21,10 @@ class PaymentRepositoryImpl implements PaymentRepository {
   @override
   Future<PaymentResponseModel> getPaymentStatusByBookingId(String bookingId) {
     return remoteDataSource.getPaymentStatusByBookingId(bookingId);
+  }
+
+  @override
+  Future<bool> isBankTransferAvailable(String pitchId) {
+    return remoteDataSource.isBankTransferAvailable(pitchId);
   }
 }

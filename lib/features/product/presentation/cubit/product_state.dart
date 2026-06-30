@@ -28,6 +28,9 @@ class ProductState {
   final List<CategoryEntity> categories;
   final String searchQuery;
   final Set<String> selectedBrands;
+  // Danh sách brand HIỂN THỊ trong bộ lọc — nguồn ổn định, KHÔNG co lại khi đã lọc brand
+  // (nếu lấy từ `products` đã filter thì chọn 1 brand sẽ làm mất các brand khác).
+  final Set<String> brandFacet;
   final String selectedCategory; // Parent category name
   final Set<String> selectedSubCategoryNames;
   final RangeValues priceRange;
@@ -45,6 +48,7 @@ class ProductState {
     this.categories = const [],
     this.searchQuery = '',
     this.selectedBrands = const {},
+    this.brandFacet = const {},
     this.selectedCategory = '',
     this.selectedSubCategoryNames = const {},
     this.priceRange = const RangeValues(0, 1000),
@@ -142,7 +146,11 @@ class ProductState {
   }
 
   List<String> get allBrands {
-    final brands = products.map((p) => p.brand).where((b) => b.isNotEmpty).toSet().toList();
+    // Ưu tiên facet ổn định; fallback về products khi facet chưa có (lần đầu).
+    final source = brandFacet.isNotEmpty
+        ? brandFacet
+        : products.map((p) => p.brand).toSet();
+    final brands = source.where((b) => b.isNotEmpty).toList();
     brands.sort();
     return brands;
   }
@@ -161,6 +169,7 @@ class ProductState {
     List<CategoryEntity>? categories,
     String? searchQuery,
     Set<String>? selectedBrands,
+    Set<String>? brandFacet,
     String? selectedCategory,
     Set<String>? selectedSubCategoryNames,
     RangeValues? priceRange,
@@ -178,6 +187,7 @@ class ProductState {
       categories: categories ?? this.categories,
       searchQuery: searchQuery ?? this.searchQuery,
       selectedBrands: selectedBrands ?? this.selectedBrands,
+      brandFacet: brandFacet ?? this.brandFacet,
       selectedCategory: selectedCategory ?? this.selectedCategory,
       selectedSubCategoryNames: selectedSubCategoryNames ?? this.selectedSubCategoryNames,
       priceRange: priceRange ?? this.priceRange,

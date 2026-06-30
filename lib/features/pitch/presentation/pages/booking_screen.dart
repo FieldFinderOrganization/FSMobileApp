@@ -496,11 +496,46 @@ class _BookingViewState extends State<_BookingView> {
                 'Chuyển khoản',
                 Icons.account_balance_outlined,
                 state.paymentMethod == 'BANK_TRANSFER',
-                () => context.read<BookingCubit>().setPaymentMethod('BANK_TRANSFER'),
+                state.bankTransferEnabled
+                    ? () => context
+                        .read<BookingCubit>()
+                        .setPaymentMethod('BANK_TRANSFER')
+                    : null,
+                enabled: state.bankTransferEnabled,
               ),
             ),
           ],
         ),
+        if (!state.bankTransferEnabled) ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.orange.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline_rounded,
+                    size: 16, color: Colors.orange.shade800),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Sân này chưa hỗ trợ chuyển khoản (chủ sân chưa đăng ký '
+                    'tài khoản nhận tiền). Vui lòng thanh toán bằng tiền mặt.',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.orange.shade900,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 24),
         // Total Summary
         Container(
@@ -648,38 +683,56 @@ class _BookingViewState extends State<_BookingView> {
     String label,
     IconData icon,
     bool isSelected,
-    VoidCallback onTap,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFFF5F5) : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? AppColors.primaryRed : const Color(0xFFEEEEEE),
-            width: isSelected ? 1.5 : 1,
+    VoidCallback? onTap, {
+    bool enabled = true,
+  }) {
+    final Color fg = !enabled
+        ? const Color(0xFFBDBDBD)
+        : (isSelected ? AppColors.primaryRed : AppColors.textGrey);
+    return Opacity(
+      opacity: enabled ? 1.0 : 0.6,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: !enabled
+                ? const Color(0xFFF5F5F5)
+                : (isSelected ? const Color(0xFFFFF5F5) : Colors.white),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected && enabled
+                  ? AppColors.primaryRed
+                  : const Color(0xFFEEEEEE),
+              width: isSelected && enabled ? 1.5 : 1,
+            ),
           ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              isSelected ? Icons.check_circle_rounded : icon,
-              size: 18,
-              color: isSelected ? AppColors.primaryRed : AppColors.textGrey,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? AppColors.primaryRed : AppColors.textGrey,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                !enabled
+                    ? Icons.lock_outline_rounded
+                    : (isSelected ? Icons.check_circle_rounded : icon),
+                size: 18,
+                color: fg,
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: isSelected && enabled
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                    color: fg,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

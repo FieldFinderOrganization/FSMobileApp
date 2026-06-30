@@ -31,6 +31,22 @@ class PaymentRemoteDataSource {
     }
   }
 
+  /// Chủ sân của [pitchId] đã đăng ký TK ngân hàng nhận tiền chưa?
+  /// Fail-open: lỗi mạng / BE chưa có endpoint → trả `true` để không chặn nhầm
+  /// (BE vẫn chặn với message rõ nếu thật sự thiếu TK).
+  Future<bool> isBankTransferAvailable(String pitchId) async {
+    try {
+      final response = await dioClient.dio.get(
+        '${ApiConstants.payments}/bank-transfer-available/$pitchId',
+      );
+      final data = response.data;
+      if (data is Map && data['available'] is bool) return data['available'] as bool;
+      return true;
+    } catch (_) {
+      return true;
+    }
+  }
+
   Future<Map<String, dynamic>> createOrder(Map<String, dynamic> requestBody) async {
     try {
       final response = await dioClient.dio.post(

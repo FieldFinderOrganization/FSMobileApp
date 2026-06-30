@@ -21,6 +21,7 @@ class BookingSuccess extends BookingState {
   final double discountAmount;    // tổng giảm
   final List<String> discountCodes;
   final String paymentMethod; // 'CASH' or 'BANK_TRANSFER'
+  final bool bankTransferEnabled; // chủ sân đã có TK nhận tiền → cho chọn chuyển khoản
 
   const BookingSuccess({
     required this.slots,
@@ -30,6 +31,7 @@ class BookingSuccess extends BookingState {
     this.discountAmount = 0.0,
     this.discountCodes = const [],
     this.paymentMethod = 'CASH',
+    this.bankTransferEnabled = true,
   });
 
   @override
@@ -41,6 +43,7 @@ class BookingSuccess extends BookingState {
         discountAmount,
         discountCodes,
         paymentMethod,
+        bankTransferEnabled,
       ];
 
   BookingSuccess copyWith({
@@ -51,6 +54,7 @@ class BookingSuccess extends BookingState {
     double? discountAmount,
     List<String>? discountCodes,
     String? paymentMethod,
+    bool? bankTransferEnabled,
   }) {
     return BookingSuccess(
       slots: slots ?? this.slots,
@@ -60,6 +64,7 @@ class BookingSuccess extends BookingState {
       discountAmount: discountAmount ?? this.discountAmount,
       discountCodes: discountCodes ?? this.discountCodes,
       paymentMethod: paymentMethod ?? this.paymentMethod,
+      bankTransferEnabled: bankTransferEnabled ?? this.bankTransferEnabled,
     );
   }
 }

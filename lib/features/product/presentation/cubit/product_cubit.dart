@@ -29,10 +29,9 @@ class ProductCubit extends Cubit<ProductState> {
     }
   }
 
-  String? get _brandParam {
-    if (state.selectedBrands.length == 1) return state.selectedBrands.first;
-    return null;
-  }
+  // Gửi TẤT CẢ brand đang chọn (BE nhận Set<String> → lọc OR nhiều brand).
+  List<String>? get _brandParams =>
+      state.selectedBrands.isEmpty ? null : state.selectedBrands.toList();
 
   int? _getCategoryIdFromName(String name) {
     if (name.isEmpty) return null;
@@ -54,7 +53,7 @@ class ProductCubit extends Cubit<ProductState> {
 
   /// [keepPrice] giữ nguyên priceRange + priceTouched user đã chọn (dùng khi Áp dụng
   /// bộ lọc); mặc định false = reset price (đổi danh mục / reload là list mới).
-  Future<void> loadProducts({int? categoryId, String? brand, String? sort, bool keepPrice = false}) async {
+  Future<void> loadProducts({int? categoryId, List<String>? brands, String? sort, bool keepPrice = false}) async {
     final session = ++_catalogLoadGeneration;
     emit(state.copyWith(
       status: LoadStatus.loading,
@@ -69,7 +68,7 @@ class ProductCubit extends Cubit<ProductState> {
       priceTouched: keepPrice ? state.priceTouched : false,
     ));
     try {
-      final result = await _repository.getAllProducts(page: 0, size: 10, categoryId: categoryId, brand: brand, sort: sort);
+      final result = await _repository.getAllProducts(page: 0, size: 10, categoryId: categoryId, brands: brands, sort: sort);
       if (session != _catalogLoadGeneration) return;
 
       final List<ProductEntity> products = result['products'] as List<ProductEntity>;
@@ -81,9 +80,19 @@ class ProductCubit extends Cubit<ProductState> {
         maxPrice = products.map((p) => p.price).reduce((a, b) => a > b ? a : b);
       }
 
+      // Facet brand: nếu load KHÔNG lọc brand → facet = brand của list hiện tại (đổi danh mục
+      // sẽ refresh). Nếu ĐANG lọc brand → giữ + hợp nhất (không để chip brand khác biến mất).
+      final loadedBrands =
+          products.map((p) => p.brand).where((b) => b.isNotEmpty).toSet();
+      final bool brandFiltered = brands != null && brands.isNotEmpty;
+      final Set<String> newFacet = brandFiltered
+          ? {...state.brandFacet, ...loadedBrands}
+          : loadedBrands;
+
       emit(state.copyWith(
         status: LoadStatus.success,
         products: products,
+        brandFacet: newFacet,
         currentPage: 0,
         hasMore: !last,
         priceRange: keepPrice ? state.priceRange : RangeValues(0, maxPrice),
@@ -113,7 +122,7 @@ class ProductCubit extends Cubit<ProductState> {
     try {
       final nextPage = state.currentPage + 1;
       final categoryId = _activeCategoryIdForListing();
-      final result = await _repository.getAllProducts(page: nextPage, size: 10, categoryId: categoryId, brand: _brandParam, sort: _sortParam());
+      final result = await _repository.getAllProducts(page: nextPage, size: 10, categoryId: categoryId, brands: _brandParams, sort: _sortParam());
       if (session != _catalogLoadGeneration) {
         emit(state.copyWith(isLoadingMore: false));
         return;
@@ -125,6 +134,11 @@ class ProductCubit extends Cubit<ProductState> {
       emit(state.copyWith(
         isLoadingMore: false,
         products: [...state.products, ...newProducts],
+        // Hợp nhất brand trang mới vào facet để không sót brand ở các trang sau.
+        brandFacet: {
+          ...state.brandFacet,
+          ...newProducts.map((p) => p.brand).where((b) => b.isNotEmpty),
+        },
         currentPage: nextPage,
         hasMore: !last,
       ));
@@ -164,7 +178,7 @@ class ProductCubit extends Cubit<ProductState> {
       selectedSubCategoryNames: {},
     ));
     final categoryId = _getCategoryIdFromName(newCategory);
-    loadProducts(categoryId: categoryId, brand: _brandParam, sort: _sortParam());
+    loadProducts(categoryId: categoryId, brands: _brandParams, sort: _sortParam());
   }
 
   void toggleSubCategory(String subCategoryName) {
@@ -177,11 +191,11 @@ class ProductCubit extends Cubit<ProductState> {
     if (isAlreadySelected) {
       // Back to parent category
       final parentCategoryId = _getCategoryIdFromName(state.selectedCategory);
-      loadProducts(categoryId: parentCategoryId, brand: _brandParam, sort: _sortParam());
+      loadProducts(categoryId: parentCategoryId, brands: _brandParams, sort: _sortParam());
     } else {
       // Load specifically for this subcategory
       final subCategoryId = _getCategoryIdFromName(subCategoryName);
-      loadProducts(categoryId: subCategoryId, brand: _brandParam, sort: _sortParam());
+      loadProducts(categoryId: subCategoryId, brands: _brandParams, sort: _sortParam());
     }
   }
 
@@ -210,7 +224,7 @@ class ProductCubit extends Cubit<ProductState> {
     final categoryId = _activeCategoryIdForListing();
     await loadProducts(
       categoryId: categoryId,
-      brand: _brandParam,
+      brands: _brandParams,
       sort: _sortParam(),
       keepPrice: state.priceTouched,
     );
@@ -235,7 +249,7 @@ class ProductCubit extends Cubit<ProductState> {
         ? state.selectedSubCategoryNames.first
         : state.selectedCategory;
     final categoryId = _getCategoryIdFromName(activeCategory);
-    await loadProducts(categoryId: categoryId, brand: _brandParam, sort: _sortParam());
+    await loadProducts(categoryId: categoryId, brands: _brandParams, sort: _sortParam());
   }
 
   void reset() {

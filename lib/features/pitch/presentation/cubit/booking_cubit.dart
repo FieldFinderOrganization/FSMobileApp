@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../discount/domain/entities/user_discount_entity.dart';
 import '../../data/models/booking_request_model.dart';
 import '../../data/models/payment_request_model.dart';
@@ -52,7 +53,11 @@ class BookingCubit extends Cubit<BookingState> {
     emit(BookingLoading());
     try {
       final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-      final slotStatuses = await repository.getSlotStatuses(pitch.pitchId, dateStr);
+      // Lấy song song: trạng thái slot + chủ sân có TK nhận tiền chưa (để bật/tắt Chuyển khoản).
+      final statusesFuture = repository.getSlotStatuses(pitch.pitchId, dateStr);
+      final bankFuture = paymentRepository.isBankTransferAvailable(pitch.pitchId);
+      final slotStatuses = await statusesFuture;
+      final bankTransferEnabled = await bankFuture;
 
       final now = DateTime.now();
 
@@ -104,6 +109,8 @@ class BookingCubit extends Cubit<BookingState> {
         selectedSlotIds: selectedIds,
         subtotal: subtotal,
         totalAmount: subtotal,
+        bankTransferEnabled: bankTransferEnabled,
+        // paymentMethod mặc định 'CASH' → sân chưa có TK nhận vẫn an toàn.
       ));
     } catch (e) {
       emit(BookingError(e.toString()));
@@ -189,7 +196,10 @@ class BookingCubit extends Cubit<BookingState> {
 
   void setPaymentMethod(String method) {
     if (state is! BookingSuccess) return;
-    emit((state as BookingSuccess).copyWith(paymentMethod: method));
+    final s = state as BookingSuccess;
+    // Chặn chọn chuyển khoản khi chủ sân chưa đăng ký TK nhận tiền.
+    if (method == 'BANK_TRANSFER' && !s.bankTransferEnabled) return;
+    emit(s.copyWith(paymentMethod: method));
   }
 
   Future<void> confirmBooking(String userId) async {
@@ -244,8 +254,8 @@ class BookingCubit extends Cubit<BookingState> {
         emit(BookingConfirmed(bookingId: bookingId));
       }
     } catch (e) {
-      emit(BookingError(e.toString()));
-      loadSlots(); 
+      emit(BookingError(messageFromError(e)));
+      loadSlots();
     }
   }
 

@@ -7,14 +7,17 @@ class ProductRemoteDataSource {
 
   ProductRemoteDataSource(this._dio);
 
-  Future<Map<String, dynamic>> getAllProducts({int page = 0, int size = 10, int? categoryId, String? brand, String? sort}) async {
+  Future<Map<String, dynamic>> getAllProducts({int page = 0, int size = 10, int? categoryId, List<String>? brands, String? sort}) async {
     final Map<String, dynamic> params = {'page': page, 'size': size};
     if (categoryId != null) params['categoryId'] = categoryId;
-    if (brand != null && brand.isNotEmpty) params['brand'] = brand;
+    // Nhiều brand → gửi lặp `brand=A&brand=B` (ListFormat.multi) khớp Set<String> ở BE.
+    final cleanBrands = brands?.where((b) => b.isNotEmpty).toList() ?? const [];
+    if (cleanBrands.isNotEmpty) params['brand'] = cleanBrands;
     if (sort != null && sort.isNotEmpty) params['sort'] = sort;
     final response = await _dio.get(
       ApiConstants.products,
       queryParameters: params,
+      options: Options(listFormat: ListFormat.multi),
     );
     return response.data as Map<String, dynamic>;
   }
