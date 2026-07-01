@@ -1093,7 +1093,7 @@ class _AdminPitchesScreenState extends State<AdminPitchesScreen> {
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(color: Colors.orange.withOpacity(0.4)),
                             ),
-                            child: Text('NGƪNH',
+                            child: Text('NGƯNG',
                                 style: GoogleFonts.inter(
                                     fontSize: 9, fontWeight: FontWeight.w700, color: Colors.orange[800])),
                           ),

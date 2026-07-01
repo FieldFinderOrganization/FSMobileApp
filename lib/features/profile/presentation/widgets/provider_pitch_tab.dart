@@ -207,7 +207,7 @@ class _ProviderPitchTabState extends State<ProviderPitchTab> {
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: Colors.orange.withOpacity(0.5)),
                         ),
-                        child: Text('NGƪNH', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.orange[800])),
+                        child: Text('NGƯNG', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.orange[800])),
                       ),
                   ],
                 ),
