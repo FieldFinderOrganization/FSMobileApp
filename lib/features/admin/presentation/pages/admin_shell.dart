@@ -151,92 +151,100 @@ class _AdminShellState extends State<AdminShell> {
                   thickness: 1,
                   color: Colors.grey.shade200,
                 ),
-                const SizedBox(height: 12),
-                _buildDrawerItem(
-                  0,
-                  'Tổng quan',
-                  Icons.space_dashboard_outlined,
-                  onTap: () => Navigator.pop(context),
-                ),
-                _buildDrawerItem(
-                  1,
-                  'Người dùng',
-                  Icons.people_outline,
-                  onTap: () => _pushScreen(
-                    AdminUsersScreen(datasource: cubit.datasource),
-                  ),
-                ),
-                _buildDrawerItem(
-                  2,
-                  'Sân bóng',
-                  Icons.sports_soccer_outlined,
-                  onTap: () => _pushScreen(
-                    AdminPitchesScreen(
-                      datasource: cubit.datasource,
-                      pitchTypeData: loaded?.pitchesByType ?? [],
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 12),
+                        _buildDrawerItem(
+                          0,
+                          'Tổng quan',
+                          Icons.space_dashboard_outlined,
+                          onTap: () => Navigator.pop(context),
+                        ),
+                        _buildDrawerItem(
+                          1,
+                          'Người dùng',
+                          Icons.people_outline,
+                          onTap: () => _pushScreen(
+                            AdminUsersScreen(datasource: cubit.datasource),
+                          ),
+                        ),
+                        _buildDrawerItem(
+                          2,
+                          'Sân bóng',
+                          Icons.sports_soccer_outlined,
+                          onTap: () => _pushScreen(
+                            AdminPitchesScreen(
+                              datasource: cubit.datasource,
+                              pitchTypeData: loaded?.pitchesByType ?? [],
+                            ),
+                          ),
+                        ),
+                        _buildDrawerItem(
+                          4,
+                          'Đặt sân',
+                          Icons.calendar_today_outlined,
+                          onTap: () => _pushScreen(
+                            AdminBookingsScreen(datasource: cubit.datasource),
+                          ),
+                        ),
+                        _buildDrawerItem(
+                          5,
+                          'Đơn hàng',
+                          Icons.receipt_long_outlined,
+                          onTap: () => _pushScreen(
+                            AdminOrdersScreen(datasource: cubit.datasource),
+                          ),
+                        ),
+                        _buildDrawerItem(
+                          6,
+                          'Mã khuyến mãi',
+                          Icons.local_offer_outlined,
+                          onTap: () => _pushScreen(
+                            BlocProvider.value(
+                              value: context.read<AdminDiscountCubit>(),
+                              child: const AdminDiscountListScreen(),
+                            ),
+                          ),
+                        ),
+                        _buildDrawerItem(
+                          7,
+                          'Kiểm duyệt đánh giá',
+                          Icons.reviews_outlined,
+                          onTap: () => _pushScreen(
+                            AdminReviewModerationScreen(datasource: cubit.datasource),
+                          ),
+                        ),
+                        _buildDrawerItem(
+                          8,
+                          'Nợ chủ sân (ví âm)',
+                          Icons.account_balance_wallet_outlined,
+                          onTap: () => _pushScreen(
+                            AdminWalletDebtsScreen(datasource: cubit.datasource),
+                          ),
+                        ),
+                        _buildDrawerItem(
+                          9,
+                          'Nợ shipper (ví âm)',
+                          Icons.local_shipping_outlined,
+                          onTap: () => _pushScreen(
+                            AdminShipperDebtsScreen(datasource: cubit.datasource),
+                          ),
+                        ),
+                        _buildDrawerItem(
+                          10,
+                          'Duyệt TK ngân hàng',
+                          Icons.verified_user_outlined,
+                          onTap: () => _pushScreen(
+                            AdminBankReviewsScreen(datasource: cubit.datasource),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                _buildDrawerItem(
-                  4,
-                  'Đặt sân',
-                  Icons.calendar_today_outlined,
-                  onTap: () => _pushScreen(
-                    AdminBookingsScreen(datasource: cubit.datasource),
-                  ),
-                ),
-                _buildDrawerItem(
-                  5,
-                  'Đơn hàng',
-                  Icons.receipt_long_outlined,
-                  onTap: () => _pushScreen(
-                    AdminOrdersScreen(datasource: cubit.datasource),
-                  ),
-                ),
-                _buildDrawerItem(
-                  6,
-                  'Mã khuyến mãi',
-                  Icons.local_offer_outlined,
-                  onTap: () => _pushScreen(
-                    BlocProvider.value(
-                      value: context.read<AdminDiscountCubit>(),
-                      child: const AdminDiscountListScreen(),
-                    ),
-                  ),
-                ),
-                _buildDrawerItem(
-                  7,
-                  'Kiểm duyệt đánh giá',
-                  Icons.reviews_outlined,
-                  onTap: () => _pushScreen(
-                    AdminReviewModerationScreen(datasource: cubit.datasource),
-                  ),
-                ),
-                _buildDrawerItem(
-                  8,
-                  'Nợ chủ sân (ví âm)',
-                  Icons.account_balance_wallet_outlined,
-                  onTap: () => _pushScreen(
-                    AdminWalletDebtsScreen(datasource: cubit.datasource),
-                  ),
-                ),
-                _buildDrawerItem(
-                  9,
-                  'Nợ shipper (ví âm)',
-                  Icons.local_shipping_outlined,
-                  onTap: () => _pushScreen(
-                    AdminShipperDebtsScreen(datasource: cubit.datasource),
-                  ),
-                ),
-                _buildDrawerItem(
-                  10,
-                  'Duyệt TK ngân hàng',
-                  Icons.verified_user_outlined,
-                  onTap: () => _pushScreen(
-                    AdminBankReviewsScreen(datasource: cubit.datasource),
-                  ),
-                ),
-                const Spacer(),
                 Divider(
                   height: 1,
                   thickness: 1,

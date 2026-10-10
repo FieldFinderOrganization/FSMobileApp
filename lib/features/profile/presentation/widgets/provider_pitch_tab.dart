@@ -250,23 +250,27 @@ class _ProviderPitchTabState extends State<ProviderPitchTab> {
                     pitchName: pitch.name,
                   ),
                 ),
-              // Nút Ngưng / Kích hoạt — cả Admin và Provider
-              IconButton(
-                tooltip: pitch.isActive ? 'Ngưng hoạt động' : 'Kích hoạt lại',
-                icon: Icon(
-                  pitch.isActive
-                      ? Icons.pause_circle_outline_rounded
-                      : Icons.play_circle_outline_rounded,
-                  size: 20,
-                  color: pitch.isActive ? Colors.orange : Colors.green,
-                ),
-                onPressed: () {
-                  if (pitch.isActive) {
-                    _showDeactivatePitchDialog(context, pitch, _selectedAddress!.providerAddressId);
-                  } else {
-                    cubit.reactivatePitch(pitch.pitchId, _selectedAddress!.providerAddressId);
-                  }
-                },
+              // Nút Ngưng — chỉ chủ sân (admin không có quyền tự ngưng sân ACTIVE của provider,
+              // tránh lợi dụng gây hại kinh doanh). Nút Kích hoạt lại — cả Admin và Provider.
+              if (pitch.isActive && widget.user.role == 'ADMIN')
+                const SizedBox.shrink()
+              else
+                IconButton(
+                  tooltip: pitch.isActive ? 'Ngưng hoạt động' : 'Kích hoạt lại',
+                  icon: Icon(
+                    pitch.isActive
+                        ? Icons.pause_circle_outline_rounded
+                        : Icons.play_circle_outline_rounded,
+                    size: 20,
+                    color: pitch.isActive ? Colors.orange : Colors.green,
+                  ),
+                  onPressed: () {
+                    if (pitch.isActive) {
+                      _showDeactivatePitchDialog(context, pitch, _selectedAddress!.providerAddressId);
+                    } else {
+                      cubit.reactivatePitch(pitch.pitchId, _selectedAddress!.providerAddressId);
+                    }
+                  },
               ),
             ],
           ),

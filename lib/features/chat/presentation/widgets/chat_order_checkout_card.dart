@@ -44,6 +44,7 @@ class _ChatOrderCheckoutCardState extends State<ChatOrderCheckoutCard> {
   List<UserDiscountEntity> _walletVouchers = [];
   final List<UserDiscountEntity> _selectedVouchers = [];
   bool _walletLoading = false;
+  String _userTier = 'MEMBER'; // hạng user → cho phép chọn mã gắn hạng (minTier)
 
   // Phí ship (preview từ BE). null = chưa quote / lỗi quote. BE vẫn tính lại
   // authoritative khi tạo đơn nên lỗi quote không chặn đặt hàng.
@@ -67,6 +68,23 @@ class _ChatOrderCheckoutCardState extends State<ChatOrderCheckoutCard> {
         if (mounted) _fetchShippingQuote();
       });
     }
+    // Lấy hạng user để cho chọn mã gắn hạng (minTier). Thiếu bước này thì
+    // card AI mặc định MEMBER → chặn nhầm mã dù user đã đủ rank.
+    if (user?.userId != null) _loadTier(user!.userId);
+  }
+
+  /// Lấy hạng user để mở khoá mã gắn hạng. Lỗi → giữ MEMBER (giống CheckoutScreen).
+  Future<void> _loadTier(String userId) async {
+    try {
+      final ds = DiscountRemoteDataSource(context.read<DioClient>().dio);
+      final info = await ds.getTierInfo(userId);
+      if (!mounted) return;
+      setState(() {
+        _userTier = info.tier;
+        // Bỏ chọn mã không còn hợp lệ theo hạng vừa load.
+        _selectedVouchers.removeWhere((v) => !_pricing.isVoucherSelectable(v));
+      });
+    } catch (_) {}
   }
 
   Map<String, dynamic> get _product =>
@@ -110,8 +128,11 @@ class _ChatOrderCheckoutCardState extends State<ChatOrderCheckoutCard> {
     ];
   }
 
-  CheckoutPricing get _pricing =>
-      CheckoutPricing(items: _items, selectedVouchers: _selectedVouchers);
+  CheckoutPricing get _pricing => CheckoutPricing(
+        items: _items,
+        selectedVouchers: _selectedVouchers,
+        userTier: _userTier,
+      );
 
   /// Tổng phải trả = tiền hàng sau giảm + phí ship (server tính lại khi tạo đơn).
   double get _grandTotal => _pricing.total + (_shippingFee ?? 0);
@@ -216,6 +237,7 @@ class _ChatOrderCheckoutCardState extends State<ChatOrderCheckoutCard> {
       selected: _selectedVouchers,
       items: _items,
       onToggle: _toggleVoucher,
+      userTier: _userTier,
     );
   }
 

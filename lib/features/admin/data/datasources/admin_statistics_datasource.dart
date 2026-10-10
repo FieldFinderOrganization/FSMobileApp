@@ -403,17 +403,8 @@ class AdminStatisticsDatasource {
     return response.data as Map<String, dynamic>;
   }
 
-  /// Ngưng sân từ targetDate (Admin — áp dụng cho mọi sân).
-  Future<void> deactivatePitch(String pitchId, DateTime targetDate) async {
-    final dateStr =
-        '${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}';
-    await dioClient.dio.patch(
-      '${ApiConstants.pitches}/$pitchId/status',
-      data: {'targetDate': dateStr},
-    );
-  }
-
-  /// Kích hoạt lại sân INACTIVE (Admin).
+  /// Kích hoạt lại sân INACTIVE (Admin) — admin chỉ được reactivate, không được tự ngưng sân
+  /// đang ACTIVE của chủ sân (xem PitchServiceImpl.deactivatePitch phía BE).
   Future<void> reactivatePitch(String pitchId) async {
     await dioClient.dio.patch(
       '${ApiConstants.pitches}/$pitchId/status',

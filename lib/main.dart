@@ -60,7 +60,7 @@ import 'features/auth/login/presentation/bloc/auth_state.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: '.env');
+  await dotenv.load(fileName: 'env.config');
   await initializeDateFormatting('vi');
 
   final tokenStorage = TokenStorage();
